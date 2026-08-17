@@ -1,0 +1,36 @@
+# render.yaml — Render.com Blueprint
+# Deploy: Frontend (Static Site) + RD Proxy Backend (Node.js)
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  # ─── RD Proxy Backend (Node.js/Express) ──────────────────────
+  - type: web
+    name: warsgate-accounting-proxy
+    runtime: node
+    rootDir: .
+    buildCommand: npm install
+    startCommand: node proxy-server.cjs
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: PORT
+        value: 10000
+
+  # ─── Frontend React App (Static Site) ────────────────────────
+  - type: web
+    name: warsgate-accounting
+    runtime: static
+    rootDir: .
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: 20

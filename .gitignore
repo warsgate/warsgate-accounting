@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Local env files (ไม่ push ขึ้น GitHub)
+.env.local
+.env.*.local
+
+# Editor
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Temp
+*.tmp
