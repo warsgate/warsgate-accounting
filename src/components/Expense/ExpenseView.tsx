@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TrendingDown, Plus, Search, Filter, Printer, Pencil, Trash2, AlertTriangle, FileText, CheckCircle2 } from 'lucide-react';
+import { TrendingDown, Plus, Search, Filter, Printer, Pencil, Trash2, AlertTriangle, FileText, CheckCircle2, RotateCcw } from 'lucide-react';
 import { AccountingDocument, DocumentType, DocumentStatus } from '../../types';
 import { formatMoney, getStatusBadge, formatThaiDate } from '../../utils/formatters';
 
@@ -22,7 +22,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   onUpdateStatus,
   onDeleteDocument
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<string>('ALL');
+  const [activeTypeFilter, setActiveTypeFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [deleteTarget, setDeleteTarget] = useState<AccountingDocument | null>(null);
@@ -30,7 +30,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   const expenseDocs = documents.filter(d => EXPENSE_DOC_TYPES.includes(d.type));
 
   const filteredDocs = expenseDocs.filter(doc => {
-    if (activeSubTab !== 'ALL' && doc.type !== activeSubTab) return false;
+    if (activeTypeFilter !== 'ALL' && doc.type !== activeTypeFilter) return false;
     if (statusFilter !== 'ALL' && doc.status !== statusFilter) return false;
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
@@ -57,6 +57,14 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
     { id: 'WHT_CERTIFICATE', label: 'หัก ณ ที่จ่าย (50 ทวิ)', count: expenseDocs.filter(d => d.type === 'WHT_CERTIFICATE').length },
   ];
 
+  const hasActiveFilters = activeTypeFilter !== 'ALL' || statusFilter !== 'ALL' || searchTerm.trim() !== '';
+
+  const handleResetFilters = () => {
+    setActiveTypeFilter('ALL');
+    setStatusFilter('ALL');
+    setSearchTerm('');
+  };
+
   return (
     <div className="space-y-6 pb-12">
 
@@ -68,7 +76,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
             <span>ระบบจัดการรายจ่าย & การซื้อ (Expense & Purchasing)</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            สร้าง ออกเอกสาร แก้ไข ลบ ใบสั่งซื้อ (PO), ค่าใช้จ่ายโครงการ และภาษีหัก ณ ที่จ่าย (50 ทวิ)
+            สร้าง ออกเอกสาร แก้ไข ลบ ใบสั่งซื้อ (PO), ค่าใช้จ่ายโครงการ, ใบสำคัญจ่าย (PV), และหนังสือรับรอง 50 ทวิ
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -136,32 +144,34 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
         ))}
       </div>
 
-      {/* ── Sub-Tab Cards ───────────────────────────────────────────────────── */}
+      {/* ── Sub-Tab Filter Cards ────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         {subTabs.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveSubTab(tab.id)}
+            onClick={() => setActiveTypeFilter(tab.id)}
             className={`p-3.5 rounded-2xl border text-left transition ${
-              activeSubTab === tab.id
-                ? 'bg-rose-50 border-rose-300 shadow-sm'
+              activeTypeFilter === tab.id
+                ? 'bg-rose-50 border-rose-300 shadow-sm ring-1 ring-rose-200'
                 : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300'
             }`}
           >
             <span
               className={`text-[10px] uppercase tracking-wider font-bold block ${
-                activeSubTab === tab.id ? 'text-rose-600' : 'text-slate-400'
+                activeTypeFilter === tab.id ? 'text-rose-600' : 'text-slate-400'
               }`}
             >
               {tab.label}
             </span>
-            <span className="text-xl font-bold text-slate-800 block mt-1">{tab.count} รายการ</span>
+            <span className="text-xl font-bold text-slate-800 block mt-1 font-mono">{tab.count} รายการ</span>
           </button>
         ))}
       </div>
 
-      {/* ── Search & Filter Bar ─────────────────────────────────────────────── */}
-      <div className="glass-panel p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+      {/* ── Search & Filter Toolbar ─────────────────────────────────────────── */}
+      <div className="glass-panel p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-3">
+        
+        {/* Search Input */}
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -172,25 +182,56 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
             className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-700 focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400/30"
           />
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-400" />
+
+        {/* Filter Dropdowns */}
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
+          
+          {/* Document Type Dropdown Filter */}
+          <div className="flex items-center gap-1.5">
+            <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-rose-400"
+              value={activeTypeFilter}
+              onChange={(e) => setActiveTypeFilter(e.target.value)}
+              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-rose-400"
             >
-              <option value="ALL">สถานะทั้งหมด</option>
-              <option value="PENDING">รอดำเนินการ / รอส่งมอบ</option>
-              <option value="APPROVED">อนุมัติแล้ว</option>
-              <option value="PAID">ชำระเงินแล้ว</option>
-              <option value="OVERDUE">เกินกำหนด</option>
-              <option value="CANCELLED">ยกเลิก</option>
+              <option value="ALL">📁 ประเภทเอกสารรายจ่ายทั้งหมด</option>
+              <option value="PURCHASE_ORDER">📦 ใบสั่งซื้อ (PO)</option>
+              <option value="PURCHASE_INVOICE">📥 ใบแจ้งหนี้ซื้อ (PINV)</option>
+              <option value="PAYMENT_VOUCHER">💸 ใบสำคัญจ่าย (PV)</option>
+              <option value="WHT_CERTIFICATE">📜 หัก ณ ที่จ่าย (50 ทวิ)</option>
             </select>
           </div>
-          <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-            <span className="text-slate-500">มูลค่ารวม: </span>
-            <span className="font-bold text-emerald-600 font-mono">{formatMoney(totalExpenseAmount)}</span>
+
+          {/* Status Dropdown Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-rose-400"
+          >
+            <option value="ALL">🏷️ สถานะทั้งหมด</option>
+            <option value="PENDING">⏳ รอดำเนินการ / รอส่งมอบ</option>
+            <option value="APPROVED">✓ อนุมัติแล้ว</option>
+            <option value="PAID">✓ ชำระเงินแล้ว</option>
+            <option value="OVERDUE">⚠️ เกินกำหนด</option>
+            <option value="CANCELLED">✕ ยกเลิก</option>
+          </select>
+
+          {/* Reset Filters Button */}
+          {hasActiveFilters && (
+            <button
+              onClick={handleResetFilters}
+              className="px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold flex items-center gap-1 transition"
+              title="ล้างตัวกรองทั้งหมด"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>ล้างตัวกรอง</span>
+            </button>
+          )}
+
+          {/* Filtered Total Amount Badge */}
+          <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs">
+            <span className="text-emerald-700 font-semibold">ยอดรวม: </span>
+            <span className="font-bold text-emerald-800 font-mono">฿{formatMoney(totalExpenseAmount)}</span>
           </div>
         </div>
       </div>
@@ -215,28 +256,35 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
                     <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                    <p className="font-medium">ไม่พบรายการเอกสารตามเงื่อนไขที่เลือก</p>
-                    <p className="text-[11px] mt-0.5">กดปุ่มสร้างเอกสารด้านบนเพื่อเพิ่มรายการใหม่</p>
+                    <p className="font-medium">ไม่พบรายการเอกสารรายจ่ายตามประเภทหรือสถานะที่เลือก</p>
+                    {hasActiveFilters && (
+                      <button
+                        onClick={handleResetFilters}
+                        className="mt-2 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-600 font-bold text-xs border border-rose-200 hover:bg-rose-100 transition"
+                      >
+                        ล้างตัวกรองทั้งหมด
+                      </button>
+                    )}
                   </td>
                 </tr>
               ) : (
                 filteredDocs.map((doc) => {
                   const badge = getStatusBadge(doc.status);
                   return (
-                    <tr key={doc.id} className="hover:bg-rose-50/30 transition group">
+                    <tr key={doc.id} className="hover:bg-rose-50/40 transition">
                       <td className="py-3.5 px-4 font-mono font-bold text-slate-700">
                         {doc.documentNo}
                       </td>
                       <td className="py-3.5 px-4">
                         <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                          className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-bold border ${
                             doc.type === 'PURCHASE_ORDER'
-                              ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
                               : doc.type === 'PURCHASE_INVOICE'
-                              ? 'bg-sky-50 text-sky-700 border-sky-200'
+                              ? 'bg-orange-50 text-orange-700 border-orange-200'
                               : doc.type === 'PAYMENT_VOUCHER'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              : 'bg-purple-50 text-purple-700 border-purple-200'
                           }`}
                         >
                           {doc.type === 'PURCHASE_ORDER'
@@ -253,12 +301,12 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                           {doc.contact?.companyName || '-'}
                         </div>
                         <span className="text-[10px] text-slate-400 truncate block">
-                          {doc.contact?.name || ''} {doc.contact?.taxId ? `(Tax: ${doc.contact.taxId})` : ''}
+                          {doc.contact?.name || ''} {doc.contact?.phone ? `(${doc.contact.phone})` : ''}
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-slate-600">
                         <div>{formatThaiDate(doc.issueDate)}</div>
-                        <span className="text-[10px] text-slate-400">กำหนด: {formatThaiDate(doc.dueDate)}</span>
+                        <span className="text-[10px] text-slate-400">ครบกำหนด: {formatThaiDate(doc.dueDate)}</span>
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-800">
                         <div>{formatMoney(doc.grandTotal)}</div>
@@ -280,20 +328,11 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                         <div className="flex items-center justify-center gap-1.5">
                           {doc.status === 'PENDING' && (
                             <button
-                              onClick={() => onUpdateStatus(doc.id, 'APPROVED')}
-                              className="px-2 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-[10px] font-bold transition whitespace-nowrap"
-                              title="เปลี่ยนเป็นอนุมัติแล้ว"
-                            >
-                              ✓ อนุมัติ
-                            </button>
-                          )}
-                          {doc.status === 'APPROVED' && (
-                            <button
                               onClick={() => onUpdateStatus(doc.id, 'PAID')}
                               className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold transition whitespace-nowrap"
-                              title="เปลี่ยนเป็นจ่ายแล้ว"
+                              title="เปลี่ยนเป็นชำระแล้ว"
                             >
-                              ✓ จ่ายแล้ว
+                              ✓ ชำระแล้ว
                             </button>
                           )}
                           <button
@@ -331,44 +370,62 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
       {/* ── Delete Confirmation Modal ───────────────────────────────────────── */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md shadow-2xl p-6 space-y-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-rose-100 flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-6 h-6 text-rose-600" />
               </div>
               <div>
                 <h3 className="font-bold text-slate-800 text-base">ยืนยันการลบเอกสารรายจ่าย</h3>
-                <p className="text-xs text-slate-400 mt-0.5">การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+                <p className="text-xs text-rose-600 font-medium mt-0.5">
+                  ระบบจะลบข้อมูลออกจากฐานข้อมูลอย่างถาวร (ไม่สามารถย้อนกลับได้)
+                </p>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 space-y-2 text-xs">
-              <div className="flex justify-between">
+            <div className="p-4 rounded-2xl bg-rose-50/80 border border-rose-200 space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">ประเภทเอกสาร:</span>
+                <span className="font-bold text-slate-800">
+                  {deleteTarget.type === 'PURCHASE_ORDER'
+                    ? 'ใบสั่งซื้อ (PO)'
+                    : deleteTarget.type === 'PURCHASE_INVOICE'
+                    ? 'ใบแจ้งหนี้ซื้อ (PINV)'
+                    : deleteTarget.type === 'PAYMENT_VOUCHER'
+                    ? 'ใบสำคัญจ่าย (PV)'
+                    : 'หนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ)'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
                 <span className="text-slate-500">เลขที่เอกสาร:</span>
                 <span className="font-mono font-bold text-rose-700">{deleteTarget.documentNo}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-slate-500">ซัพพลายเออร์:</span>
-                <span className="font-semibold text-slate-800">{deleteTarget.contact?.companyName}</span>
+                <span className="font-semibold text-slate-800 truncate max-w-[200px]">
+                  {deleteTarget.contact?.companyName}
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">วันที่เอกสาร:</span>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">วันที่ออกเอกสาร:</span>
                 <span className="text-slate-700">{formatThaiDate(deleteTarget.issueDate)}</span>
               </div>
-              <div className="flex justify-between border-t border-rose-200/60 pt-2 font-bold text-sm">
-                <span className="text-rose-700">มูลค่ารวม:</span>
+              <div className="flex justify-between items-center border-t border-rose-200 pt-2 font-bold text-sm">
+                <span className="text-rose-800">มูลค่ารวมทั้งสิ้น:</span>
                 <span className="font-mono text-rose-700">{formatMoney(deleteTarget.grandTotal)}</span>
               </div>
             </div>
 
             <div className="flex gap-2 justify-end pt-2">
               <button
+                type="button"
                 onClick={() => setDeleteTarget(null)}
                 className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition"
               >
                 ยกเลิก
               </button>
               <button
+                type="button"
                 onClick={() => {
                   onDeleteDocument(deleteTarget.id);
                   setDeleteTarget(null);
@@ -376,7 +433,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                 className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-100 transition active:scale-95"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>ลบเอกสารออกจากระบบ</span>
+                <span>ยืนยันลบออกจากฐานข้อมูล</span>
               </button>
             </div>
           </div>
