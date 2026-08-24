@@ -130,12 +130,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       invoiceAmount: 2276275.20, // งวด 2 & 3 (30% + 30%)
       cashIn: 0,
       expense: 0,
+    },
+    {
+      month: 'พ.ค. 69',
+      poInflow: 2580305.00,   // PO: 2605001 (บจก. พีเอ็นพี เทคโนโลยี เกรท - Zone 1-6)
+      invoiceAmount: 2580305.00, // INV-2605-001 (฿2.58M)
+      cashIn: 0,
+      expense: 0,
     }
   ];
 
   const categoryData = [
     { name: 'ระบบ Traceability 5 ไลน์ (Fujipart - PNP)', value: 4646999.71, color: '#0ea5e9' },
     { name: 'ระบบอัตโนมัติ Auto Pack LM1 (TSF)', value: 3793792.00, color: '#6366f1' },
+    { name: 'ระบบโครงสร้าง Zone 1-6 (Fujipart - PNP)', value: 2580305.00, color: '#10b981' },
     { name: 'ระบบซอฟต์แวร์ Solenoid Line (PNP)', value: 2325558.33, color: '#e11d48' },
   ];
 
