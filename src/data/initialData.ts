@@ -22,7 +22,7 @@ export const initialBankAccounts: BankAccount[] = [
     accountNo: '089-2-54321-9',
     branch: 'ถนนศรีนครินทร์',
     accountType: 'SAVINGS',
-    balance: 4850000.00,
+    balance: 0.00,
     isDefault: true,
   },
   {
@@ -32,7 +32,7 @@ export const initialBankAccounts: BankAccount[] = [
     accountNo: '142-3-98765-4',
     branch: 'เมกาบางนา',
     accountType: 'CURRENT',
-    balance: 1620000.00,
+    balance: 0.00,
     isDefault: false,
   }
 ];
