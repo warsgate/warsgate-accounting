@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { FileText, Plus, Search, Filter, Eye, Printer, Pencil, Trash2, AlertTriangle, CheckCircle2, RotateCcw, Calendar } from 'lucide-react';
+import { 
+  FileText, Plus, Search, Filter, Eye, Printer, Pencil, Trash2, AlertTriangle, 
+  CheckCircle2, RotateCcw, Calendar, Layers, Receipt, ShieldCheck, Clock, Download
+} from 'lucide-react';
 import { AccountingDocument, DocumentType, DocumentStatus } from '../../types';
 import { formatMoney, getStatusBadge, formatThaiDate } from '../../utils/formatters';
 
@@ -22,7 +25,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   onUpdateStatus,
   onDeleteDocument
 }) => {
-  const [activeTypeFilter, setActiveTypeFilter] = useState<string>('ALL');
+  const [activeTypeTab, setActiveTypeTab] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [datePreset, setDatePreset] = useState<string>('ALL');
   const [startDate, setStartDate] = useState<string>('');
@@ -60,10 +63,10 @@ export const SalesView: React.FC<SalesViewProps> = ({
   };
 
   const filteredDocs = salesDocs.filter(doc => {
-    if (activeTypeFilter === 'QUOTATION' && doc.type !== 'QUOTATION') return false;
-    if (activeTypeFilter === 'INVOICE' && doc.type !== 'INVOICE') return false;
-    if (activeTypeFilter === 'TAX_INVOICE' && doc.type !== 'TAX_INVOICE') return false;
-    if (activeTypeFilter === 'RECEIPT' && doc.type !== 'RECEIPT') return false;
+    if (activeTypeTab === 'QUOTATION' && doc.type !== 'QUOTATION') return false;
+    if (activeTypeTab === 'INVOICE' && doc.type !== 'INVOICE') return false;
+    if (activeTypeTab === 'TAX_INVOICE' && doc.type !== 'TAX_INVOICE') return false;
+    if (activeTypeTab === 'RECEIPT' && doc.type !== 'RECEIPT') return false;
     if (statusFilter !== 'ALL' && doc.status !== statusFilter) return false;
     if (startDate && doc.issueDate < startDate) return false;
     if (endDate && doc.issueDate > endDate) return false;
@@ -73,24 +76,68 @@ export const SalesView: React.FC<SalesViewProps> = ({
         doc.documentNo.toLowerCase().includes(q) ||
         (doc.contact?.companyName || '').toLowerCase().includes(q) ||
         (doc.contact?.taxId || '').includes(q) ||
-        (doc.contact?.name || '').toLowerCase().includes(q)
+        (doc.contact?.name || '').toLowerCase().includes(q) ||
+        (doc.notes || '').toLowerCase().includes(q)
       );
     }
     return true;
   });
 
-  const totalFilteredAmount = filteredDocs.reduce((sum, d) => sum + (d.netPayment || d.grandTotal), 0);
+  const totalFilteredGrandTotal = filteredDocs.reduce((sum, d) => sum + d.grandTotal, 0);
+  const totalFilteredVat = filteredDocs.reduce((sum, d) => sum + d.vatAmount, 0);
+  const totalFilteredNet = filteredDocs.reduce((sum, d) => sum + (d.netPayment || d.grandTotal - (d.withholdingTaxTotal || 0)), 0);
 
-  const subTabs = [
-    { id: 'ALL', label: 'เอกสารทั้งหมด', count: salesDocs.length },
-    { id: 'QUOTATION', label: 'ใบเสนอราคา (QT)', count: salesDocs.filter(d => d.type === 'QUOTATION').length },
-    { id: 'INVOICE', label: 'ใบแจ้งหนี้ (INV)', count: salesDocs.filter(d => d.type === 'INVOICE').length },
-    { id: 'TAX_INVOICE', label: 'ใบกำกับภาษี (TAX)', count: salesDocs.filter(d => d.type === 'TAX_INVOICE').length },
-    { id: 'RECEIPT', label: 'ใบเสร็จรับเงิน (REC)', count: salesDocs.filter(d => d.type === 'RECEIPT').length },
+  // Table Tabs Definition with custom icons & badge styles
+  const tableTabs = [
+    { 
+      id: 'ALL', 
+      label: 'ทั้งหมด', 
+      sublabel: 'All Documents',
+      icon: Layers, 
+      count: salesDocs.length,
+      activeColor: 'bg-rose-600 text-white shadow-rose-200',
+      badgeActive: 'bg-white text-rose-700'
+    },
+    { 
+      id: 'QUOTATION', 
+      label: 'ใบเสนอราคา', 
+      sublabel: 'Quotation (QT)',
+      icon: FileText, 
+      count: salesDocs.filter(d => d.type === 'QUOTATION').length,
+      activeColor: 'bg-emerald-600 text-white shadow-emerald-200',
+      badgeActive: 'bg-white text-emerald-700'
+    },
+    { 
+      id: 'INVOICE', 
+      label: 'ใบแจ้งหนี้', 
+      sublabel: 'Invoice (INV)',
+      icon: Receipt, 
+      count: salesDocs.filter(d => d.type === 'INVOICE').length,
+      activeColor: 'bg-sky-600 text-white shadow-sky-200',
+      badgeActive: 'bg-white text-sky-700'
+    },
+    { 
+      id: 'TAX_INVOICE', 
+      label: 'ใบกำกับภาษี', 
+      sublabel: 'Tax Invoice (TAX)',
+      icon: ShieldCheck, 
+      count: salesDocs.filter(d => d.type === 'TAX_INVOICE').length,
+      activeColor: 'bg-indigo-600 text-white shadow-indigo-200',
+      badgeActive: 'bg-white text-indigo-700'
+    },
+    { 
+      id: 'RECEIPT', 
+      label: 'ใบเสร็จรับเงิน', 
+      sublabel: 'Receipt (REC)',
+      icon: CheckCircle2, 
+      count: salesDocs.filter(d => d.type === 'RECEIPT').length,
+      activeColor: 'bg-amber-600 text-white shadow-amber-200',
+      badgeActive: 'bg-white text-amber-700'
+    },
   ];
 
   const hasActiveFilters = 
-    activeTypeFilter !== 'ALL' || 
+    activeTypeTab !== 'ALL' || 
     statusFilter !== 'ALL' || 
     datePreset !== 'ALL' || 
     startDate !== '' || 
@@ -98,7 +145,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
     searchTerm.trim() !== '';
 
   const handleResetFilters = () => {
-    setActiveTypeFilter('ALL');
+    setActiveTypeTab('ALL');
     setStatusFilter('ALL');
     setDatePreset('ALL');
     setStartDate('');
@@ -145,67 +192,27 @@ export const SalesView: React.FC<SalesViewProps> = ({
         </div>
       </div>
 
-      {/* ── Sub-Tab Filter Cards ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {subTabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTypeFilter(tab.id)}
-            className={`p-3.5 rounded-2xl border text-left transition ${
-              activeTypeFilter === tab.id
-                ? 'bg-rose-50 border-rose-300 shadow-sm ring-1 ring-rose-200'
-                : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-            }`}
-          >
-            <span
-              className={`text-[11px] uppercase tracking-wider font-bold block ${
-                activeTypeFilter === tab.id ? 'text-rose-600' : 'text-slate-400'
-              }`}
-            >
-              {tab.label}
-            </span>
-            <span className="text-xl font-bold text-slate-800 block mt-1 font-mono">{tab.count} รายการ</span>
-          </button>
-        ))}
-      </div>
-
       {/* ── Search & Filter Toolbar ─────────────────────────────────────────── */}
       <div className="glass-panel p-4 rounded-2xl space-y-3">
         
-        {/* Row 1: Search & Type & Status */}
+        {/* Row 1: Search & Status Filter */}
         <div className="flex flex-col lg:flex-row items-center justify-between gap-3">
           
           {/* Search Input */}
-          <div className="relative w-full lg:w-80">
+          <div className="relative w-full lg:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="ค้นหาเลขที่เอกสาร, ชื่อลูกค้า, Tax ID..."
+              placeholder="ค้นหาเลขที่เอกสาร, ชื่อลูกค้า, Tax ID, รายละเอียด..."
               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-700 focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400/30"
             />
           </div>
 
-          {/* Quick Filters */}
+          {/* Quick Filters & Reset */}
           <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-between lg:justify-end">
             
-            {/* Document Type Dropdown Filter */}
-            <div className="flex items-center gap-1.5">
-              <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <select
-                value={activeTypeFilter}
-                onChange={(e) => setActiveTypeFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-rose-400"
-              >
-                <option value="ALL">📁 ประเภทเอกสารทั้งหมด</option>
-                <option value="QUOTATION">📄 ใบเสนอราคา (QT)</option>
-                <option value="INVOICE">🧾 ใบแจ้งหนี้ (INV)</option>
-                <option value="TAX_INVOICE">🏛️ ใบกำกับภาษี (TAX)</option>
-                <option value="RECEIPT">💰 ใบเสร็จรับเงิน (REC)</option>
-              </select>
-            </div>
-
             {/* Status Dropdown Filter */}
             <select
               value={statusFilter}
@@ -224,28 +231,28 @@ export const SalesView: React.FC<SalesViewProps> = ({
             {hasActiveFilters && (
               <button
                 onClick={handleResetFilters}
-                className="px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold flex items-center gap-1 transition"
+                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold flex items-center gap-1.5 transition"
                 title="ล้างตัวกรองทั้งหมด"
               >
-                <RotateCcw className="w-3 h-3" />
+                <RotateCcw className="w-3.5 h-3.5" />
                 <span>ล้างตัวกรอง</span>
               </button>
             )}
 
             {/* Filtered Total Amount Badge */}
-            <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs">
-              <span className="text-emerald-700 font-semibold">ยอดรวม: </span>
-              <span className="font-bold text-emerald-800 font-mono">฿{formatMoney(totalFilteredAmount)}</span>
+            <div className="px-3.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs flex items-center gap-2">
+              <span className="text-emerald-700 font-semibold">ยอดรวมสุทธิ:</span>
+              <span className="font-bold text-emerald-800 font-mono text-sm">฿{formatMoney(totalFilteredNet)}</span>
             </div>
           </div>
         </div>
 
         {/* Row 2: Date Range Filter Bar */}
-        <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-slate-600 flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-rose-500" />
-              <span>ช่วงวันที่ออกเอกสาร:</span>
+              <span>ช่วงวันที่:</span>
             </span>
 
             {/* Preset selector */}
@@ -299,145 +306,205 @@ export const SalesView: React.FC<SalesViewProps> = ({
 
       </div>
 
-      {/* ── Documents Table ─────────────────────────────────────────────────── */}
-      <div className="glass-panel rounded-3xl p-6">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
-              <tr>
-                <th className="py-3 px-4">เลขที่เอกสาร</th>
-                <th className="py-3 px-4">ประเภท</th>
-                <th className="py-3 px-4">ลูกค้า / บริษัทคู่ค้า</th>
-                <th className="py-3 px-4">วันที่ออก / ครบกำหนด</th>
-                <th className="py-3 px-4 text-right">มูลค่ารวม (VAT 7%)</th>
-                <th className="py-3 px-4 text-center">สถานะ</th>
-                <th className="py-3 px-4 text-center">จัดการ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredDocs.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">
-                    <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                    <p className="font-medium">ไม่พบรายการเอกสารตามเงื่อนไขช่วงวันที่หรือประเภทที่เลือก</p>
-                    {hasActiveFilters && (
-                      <button
-                        onClick={handleResetFilters}
-                        className="mt-2 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-600 font-bold text-xs border border-rose-200 hover:bg-rose-100 transition"
-                      >
-                        ล้างตัวกรองทั้งหมด
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ) : (
-                filteredDocs.map((doc) => {
-                  const badge = getStatusBadge(doc.status);
-                  return (
-                    <tr key={doc.id} className="hover:bg-rose-50/40 transition">
-                      <td className="py-3.5 px-4 font-mono font-bold text-slate-700">
-                        {doc.documentNo}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-bold border ${
-                            doc.type === 'QUOTATION'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : doc.type === 'INVOICE'
-                              ? 'bg-sky-50 text-sky-700 border-sky-200'
-                              : doc.type === 'TAX_INVOICE'
-                              ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                              : 'bg-amber-50 text-amber-700 border-amber-200'
-                          }`}
-                        >
-                          {doc.type === 'QUOTATION'
-                            ? 'ใบเสนอราคา'
-                            : doc.type === 'INVOICE'
-                            ? 'ใบแจ้งหนี้'
-                            : doc.type === 'TAX_INVOICE'
-                            ? 'ใบกำกับภาษี'
-                            : 'ใบเสร็จรับเงิน'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 max-w-xs">
-                        <div className="font-semibold text-slate-800 truncate">
-                          {doc.contact?.companyName || '-'}
-                        </div>
-                        <span className="text-[10px] text-slate-400 truncate block">
-                          {doc.contact?.name || ''} {doc.contact?.phone ? `(${doc.contact.phone})` : ''}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-600">
-                        <div>{formatThaiDate(doc.issueDate)}</div>
-                        <span className="text-[10px] text-slate-400">ครบกำหนด: {formatThaiDate(doc.dueDate)}</span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-800">
-                        <div>{formatMoney(doc.grandTotal)}</div>
-                        {doc.withholdingTaxTotal > 0 && (
-                          <span className="text-[10px] text-rose-500 block font-normal">
-                            หัก ณ ที่จ่าย: -{formatMoney(doc.withholdingTaxTotal)}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${badge.bg}`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
-                          {badge.label}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {onIssueReceipt && (doc.type === 'INVOICE' || doc.type === 'TAX_INVOICE') && (
-                            <button
-                              onClick={() => onIssueReceipt(doc)}
-                              className="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold transition flex items-center gap-1 whitespace-nowrap shadow-sm"
-                              title="ออกใบเสร็จรับเงินจากใบแจ้งหนี้นี้"
-                            >
-                              <FileText className="w-3 h-3 text-amber-600" />
-                              <span>ออกใบเสร็จ</span>
-                            </button>
-                          )}
-                          {doc.status === 'PENDING' && (
-                            <button
-                              onClick={() => onUpdateStatus(doc.id, 'PAID')}
-                              className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold transition whitespace-nowrap"
-                              title="เปลี่ยนเป็นชำระแล้ว"
-                            >
-                              ✓ ชำระแล้ว
-                            </button>
-                          )}
-                          <button
-                            onClick={() => openViewDocument(doc)}
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-800 text-slate-500 transition shadow-sm"
-                            title="ดูตัวอย่าง / พิมพ์เอกสาร"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => openEditDocument(doc)}
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 text-slate-500 transition shadow-sm"
-                            title="แก้ไขเอกสาร"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(doc)}
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-slate-500 transition shadow-sm"
-                            title="ลบเอกสาร"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+      {/* ── DOCUMENTS TABLE WITH INTEGRATED TYPE TABS ───────────────────────── */}
+      <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-200">
+        
+        {/* Table Type Tabs Header */}
+        <div className="bg-slate-50/80 border-b border-slate-200 p-2 sm:p-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            {tableTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTypeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTypeTab(tab.id)}
+                  className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition whitespace-nowrap active:scale-95 ${
+                    isActive
+                      ? `${tab.activeColor} shadow-md`
+                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100/80 hover:text-slate-800'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <span>{tab.label}</span>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                      isActive ? tab.badgeActive : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
+
+        {/* Table Content */}
+        <div className="p-4 sm:p-6 space-y-4">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                <tr>
+                  <th className="py-3 px-4">เลขที่เอกสาร</th>
+                  <th className="py-3 px-4">ประเภท</th>
+                  <th className="py-3 px-4">ลูกค้า / บริษัทคู่ค้า</th>
+                  <th className="py-3 px-4">วันที่ออก / ครบกำหนด</th>
+                  <th className="py-3 px-4 text-right">มูลค่ารวม (VAT 7%)</th>
+                  <th className="py-3 px-4 text-center">สถานะ</th>
+                  <th className="py-3 px-4 text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredDocs.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                      <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                      <p className="font-medium">
+                        ไม่พบรายการเอกสารในแท็บ &quot;{tableTabs.find(t => t.id === activeTypeTab)?.label}&quot; ตามเงื่อนไขที่เลือก
+                      </p>
+                      {hasActiveFilters && (
+                        <button
+                          onClick={handleResetFilters}
+                          className="mt-2.5 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-600 font-bold text-xs border border-rose-200 hover:bg-rose-100 transition"
+                        >
+                          ล้างตัวกรองทั้งหมด
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredDocs.map((doc) => {
+                    const badge = getStatusBadge(doc.status);
+                    return (
+                      <tr key={doc.id} className="hover:bg-rose-50/40 transition">
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-700">
+                          {doc.documentNo}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span
+                            className={`inline-block text-[11px] px-2.5 py-0.5 rounded-full font-bold border ${
+                              doc.type === 'QUOTATION'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : doc.type === 'INVOICE'
+                                ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                : doc.type === 'TAX_INVOICE'
+                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                            }`}
+                          >
+                            {doc.type === 'QUOTATION'
+                              ? 'ใบเสนอราคา'
+                              : doc.type === 'INVOICE'
+                              ? 'ใบแจ้งหนี้'
+                              : doc.type === 'TAX_INVOICE'
+                              ? 'ใบกำกับภาษี'
+                              : 'ใบเสร็จรับเงิน'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 max-w-xs">
+                          <div className="font-semibold text-slate-800 truncate">
+                            {doc.contact?.companyName || '-'}
+                          </div>
+                          <span className="text-[10px] text-slate-400 truncate block">
+                            {doc.contact?.name || ''} {doc.contact?.phone ? `(${doc.contact.phone})` : ''}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-600">
+                          <div>{formatThaiDate(doc.issueDate)}</div>
+                          <span className="text-[10px] text-slate-400">ครบกำหนด: {formatThaiDate(doc.dueDate)}</span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-800">
+                          <div>{formatMoney(doc.grandTotal)}</div>
+                          {doc.withholdingTaxTotal > 0 && (
+                            <span className="text-[10px] text-rose-500 block font-normal">
+                              หัก ณ ที่จ่าย 3%: -{formatMoney(doc.withholdingTaxTotal)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${badge.bg}`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                            {badge.label}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {onIssueReceipt && (doc.type === 'INVOICE' || doc.type === 'TAX_INVOICE') && (
+                              <button
+                                onClick={() => onIssueReceipt(doc)}
+                                className="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold transition flex items-center gap-1 whitespace-nowrap shadow-sm"
+                                title="ออกใบเสร็จรับเงินจากใบแจ้งหนี้นี้"
+                              >
+                                <FileText className="w-3 h-3 text-amber-600" />
+                                <span>ออกใบเสร็จ</span>
+                              </button>
+                            )}
+                            {doc.status === 'PENDING' && (
+                              <button
+                                onClick={() => onUpdateStatus(doc.id, 'PAID')}
+                                className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold transition whitespace-nowrap"
+                                title="เปลี่ยนเป็นชำระแล้ว"
+                              >
+                                ✓ ชำระแล้ว
+                              </button>
+                            )}
+                            <button
+                              onClick={() => openViewDocument(doc)}
+                              className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-800 text-slate-500 transition shadow-sm"
+                              title="ดูตัวอย่าง / พิมพ์เอกสาร"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => openEditDocument(doc)}
+                              className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 text-slate-500 transition shadow-sm"
+                              title="แก้ไขเอกสาร"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(doc)}
+                              className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-slate-500 transition shadow-sm"
+                              title="ลบเอกสาร"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Table Footer Summary Bar */}
+          {filteredDocs.length > 0 && (
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="text-slate-500 font-medium">
+                แสดงผล <span className="font-bold text-slate-800">{filteredDocs.length}</span> รายการ ในแท็บ <span className="font-bold text-rose-600">{tableTabs.find(t => t.id === activeTypeTab)?.label}</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 text-xs font-mono">
+                <div>
+                  <span className="text-slate-400">VAT 7%: </span>
+                  <span className="font-bold text-slate-700">฿{formatMoney(totalFilteredVat)}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">ยอดรวมทั้งสิ้น: </span>
+                  <span className="font-bold text-slate-800">฿{formatMoney(totalFilteredGrandTotal)}</span>
+                </div>
+                <div className="px-3 py-1 rounded-xl bg-emerald-100/80 text-emerald-800 font-bold border border-emerald-200">
+                  <span>รับสุทธิ: ฿{formatMoney(totalFilteredNet)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* ── Delete Confirmation Modal ───────────────────────────────────────── */}
