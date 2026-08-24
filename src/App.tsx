@@ -35,38 +35,38 @@ export function App() {
 
   const [documents, setDocuments] = useState<AccountingDocument[]>(() => {
     const saved = localStorage.getItem('warsgate_documents');
-    if (!saved) return initialDocuments;
-    try {
-      const parsed: AccountingDocument[] = JSON.parse(saved);
-      const missing = initialDocuments.filter(id => !parsed.some(p => p.id === id.id));
-      return missing.length > 0 ? [...missing, ...parsed] : parsed;
-    } catch {
-      return initialDocuments;
+    if (saved !== null) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return initialDocuments;
+      }
     }
+    return initialDocuments;
   });
 
   const [contacts, setContacts] = useState<Contact[]>(() => {
     const saved = localStorage.getItem('warsgate_contacts');
-    if (!saved) return initialContacts;
-    try {
-      const parsed: Contact[] = JSON.parse(saved);
-      const missing = initialContacts.filter(ic => !parsed.some(p => p.id === ic.id));
-      return missing.length > 0 ? [...missing, ...parsed] : parsed;
-    } catch {
-      return initialContacts;
+    if (saved !== null) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return initialContacts;
+      }
     }
+    return initialContacts;
   });
 
   const [products, setProducts] = useState<ProductService[]>(() => {
     const saved = localStorage.getItem('warsgate_products');
-    if (!saved) return initialProducts;
-    try {
-      const parsed: ProductService[] = JSON.parse(saved);
-      const missing = initialProducts.filter(ip => !parsed.some(p => p.id === ip.id));
-      return missing.length > 0 ? [...missing, ...parsed] : parsed;
-    } catch {
-      return initialProducts;
+    if (saved !== null) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return initialProducts;
+      }
     }
+    return initialProducts;
   });
 
   const [chartOfAccounts] = useState(initialChartOfAccounts);
@@ -99,45 +99,74 @@ export function App() {
   const handleSaveDocument = (doc: AccountingDocument) => {
     setDocuments(prev => {
       const exists = prev.some(d => d.id === doc.id);
-      if (exists) {
-        return prev.map(d => d.id === doc.id ? doc : d);
-      }
-      return [doc, ...prev];
+      const updated = exists ? prev.map(d => d.id === doc.id ? doc : d) : [doc, ...prev];
+      localStorage.setItem('warsgate_documents', JSON.stringify(updated));
+      return updated;
     });
   };
 
   const handleDeleteDocument = (docId: string) => {
-    setDocuments(prev => prev.filter(d => d.id !== docId));
+    setDocuments(prev => {
+      const updated = prev.filter(d => d.id !== docId);
+      localStorage.setItem('warsgate_documents', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleUpdateDocumentStatus = (docId: string, newStatus: DocumentStatus) => {
-    const updated = documents.map(d => d.id === docId ? { ...d, status: newStatus } : d);
-    setDocuments(updated);
+    setDocuments(prev => {
+      const updated = prev.map(d => d.id === docId ? { ...d, status: newStatus } : d);
+      localStorage.setItem('warsgate_documents', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleAddContact = (newContact: Contact) => {
-    const updated = [newContact, ...contacts];
-    setContacts(updated);
+    setContacts(prev => {
+      const updated = [newContact, ...prev];
+      localStorage.setItem('warsgate_contacts', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleUpdateContact = (updated: Contact) => {
-    setContacts(prev => prev.map(c => c.id === updated.id ? updated : c));
+    setContacts(prev => {
+      const next = prev.map(c => c.id === updated.id ? updated : c);
+      localStorage.setItem('warsgate_contacts', JSON.stringify(next));
+      return next;
+    });
   };
 
   const handleDeleteContact = (id: string) => {
-    setContacts(prev => prev.filter(c => c.id !== id));
+    setContacts(prev => {
+      const updated = prev.filter(c => c.id !== id);
+      localStorage.setItem('warsgate_contacts', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleAddProduct = (newProduct: ProductService) => {
-    setProducts(prev => [newProduct, ...prev]);
+    setProducts(prev => {
+      const updated = [newProduct, ...prev];
+      localStorage.setItem('warsgate_products', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleUpdateProduct = (updated: ProductService) => {
-    setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+    setProducts(prev => {
+      const next = prev.map(p => p.id === updated.id ? updated : p);
+      localStorage.setItem('warsgate_products', JSON.stringify(next));
+      return next;
+    });
   };
 
   const handleDeleteProduct = (id: string) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
+    setProducts(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      localStorage.setItem('warsgate_products', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   return (

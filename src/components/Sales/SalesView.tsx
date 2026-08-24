@@ -278,44 +278,62 @@ export const SalesView: React.FC<SalesViewProps> = ({
       {/* ── Delete Confirmation Modal ───────────────────────────────────────── */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md shadow-2xl p-6 space-y-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-rose-100 flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-6 h-6 text-rose-600" />
               </div>
               <div>
                 <h3 className="font-bold text-slate-800 text-base">ยืนยันการลบเอกสาร</h3>
-                <p className="text-xs text-slate-400 mt-0.5">การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+                <p className="text-xs text-rose-600 font-medium mt-0.5">
+                  ระบบจะลบข้อมูลออกจากฐานข้อมูลอย่างถาวร (ไม่สามารถย้อนกลับได้)
+                </p>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 space-y-2 text-xs">
-              <div className="flex justify-between">
+            <div className="p-4 rounded-2xl bg-rose-50/80 border border-rose-200 space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">ประเภทเอกสาร:</span>
+                <span className="font-bold text-slate-800">
+                  {deleteTarget.type === 'QUOTATION'
+                    ? 'ใบเสนอราคา (Quotation)'
+                    : deleteTarget.type === 'INVOICE'
+                    ? 'ใบแจ้งหนี้ (Invoice)'
+                    : deleteTarget.type === 'TAX_INVOICE'
+                    ? 'ใบกำกับภาษี (Tax Invoice)'
+                    : 'ใบเสร็จรับเงิน (Receipt)'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
                 <span className="text-slate-500">เลขที่เอกสาร:</span>
                 <span className="font-mono font-bold text-rose-700">{deleteTarget.documentNo}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-slate-500">ลูกค้า / คู่ค้า:</span>
-                <span className="font-semibold text-slate-800">{deleteTarget.contact?.companyName}</span>
+                <span className="font-semibold text-slate-800 truncate max-w-[200px]">
+                  {deleteTarget.contact?.companyName}
+                </span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-slate-500">วันที่ออกเอกสาร:</span>
                 <span className="text-slate-700">{formatThaiDate(deleteTarget.issueDate)}</span>
               </div>
-              <div className="flex justify-between border-t border-rose-200/60 pt-2 font-bold text-sm">
-                <span className="text-rose-700">มูลค่ารวม:</span>
+              <div className="flex justify-between items-center border-t border-rose-200 pt-2 font-bold text-sm">
+                <span className="text-rose-800">มูลค่ารวมทั้งสิ้น:</span>
                 <span className="font-mono text-rose-700">{formatMoney(deleteTarget.grandTotal)}</span>
               </div>
             </div>
 
             <div className="flex gap-2 justify-end pt-2">
               <button
+                type="button"
                 onClick={() => setDeleteTarget(null)}
                 className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition"
               >
                 ยกเลิก
               </button>
               <button
+                type="button"
                 onClick={() => {
                   onDeleteDocument(deleteTarget.id);
                   setDeleteTarget(null);
@@ -323,7 +341,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                 className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-100 transition active:scale-95"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>ลบเอกสารออกจากระบบ</span>
+                <span>ยืนยันลบออกจากฐานข้อมูล</span>
               </button>
             </div>
           </div>
