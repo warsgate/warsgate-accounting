@@ -94,6 +94,14 @@ export function App() {
   const [viewDoc, setViewDoc] = useState<AccountingDocument | null>(null);
   const [createDocType, setCreateDocType] = useState<DocumentType | null>(null);
   const [editingDoc, setEditingDoc] = useState<AccountingDocument | null>(null);
+  const [fromDoc, setFromDoc] = useState<AccountingDocument | null>(null);
+
+  const handleIssueReceiptFromInvoice = (invoiceDoc: AccountingDocument) => {
+    setFromDoc(invoiceDoc);
+    setCreateDocType('RECEIPT');
+    setEditingDoc(null);
+    setViewDoc(null);
+  };
 
   // Actions
   const handleSaveDocument = (doc: AccountingDocument) => {
@@ -177,7 +185,11 @@ export function App() {
         company={company}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        openCreateModal={(type) => setCreateDocType(type)}
+        openCreateModal={(type) => {
+          setFromDoc(null);
+          setEditingDoc(null);
+          setCreateDocType(type);
+        }}
       />
 
       {/* Main Workspace Layout */}
@@ -201,7 +213,11 @@ export function App() {
                 bankAccounts={bankAccounts}
                 contacts={contacts}
                 setActiveTab={setActiveTab}
-                openCreateModal={(type) => setCreateDocType(type)}
+                openCreateModal={(type) => {
+                  setFromDoc(null);
+                  setEditingDoc(null);
+                  setCreateDocType(type);
+                }}
                 openViewDocument={(doc) => setViewDoc(doc)}
               />
             )}
@@ -209,9 +225,17 @@ export function App() {
             {activeTab === 'sales' && (
               <SalesView
                 documents={documents}
-                openCreateModal={(type) => setCreateDocType(type)}
-                openEditDocument={(doc) => setEditingDoc(doc)}
+                openCreateModal={(type) => {
+                  setFromDoc(null);
+                  setEditingDoc(null);
+                  setCreateDocType(type);
+                }}
+                openEditDocument={(doc) => {
+                  setFromDoc(null);
+                  setEditingDoc(doc);
+                }}
                 openViewDocument={(doc) => setViewDoc(doc)}
+                onIssueReceipt={handleIssueReceiptFromInvoice}
                 onUpdateStatus={handleUpdateDocumentStatus}
                 onDeleteDocument={handleDeleteDocument}
               />
@@ -220,8 +244,15 @@ export function App() {
             {activeTab === 'expenses' && (
               <ExpenseView
                 documents={documents}
-                openCreateModal={(type) => setCreateDocType(type)}
-                openEditDocument={(doc) => setEditingDoc(doc)}
+                openCreateModal={(type) => {
+                  setFromDoc(null);
+                  setEditingDoc(null);
+                  setCreateDocType(type);
+                }}
+                openEditDocument={(doc) => {
+                  setFromDoc(null);
+                  setEditingDoc(doc);
+                }}
                 openViewDocument={(doc) => setViewDoc(doc)}
                 onUpdateStatus={handleUpdateDocumentStatus}
                 onDeleteDocument={handleDeleteDocument}
@@ -276,24 +307,29 @@ export function App() {
           document={viewDoc}
           company={company}
           onClose={() => setViewDoc(null)}
+          onIssueReceipt={handleIssueReceiptFromInvoice}
         />
       )}
 
       {/* Create / Edit Document Modal */}
-      {(createDocType || editingDoc) && (
+      {(createDocType || editingDoc || fromDoc) && (
         <CreateDocumentModal
-          type={editingDoc ? editingDoc.type : createDocType!}
+          type={editingDoc ? editingDoc.type : (createDocType || 'RECEIPT')}
           initialDocument={editingDoc}
+          fromDocument={fromDoc}
+          documents={documents}
           contacts={contacts}
           products={products}
           onClose={() => {
             setCreateDocType(null);
             setEditingDoc(null);
+            setFromDoc(null);
           }}
           onSubmit={(doc) => {
             handleSaveDocument(doc);
             setCreateDocType(null);
             setEditingDoc(null);
+            setFromDoc(null);
           }}
         />
       )}

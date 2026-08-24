@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { X, Plus, Trash2, CheckCircle2, Pencil, Calculator, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Plus, Trash2, CheckCircle2, Pencil, Link2, FileText, ArrowRight } from 'lucide-react';
 import { AccountingDocument, Contact, ProductService, DocumentType, DocumentItem, DocumentStatus } from '../types';
 import { formatMoney } from '../utils/formatters';
 
 interface CreateDocumentModalProps {
   type: DocumentType;
   initialDocument?: AccountingDocument | null;
+  fromDocument?: AccountingDocument | null;
+  documents?: AccountingDocument[];
   contacts: Contact[];
   products: ProductService[];
   onClose: () => void;
@@ -26,17 +28,26 @@ const DOCUMENT_TYPE_NAMES: Record<DocumentType, string> = {
 export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   type: initialType,
   initialDocument,
+  fromDocument,
+  documents = [],
   contacts,
   products,
   onClose,
   onSubmit
 }) => {
   const isEdit = !!initialDocument;
-  const [docType, setDocType] = useState<DocumentType>(initialDocument?.type || initialType);
+  const [docType, setDocType] = useState<DocumentType>(
+    initialDocument?.type || (fromDocument ? 'RECEIPT' : initialType)
+  );
   const isPurchase = docType === 'PURCHASE_ORDER' || docType === 'PURCHASE_INVOICE' || docType === 'PAYMENT_VOUCHER';
 
   const filteredContacts = contacts.filter(c => isPurchase ? c.type === 'SUPPLIER' : c.type === 'CUSTOMER');
-  const defaultContactId = initialDocument?.contact?.id || filteredContacts[0]?.id || contacts[0]?.id || '';
+  const defaultContactId =
+    initialDocument?.contact?.id ||
+    fromDocument?.contact?.id ||
+    filteredContacts[0]?.id ||
+    contacts[0]?.id ||
+    '';
 
   const todayStr = new Date().toISOString().split('T')[0];
   const nextMonthStr = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -47,15 +58,31 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   const [status, setStatus] = useState<DocumentStatus>(
     initialDocument?.status || (docType === 'RECEIPT' ? 'PAID' : 'PENDING')
   );
-  const [notes, setNotes] = useState<string>(
-    initialDocument?.notes !== undefined
-      ? initialDocument.notes
-      : 'กำหนดยอดชำระตามวงเงินเครดิต 30 วัน โอนเข้าบัญชี บจก. วอร์สเกต'
-  );
+
+  const initialNotes = initialDocument?.notes !== undefined
+    ? initialDocument.notes
+    : fromDocument
+    ? `รับชำระเงินตามใบแจ้งหนี้เลขที่ ${fromDocument.documentNo} (${fromDocument.contact?.companyName})`
+    : 'กำหนดยอดชำระตามวงเงินเครดิต 30 วัน โอนเข้าบัญชี บจก. วอร์สเกต';
+
+  const [notes, setNotes] = useState<string>(initialNotes);
+  const [customDocNo, setCustomDocNo] = useState<string>(() => {
+    if (initialDocument?.documentNo) return initialDocument.documentNo;
+    if (fromDocument?.documentNo) {
+      return fromDocument.documentNo
+        .replace(/^INV-/, 'REC-')
+        .replace(/^TAX-/, 'REC-')
+        .replace(/^QT-/, 'INV-');
+    }
+    return '';
+  });
+
   const [paymentMethod, setPaymentMethod] = useState<'BANK_TRANSFER' | 'CASH' | 'CHEQUE' | 'CREDIT_CARD'>(
     initialDocument?.paymentMethod || 'BANK_TRANSFER'
   );
-  const [bankAccount, setBankAccount] = useState<string>(initialDocument?.bankAccount || 'KBANK 089-2-54321-9');
+  const [bankAccount, setBankAccount] = useState<string>(
+    initialDocument?.bankAccount || 'KBANK 089-2-54321-9 (บจก. วอร์สเกต)'
+  );
 
   const defaultFirstItem: DocumentItem = {
     id: `item-${Date.now()}`,
@@ -71,11 +98,42 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     withholdingTaxRate: products[0]?.type === 'SERVICE' ? 3 : 0,
   };
 
-  const [items, setItems] = useState<DocumentItem[]>(
-    initialDocument?.items && initialDocument.items.length > 0
-      ? initialDocument.items
-      : [defaultFirstItem]
-  );
+  const [items, setItems] = useState<DocumentItem[]>(() => {
+    if (initialDocument?.items && initialDocument.items.length > 0) {
+      return initialDocument.items;
+    }
+    if (fromDocument?.items && fromDocument.items.length > 0) {
+      return fromDocument.items.map(i => ({
+        ...i,
+        id: `item-${Date.now()}-${Math.random()}`
+      }));
+    }
+    return [defaultFirstItem];
+  });
+
+  // Handle Quick Import from existing invoice / quotation
+  const handleImportFromDocument = (sourceDocId: string) => {
+    const src = documents.find(d => d.id === sourceDocId);
+    if (!src) return;
+
+    if (src.contact?.id) {
+      setSelectedContactId(src.contact.id);
+    }
+    if (src.items && src.items.length > 0) {
+      setItems(src.items.map(i => ({
+        ...i,
+        id: `item-${Date.now()}-${Math.random()}`
+      })));
+    }
+    if (docType === 'RECEIPT') {
+      setStatus('PAID');
+      setNotes(`รับชำระเงินตามใบแจ้งหนี้เลขที่ ${src.documentNo} (${src.contact?.companyName})`);
+      setCustomDocNo(src.documentNo.replace(/^INV-/, 'REC-').replace(/^TAX-/, 'REC-'));
+    } else if (docType === 'INVOICE') {
+      setNotes(`อ้างอิงใบเสนอราคาเลขที่ ${src.documentNo}`);
+      setCustomDocNo(src.documentNo.replace(/^QT-/, 'INV-'));
+    }
+  };
 
   // ── Item Actions ───────────────────────────────────────────────────────────
   const handleAddItem = () => {
@@ -170,6 +228,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     if (isEdit && initialDocument) {
       const updatedDoc: AccountingDocument = {
         ...initialDocument,
+        documentNo: customDocNo || initialDocument.documentNo,
         type: docType,
         issueDate,
         dueDate,
@@ -199,7 +258,8 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         docType === 'PAYMENT_VOUCHER' ? 'PV' : 'WHT';
       const datePart = issueDate.replace(/-/g, '').slice(0, 6);
       const randomNum = String(Math.floor(100 + Math.random() * 900));
-      const docNo = `${prefix}-${datePart}-${randomNum}`;
+      const autoDocNo = `${prefix}-${datePart}-${randomNum}`;
+      const docNo = customDocNo.trim() ? customDocNo.trim() : autoDocNo;
 
       const newDoc: AccountingDocument = {
         id: `doc-${Date.now()}`,
@@ -229,29 +289,37 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+      <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150">
 
         {/* ── Modal Header ──────────────────────────────────────────────────── */}
         <div className={`px-6 py-4 border-b flex items-center justify-between ${
-          isEdit ? 'bg-gradient-to-r from-sky-600 to-sky-700 text-white' : 'bg-white border-slate-200 text-slate-800'
+          isEdit
+            ? 'bg-gradient-to-r from-sky-600 to-sky-700 text-white'
+            : fromDocument
+            ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white'
+            : 'bg-white border-slate-200 text-slate-800'
         }`}>
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
-              isEdit ? 'bg-white/20 text-white' : 'bg-rose-50 text-rose-600 border border-rose-200'
+              isEdit || fromDocument ? 'bg-white/20 text-white' : 'bg-rose-50 text-rose-600 border border-rose-200'
             }`}>
-              {isEdit ? <Pencil className="w-4 h-4" /> : 'W'}
+              {isEdit ? <Pencil className="w-4 h-4" /> : fromDocument ? <FileText className="w-4 h-4" /> : 'W'}
             </div>
             <div>
               <h2 className="text-base font-bold">
-                {isEdit ? `แก้ไข: ${DOCUMENT_TYPE_NAMES[docType]} (${initialDocument.documentNo})` : `สร้าง ${DOCUMENT_TYPE_NAMES[docType]} ใหม่`}
+                {isEdit
+                  ? `แก้ไข: ${DOCUMENT_TYPE_NAMES[docType]} (${initialDocument.documentNo})`
+                  : fromDocument
+                  ? `ออกใบเสร็จรับเงิน (ดึงข้อมูลจาก ${fromDocument.documentNo})`
+                  : `สร้าง ${DOCUMENT_TYPE_NAMES[docType]} ใหม่`}
               </h2>
-              <span className={`text-[11px] ${isEdit ? 'text-white/80' : 'text-slate-400'}`}>
+              <span className={`text-[11px] ${isEdit || fromDocument ? 'text-white/80' : 'text-slate-400'}`}>
                 บริษัท วอร์สเกต จำกัด (WARSGATE CO., LTD.)
               </span>
             </div>
           </div>
           <button onClick={onClose} className={`p-2 rounded-xl transition ${
-            isEdit ? 'text-white/80 hover:text-white hover:bg-white/10' : 'bg-slate-100 text-slate-400 hover:text-slate-700 hover:bg-slate-200'
+            isEdit || fromDocument ? 'text-white/80 hover:text-white hover:bg-white/10' : 'bg-slate-100 text-slate-400 hover:text-slate-700 hover:bg-slate-200'
           }`}>
             <X className="w-4 h-4" />
           </button>
@@ -260,8 +328,37 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         {/* ── Form Body ─────────────────────────────────────────────────────── */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
 
-          {/* Doc Type & Status (when editing or creating) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          {/* ── Quick Import Banner from Invoices (When creating or if not fromDocument) ── */}
+          {!isEdit && documents.filter(d => ['INVOICE', 'TAX_INVOICE', 'QUOTATION'].includes(d.type)).length > 0 && (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200">
+                  <Link2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-slate-800 text-xs">🔗 ดึงข้อมูลอัตโนมัติจากใบแจ้งหนี้ / ใบเสนอราคา</div>
+                  <div className="text-[10px] text-slate-500">เลือกเอกสารต้นทางเพื่อคัดลอกลูกค้า รายการสินค้า และยอดเงินทันที</div>
+                </div>
+              </div>
+              <select
+                onChange={(e) => handleImportFromDocument(e.target.value)}
+                defaultValue={fromDocument?.id || ''}
+                className="w-full sm:w-auto bg-white border border-amber-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-sm"
+              >
+                <option value="">-- เลือกใบแจ้งหนี้เพื่อดึงข้อมูล --</option>
+                {documents
+                  .filter(d => ['INVOICE', 'TAX_INVOICE', 'QUOTATION'].includes(d.type))
+                  .map(d => (
+                    <option key={d.id} value={d.id}>
+                      {d.documentNo} - {d.contact?.companyName} ({formatMoney(d.grandTotal)})
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
+
+          {/* Doc Type, Doc No, Status, Dates */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
             <div>
               <label className="block text-slate-500 font-semibold mb-1">ประเภทเอกสาร</label>
               <select
@@ -275,6 +372,19 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                 <option value="RECEIPT">ใบเสร็จรับเงิน (REC)</option>
                 <option value="PURCHASE_ORDER">ใบสั่งซื้อ (PO)</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-slate-500 font-semibold mb-1">
+                เลขที่เอกสาร <span className="text-[10px] text-slate-400 font-normal">(เว้นว่างเพื่อ Auto)</span>
+              </label>
+              <input
+                type="text"
+                value={customDocNo}
+                onChange={e => setCustomDocNo(e.target.value)}
+                placeholder="เช่น REC-2505-005/1"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-mono font-bold focus:outline-none focus:border-rose-400"
+              />
             </div>
 
             <div>
@@ -563,11 +673,21 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             <button
               type="submit"
               className={`px-6 py-2.5 rounded-xl text-white font-bold flex items-center gap-2 shadow-md transition active:scale-95 ${
-                isEdit ? 'bg-sky-600 hover:bg-sky-500 shadow-sky-100' : 'bg-rose-600 hover:bg-rose-500 shadow-rose-100'
+                isEdit
+                  ? 'bg-sky-600 hover:bg-sky-500 shadow-sky-100'
+                  : fromDocument
+                  ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-100'
+                  : 'bg-rose-600 hover:bg-rose-500 shadow-rose-100'
               }`}
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>{isEdit ? '💾 บันทึกการแก้ไขเอกสาร' : '✓ บันทึกและออกเอกสาร'}</span>
+              <span>
+                {isEdit
+                  ? '💾 บันทึกการแก้ไขเอกสาร'
+                  : fromDocument
+                  ? '✓ ออกใบเสร็จรับเงินจากใบแจ้งหนี้นี้'
+                  : '✓ บันทึกและออกเอกสาร'}
+              </span>
             </button>
           </div>
 

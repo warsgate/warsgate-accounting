@@ -8,12 +8,14 @@ interface DocumentViewerModalProps {
   document: AccountingDocument | null;
   company: CompanyProfile;
   onClose: () => void;
+  onIssueReceipt?: (doc: AccountingDocument) => void;
 }
 
 export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
   document: doc,
   company,
-  onClose
+  onClose,
+  onIssueReceipt
 }) => {
   if (!doc) return null;
 
@@ -91,12 +93,22 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onIssueReceipt && (doc.type === 'INVOICE' || doc.type === 'TAX_INVOICE') && (
+              <button
+                onClick={() => onIssueReceipt(doc)}
+                className="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-300 flex items-center gap-1.5 transition shadow-sm"
+                title="ออกใบเสร็จรับเงินจากใบแจ้งหนี้นี้"
+              >
+                <FileText className="w-3.5 h-3.5 text-amber-600" />
+                <span>📑 ออกใบเสร็จรับเงิน</span>
+              </button>
+            )}
             <button
               onClick={handlePrint}
               className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs flex items-center gap-2 shadow-glow transition active:scale-95"
             >
               <Printer className="w-4 h-4" />
-              <span>พิมพ์เอกสาร A4 / บันทึก PDF</span>
+              <span>พิมพ์เอกสาร A4 / PDF</span>
             </button>
             <button
               onClick={onClose}

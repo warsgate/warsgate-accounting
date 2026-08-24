@@ -8,6 +8,7 @@ interface SalesViewProps {
   openCreateModal: (type: DocumentType) => void;
   openEditDocument: (doc: AccountingDocument) => void;
   openViewDocument: (doc: AccountingDocument) => void;
+  onIssueReceipt?: (doc: AccountingDocument) => void;
   onUpdateStatus: (docId: string, status: DocumentStatus) => void;
   onDeleteDocument: (docId: string) => void;
 }
@@ -17,6 +18,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   openCreateModal,
   openEditDocument,
   openViewDocument,
+  onIssueReceipt,
   onUpdateStatus,
   onDeleteDocument
 }) => {
@@ -234,6 +236,16 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       </td>
                       <td className="py-3.5 px-4">
                         <div className="flex items-center justify-center gap-1.5">
+                          {onIssueReceipt && (doc.type === 'INVOICE' || doc.type === 'TAX_INVOICE') && (
+                            <button
+                              onClick={() => onIssueReceipt(doc)}
+                              className="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold transition flex items-center gap-1 whitespace-nowrap shadow-sm"
+                              title="ออกใบเสร็จรับเงินจากใบแจ้งหนี้นี้"
+                            >
+                              <FileText className="w-3 h-3 text-amber-600" />
+                              <span>ออกใบเสร็จ</span>
+                            </button>
+                          )}
                           {doc.status === 'PENDING' && (
                             <button
                               onClick={() => onUpdateStatus(doc.id, 'PAID')}
