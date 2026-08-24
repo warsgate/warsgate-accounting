@@ -72,11 +72,21 @@ export function App() {
   // Modal States
   const [viewDoc, setViewDoc] = useState<AccountingDocument | null>(null);
   const [createDocType, setCreateDocType] = useState<DocumentType | null>(null);
+  const [editingDoc, setEditingDoc] = useState<AccountingDocument | null>(null);
 
   // Actions
-  const handleCreateDocument = (newDoc: AccountingDocument) => {
-    const updated = [newDoc, ...documents];
-    setDocuments(updated);
+  const handleSaveDocument = (doc: AccountingDocument) => {
+    setDocuments(prev => {
+      const exists = prev.some(d => d.id === doc.id);
+      if (exists) {
+        return prev.map(d => d.id === doc.id ? doc : d);
+      }
+      return [doc, ...prev];
+    });
+  };
+
+  const handleDeleteDocument = (docId: string) => {
+    setDocuments(prev => prev.filter(d => d.id !== docId));
   };
 
   const handleUpdateDocumentStatus = (docId: string, newStatus: DocumentStatus) => {
@@ -144,8 +154,10 @@ export function App() {
               <SalesView
                 documents={documents}
                 openCreateModal={(type) => setCreateDocType(type)}
+                openEditDocument={(doc) => setEditingDoc(doc)}
                 openViewDocument={(doc) => setViewDoc(doc)}
                 onUpdateStatus={handleUpdateDocumentStatus}
+                onDeleteDocument={handleDeleteDocument}
               />
             )}
 
@@ -208,14 +220,22 @@ export function App() {
         />
       )}
 
-      {/* Create New Document Modal */}
-      {createDocType && (
+      {/* Create / Edit Document Modal */}
+      {(createDocType || editingDoc) && (
         <CreateDocumentModal
-          type={createDocType}
+          type={editingDoc ? editingDoc.type : createDocType!}
+          initialDocument={editingDoc}
           contacts={contacts}
           products={products}
-          onClose={() => setCreateDocType(null)}
-          onSubmit={handleCreateDocument}
+          onClose={() => {
+            setCreateDocType(null);
+            setEditingDoc(null);
+          }}
+          onSubmit={(doc) => {
+            handleSaveDocument(doc);
+            setCreateDocType(null);
+            setEditingDoc(null);
+          }}
         />
       )}
 
