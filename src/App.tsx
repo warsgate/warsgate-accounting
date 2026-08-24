@@ -98,8 +98,15 @@ export function App() {
   };
 
   const handleAddProduct = (newProduct: ProductService) => {
-    const updated = [newProduct, ...products];
-    setProducts(updated);
+    setProducts(prev => [newProduct, ...prev]);
+  };
+
+  const handleUpdateProduct = (updated: ProductService) => {
+    setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+  };
+
+  const handleDeleteProduct = (id: string) => {
+    setProducts(prev => prev.filter(p => p.id !== id));
   };
 
   return (
@@ -163,6 +170,8 @@ export function App() {
               <InventoryView
                 products={products}
                 onAddProduct={handleAddProduct}
+                onUpdateProduct={handleUpdateProduct}
+                onDeleteProduct={handleDeleteProduct}
               />
             )}
 

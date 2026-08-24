@@ -126,7 +126,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
     setRdLoading(true);
     setRdResult(null);
     try {
-      const base = import.meta.env.VITE_PROXY_URL ?? 'http://localhost:3010';
+      const base = (import.meta as any).env?.VITE_PROXY_URL ?? 'http://localhost:3010';
       const resp = await fetch(`${base}/api/rd/vat/${cleanId}`);
       const data: RDResult = await resp.json();
       setRdResult(data);
