@@ -35,17 +35,38 @@ export function App() {
 
   const [documents, setDocuments] = useState<AccountingDocument[]>(() => {
     const saved = localStorage.getItem('warsgate_documents');
-    return saved ? JSON.parse(saved) : initialDocuments;
+    if (!saved) return initialDocuments;
+    try {
+      const parsed: AccountingDocument[] = JSON.parse(saved);
+      const missing = initialDocuments.filter(id => !parsed.some(p => p.id === id.id));
+      return missing.length > 0 ? [...missing, ...parsed] : parsed;
+    } catch {
+      return initialDocuments;
+    }
   });
 
   const [contacts, setContacts] = useState<Contact[]>(() => {
     const saved = localStorage.getItem('warsgate_contacts');
-    return saved ? JSON.parse(saved) : initialContacts;
+    if (!saved) return initialContacts;
+    try {
+      const parsed: Contact[] = JSON.parse(saved);
+      const missing = initialContacts.filter(ic => !parsed.some(p => p.id === ic.id));
+      return missing.length > 0 ? [...missing, ...parsed] : parsed;
+    } catch {
+      return initialContacts;
+    }
   });
 
   const [products, setProducts] = useState<ProductService[]>(() => {
     const saved = localStorage.getItem('warsgate_products');
-    return saved ? JSON.parse(saved) : initialProducts;
+    if (!saved) return initialProducts;
+    try {
+      const parsed: ProductService[] = JSON.parse(saved);
+      const missing = initialProducts.filter(ip => !parsed.some(p => p.id === ip.id));
+      return missing.length > 0 ? [...missing, ...parsed] : parsed;
+    } catch {
+      return initialProducts;
+    }
   });
 
   const [chartOfAccounts] = useState(initialChartOfAccounts);
