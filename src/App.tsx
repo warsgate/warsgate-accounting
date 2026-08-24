@@ -22,7 +22,8 @@ import {
   initialBankAccounts 
 } from './data/initialData';
 
-import { AccountingDocument, DocumentType, DocumentStatus, Contact, ProductService, CompanyProfile } from './types';
+import { AccountingDocument, DocumentType, DocumentStatus, Contact, ProductService, CompanyProfile, DocumentNumberingConfig } from './types';
+import { defaultNumberingConfig } from './utils/numbering';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -31,6 +32,11 @@ export function App() {
   const [company, setCompany] = useState<CompanyProfile>(() => {
     const saved = localStorage.getItem('warsgate_company');
     return saved ? JSON.parse(saved) : initialCompanyProfile;
+  });
+
+  const [numberingConfig, setNumberingConfig] = useState<DocumentNumberingConfig>(() => {
+    const saved = localStorage.getItem('warsgate_doc_numbering');
+    return saved ? JSON.parse(saved) : defaultNumberingConfig;
   });
 
   const [documents, setDocuments] = useState<AccountingDocument[]>(() => {
@@ -77,6 +83,10 @@ export function App() {
   useEffect(() => {
     localStorage.setItem('warsgate_company', JSON.stringify(company));
   }, [company]);
+
+  useEffect(() => {
+    localStorage.setItem('warsgate_doc_numbering', JSON.stringify(numberingConfig));
+  }, [numberingConfig]);
 
   useEffect(() => {
     localStorage.setItem('warsgate_documents', JSON.stringify(documents));
@@ -294,6 +304,8 @@ export function App() {
               <SettingsView
                 company={company}
                 onUpdateCompany={(updated) => setCompany(updated)}
+                numberingConfig={numberingConfig}
+                onUpdateNumberingConfig={(cfg) => setNumberingConfig(cfg)}
               />
             )}
           </div>
@@ -318,6 +330,7 @@ export function App() {
           initialDocument={editingDoc}
           fromDocument={fromDoc}
           documents={documents}
+          numberingConfig={numberingConfig}
           contacts={contacts}
           products={products}
           onClose={() => {

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, CheckCircle2, Pencil, Link2, FileText, ArrowRight } from 'lucide-react';
-import { AccountingDocument, Contact, ProductService, DocumentType, DocumentItem, DocumentStatus } from '../types';
+import { AccountingDocument, Contact, ProductService, DocumentType, DocumentItem, DocumentStatus, DocumentNumberingConfig } from '../types';
 import { formatMoney } from '../utils/formatters';
+import { defaultNumberingConfig, previewDocumentNo } from '../utils/numbering';
 
 interface CreateDocumentModalProps {
   type: DocumentType;
   initialDocument?: AccountingDocument | null;
   fromDocument?: AccountingDocument | null;
   documents?: AccountingDocument[];
+  numberingConfig?: DocumentNumberingConfig;
   contacts: Contact[];
   products: ProductService[];
   onClose: () => void;
@@ -30,6 +32,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   initialDocument,
   fromDocument,
   documents = [],
+  numberingConfig: propNumberingConfig,
   contacts,
   products,
   onClose,
@@ -40,6 +43,11 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     initialDocument?.type || (fromDocument ? 'RECEIPT' : initialType)
   );
   const isPurchase = docType === 'PURCHASE_ORDER' || docType === 'PURCHASE_INVOICE' || docType === 'PAYMENT_VOUCHER';
+
+  const numConfig: DocumentNumberingConfig = propNumberingConfig || (() => {
+    const saved = localStorage.getItem('warsgate_doc_numbering');
+    return saved ? JSON.parse(saved) : defaultNumberingConfig;
+  })();
 
   const filteredContacts = contacts.filter(c => isPurchase ? c.type === 'SUPPLIER' : c.type === 'CUSTOMER');
   const defaultContactId =
@@ -74,8 +82,17 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         .replace(/^TAX-/, 'REC-')
         .replace(/^QT-/, 'INV-');
     }
-    return '';
+    const setting = numConfig[docType] || defaultNumberingConfig[docType];
+    return previewDocumentNo(setting, todayStr);
   });
+
+  // When docType or issueDate changes and not in edit mode
+  useEffect(() => {
+    if (!isEdit && !fromDocument) {
+      const setting = numConfig[docType] || defaultNumberingConfig[docType];
+      setCustomDocNo(previewDocumentNo(setting, issueDate));
+    }
+  }, [docType, issueDate]);
 
   const [paymentMethod, setPaymentMethod] = useState<'BANK_TRANSFER' | 'CASH' | 'CHEQUE' | 'CREDIT_CARD'>(
     initialDocument?.paymentMethod || 'BANK_TRANSFER'
@@ -248,18 +265,23 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       };
       onSubmit(updatedDoc);
     } else {
-      const prefix =
-        docType === 'QUOTATION' ? 'QT' :
-        docType === 'INVOICE' ? 'INV' :
-        docType === 'TAX_INVOICE' ? 'TAX' :
-        docType === 'RECEIPT' ? 'REC' :
-        docType === 'PURCHASE_ORDER' ? 'PO' :
-        docType === 'PURCHASE_INVOICE' ? 'PINV' :
-        docType === 'PAYMENT_VOUCHER' ? 'PV' : 'WHT';
-      const datePart = issueDate.replace(/-/g, '').slice(0, 6);
-      const randomNum = String(Math.floor(100 + Math.random() * 900));
-      const autoDocNo = `${prefix}-${datePart}-${randomNum}`;
+      const setting = numConfig[docType] || defaultNumberingConfig[docType];
+      const autoDocNo = previewDocumentNo(setting, issueDate);
       const docNo = customDocNo.trim() ? customDocNo.trim() : autoDocNo;
+
+      // Auto increment next number in storage
+      try {
+        const updatedConfig = {
+          ...numConfig,
+          [docType]: {
+            ...setting,
+            nextNumber: (setting.nextNumber || 1) + 1
+          }
+        };
+        localStorage.setItem('warsgate_doc_numbering', JSON.stringify(updatedConfig));
+      } catch (err) {
+        console.error('Error saving numbering config', err);
+      }
 
       const newDoc: AccountingDocument = {
         id: `doc-${Date.now()}`,

@@ -136,3 +136,23 @@ export interface FinancialSummary {
   vatPurchaseTotal: number;
   netVatToPay: number;
 }
+
+export interface DocumentNumberSetting {
+  prefix: string;
+  dateFormat: 'YYYYMM' | 'YYMM' | 'YYYY' | 'NONE';
+  digits: number; // 3, 4, 5, 6
+  nextNumber: number;
+  separator: '-' | '/' | '';
+}
+
+export interface DocumentNumberingConfig {
+  QUOTATION: DocumentNumberSetting;
+  INVOICE: DocumentNumberSetting;
+  TAX_INVOICE: DocumentNumberSetting;
+  RECEIPT: DocumentNumberSetting;
+  PURCHASE_ORDER: DocumentNumberSetting;
+  PURCHASE_INVOICE: DocumentNumberSetting;
+  PAYMENT_VOUCHER: DocumentNumberSetting;
+  WHT_CERTIFICATE: DocumentNumberSetting;
+}
+
