@@ -238,50 +238,108 @@ export const initialProducts: ProductService[] = [
 ];
 
 export const initialDocuments: AccountingDocument[] = [
+  // ─── ใบแจ้งหนี้ ชุดที่ 1/3 (Downpayment 30%) ──────────────────────────────
   {
-    id: 'doc-pnp-inv-2505005',
-    documentNo: 'INV-2505-005',
+    id: 'doc-pnp-inv-2505005-1',
+    documentNo: 'INV-2505-005/1',
     type: 'INVOICE',
     issueDate: '2025-05-26',
     dueDate: '2025-06-25',
     contact: initialContacts[0], // บจก. พีเอ็นพี เทคโนโลยี เกรท
     items: [
       {
-        id: 'item-pnp-1',
+        id: 'item-pnp-inv1-1',
         code: 'SW-TRACE-001',
-        name: 'Traceability Solenoid Line Software',
-        description: 'ซอฟต์แวร์ระบบตรวจสอบย้อนกลับ (Traceability) สายการผลิต Solenoid Line',
+        name: 'งวดที่ 1/3 : ค่ามัดจำเริ่มต้นโครงการ (Downpayment 30%)',
+        description: 'โครงการพัฒนาระบบ Traceability Solenoid Line Software ตามใบสั่งซื้อ PO: 2505005',
         quantity: 1,
-        unit: 'Job',
-        pricePerUnit: 2023419.00,
+        unit: 'งวด',
+        pricePerUnit: 652025.70,
         discount: 0,
-        amount: 2023419.00,
-        vatInclusive: false,
-        withholdingTaxRate: 3,
-      },
-      {
-        id: 'item-pnp-2',
-        code: 'SW-TRACE-002',
-        name: 'Traceability Solenoid Line Software เพิ่มเติม',
-        description: 'ซอฟต์แวร์ฟังก์ชันเพิ่มเติม Traceability Solenoid Line',
-        quantity: 1,
-        unit: 'Job',
-        pricePerUnit: 150000.00,
-        discount: 0,
-        amount: 150000.00,
+        amount: 652025.70,
         vatInclusive: false,
         withholdingTaxRate: 3,
       }
     ],
-    subtotal: 2173419.00,
+    subtotal: 652025.70,
     discountTotal: 0,
     vatRate: 7,
-    vatAmount: 152139.33,
-    grandTotal: 2325558.33,
-    withholdingTaxTotal: 65202.57, // 3% of 2,173,419.00
-    netPayment: 2260355.76,
+    vatAmount: 45641.80,
+    grandTotal: 697667.50,
+    withholdingTaxTotal: 19560.77, // 3% of 652,025.70
+    netPayment: 678106.73,
     status: 'APPROVED',
-    notes: 'อ้างอิงใบสั่งซื้อลูกค้า เลขที่ P/O: 2505005 (ลงวันที่ 26 พ.ค. 2568) บจก. พีเอ็นพี เทคโนโลยี เกรท | เงื่อนไข: วางบิลวันที่ 1-25 ของทุกเดือน (ใบกำกับภาษี + สำเนา 5 ใบ), ชำระค่าสินค้าเมื่อส่งของครบตามใบสั่งซื้อ',
+    notes: 'อ้างอิงใบเสนอราคา QT-2505-005 และใบสั่งซื้อ PO: 2505005 (งวดที่ 1: Downpayment 30%) บจก. พีเอ็นพี เทคโนโลยี เกรท',
+    createdByName: 'คุณจีระวัฒน์ (MD)',
+  },
+
+  // ─── ใบแจ้งหนี้ ชุดที่ 2/3 (Test run & BuyOff 60%) ────────────────────────
+  {
+    id: 'doc-pnp-inv-2505005-2',
+    documentNo: 'INV-2505-005/2',
+    type: 'INVOICE',
+    issueDate: '2025-06-26',
+    dueDate: '2025-07-25',
+    contact: initialContacts[0],
+    items: [
+      {
+        id: 'item-pnp-inv2-1',
+        code: 'SW-TRACE-001',
+        name: 'งวดที่ 2/3 : ค่าทดสอบระบบและตรวจรับหน้างาน (Test run & BuyOff 60%)',
+        description: 'โครงการพัฒนาระบบ Traceability Solenoid Line Software ตามใบสั่งซื้อ PO: 2505005',
+        quantity: 1,
+        unit: 'งวด',
+        pricePerUnit: 1304051.40,
+        discount: 0,
+        amount: 1304051.40,
+        vatInclusive: false,
+        withholdingTaxRate: 3,
+      }
+    ],
+    subtotal: 1304051.40,
+    discountTotal: 0,
+    vatRate: 7,
+    vatAmount: 91283.60,
+    grandTotal: 1395335.00,
+    withholdingTaxTotal: 39121.54, // 3% of 1,304,051.40
+    netPayment: 1356213.46,
+    status: 'PENDING',
+    notes: 'อ้างอิงใบเสนอราคา QT-2505-005 และใบสั่งซื้อ PO: 2505005 (งวดที่ 2: Test run & BuyOff 60%) บจก. พีเอ็นพี เทคโนโลยี เกรท',
+    createdByName: 'คุณจีระวัฒน์ (MD)',
+  },
+
+  // ─── ใบแจ้งหนี้ ชุดที่ 3/3 (Manual 10%) ──────────────────────────────────
+  {
+    id: 'doc-pnp-inv-2505005-3',
+    documentNo: 'INV-2505-005/3',
+    type: 'INVOICE',
+    issueDate: '2025-07-26',
+    dueDate: '2025-08-25',
+    contact: initialContacts[0],
+    items: [
+      {
+        id: 'item-pnp-inv3-1',
+        code: 'SW-TRACE-001',
+        name: 'งวดที่ 3/3 : ส่งมอบคู่มือการใช้งานและจบโครงการ (Manual 10%)',
+        description: 'โครงการพัฒนาระบบ Traceability Solenoid Line Software ตามใบสั่งซื้อ PO: 2505005',
+        quantity: 1,
+        unit: 'งวด',
+        pricePerUnit: 217341.90,
+        discount: 0,
+        amount: 217341.90,
+        vatInclusive: false,
+        withholdingTaxRate: 3,
+      }
+    ],
+    subtotal: 217341.90,
+    discountTotal: 0,
+    vatRate: 7,
+    vatAmount: 15213.93,
+    grandTotal: 232555.83,
+    withholdingTaxTotal: 6520.26, // 3% of 217,341.90
+    netPayment: 226035.57,
+    status: 'PENDING',
+    notes: 'อ้างอิงใบเสนอราคา QT-2505-005 และใบสั่งซื้อ PO: 2505005 (งวดที่ 3: Manual 10%) บจก. พีเอ็นพี เทคโนโลยี เกรท',
     createdByName: 'คุณจีระวัฒน์ (MD)',
   },
   {
@@ -327,7 +385,7 @@ export const initialDocuments: AccountingDocument[] = [
     withholdingTaxTotal: 65202.57,
     netPayment: 2260355.76,
     status: 'APPROVED',
-    notes: 'เสนอราคาโครงการ Traceability Solenoid Line ลูกค้าออก PO: 2505005 เรียบร้อยแล้ว',
+    notes: 'เสนอราคาโครงการ Traceability Solenoid Line Software (เงื่อนไขการชำระเงิน: 1. Downpayment 30% [฿697,667.50], 2. Test run & BuyOff 60% [฿1,395,335.00], 3. Manual 10% [฿232,555.83]) | ลูกค้าออก PO: 2505005 เรียบร้อยแล้ว',
     createdByName: 'คุณจีระวัฒน์ (MD)',
   },
   {
