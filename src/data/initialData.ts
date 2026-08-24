@@ -39,6 +39,21 @@ export const initialBankAccounts: BankAccount[] = [
 
 export const initialContacts: Contact[] = [
   {
+    id: 'cont-pnp-1',
+    name: 'คุณปัทมะ จินดาพงษ์',
+    companyName: 'บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด',
+    taxId: '0205555029622',
+    isBranch: false,
+    branchCode: '00000',
+    address: '91/10 หมู่ที่ 12 ถนนศุขประยูร ตำบลนาป่า อำเภอเมืองชลบุรี จ.ชลบุรี 20000',
+    phone: '085-811-6949',
+    email: 'numpj@hotmail.com',
+    type: 'CUSTOMER',
+    creditDays: 30,
+    totalTransactions: 0,
+    balanceDue: 0.00,
+  },
+  {
     id: 'cont-1',
     name: 'คุณสมชาย วงศ์สว่าง',
     companyName: 'บริษัท ไทย ออโต้ พาร์ท อุตสาหกรรม จำกัด',
