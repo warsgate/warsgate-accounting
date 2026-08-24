@@ -50,8 +50,8 @@ export const initialContacts: Contact[] = [
     email: 'numpj@hotmail.com',
     type: 'CUSTOMER',
     creditDays: 30,
-    totalTransactions: 1,
-    balanceDue: 2325558.33,
+    totalTransactions: 3,
+    balanceDue: 0.00,
   },
   {
     id: 'cont-tsf-1',
@@ -238,6 +238,117 @@ export const initialProducts: ProductService[] = [
 ];
 
 export const initialDocuments: AccountingDocument[] = [
+  // ─── ใบเสร็จรับเงิน ชุดที่ 1/3 (Downpayment 30%) ─────────────────────────
+  {
+    id: 'doc-pnp-rec-2505005-1',
+    documentNo: 'REC-2505-005/1',
+    type: 'RECEIPT',
+    issueDate: '2025-06-20',
+    dueDate: '2025-06-20',
+    contact: initialContacts[0],
+    items: [
+      {
+        id: 'item-pnp-rec1-1',
+        code: 'SW-TRACE-001',
+        name: 'รับชำระเงินงวดที่ 1/3 : ค่ามัดจำเริ่มต้นโครงการ (Downpayment 30%)',
+        description: 'โครงการพัฒนาระบบ Traceability Solenoid Line Software ตามใบสั่งซื้อ PO: 2505005',
+        quantity: 1,
+        unit: 'งวด',
+        pricePerUnit: 652025.70,
+        discount: 0,
+        amount: 652025.70,
+        vatInclusive: false,
+        withholdingTaxRate: 3,
+      }
+    ],
+    subtotal: 652025.70,
+    discountTotal: 0,
+    vatRate: 7,
+    vatAmount: 45641.80,
+    grandTotal: 697667.50,
+    withholdingTaxTotal: 19560.77, // 3% of 652,025.70
+    netPayment: 678106.73,
+    status: 'PAID',
+    paymentMethod: 'BANK_TRANSFER',
+    bankAccount: 'KBANK 089-2-54321-9 (บจก. วอร์สเกต)',
+    notes: 'รับชำระเงินครบถ้วนตามใบแจ้งหนี้ INV-2505-005/1 (งวดที่ 1: Downpayment 30%) โอนเข้าบัญชี KBANK บจก. วอร์สเกต',
+    createdByName: 'คุณจีระวัฒน์ (MD)',
+  },
+
+  // ─── ใบเสร็จรับเงิน ชุดที่ 2/3 (Test run & BuyOff 60%) ───────────────────
+  {
+    id: 'doc-pnp-rec-2505005-2',
+    documentNo: 'REC-2505-005/2',
+    type: 'RECEIPT',
+    issueDate: '2025-07-20',
+    dueDate: '2025-07-20',
+    contact: initialContacts[0],
+    items: [
+      {
+        id: 'item-pnp-rec2-1',
+        code: 'SW-TRACE-001',
+        name: 'รับชำระเงินงวดที่ 2/3 : ค่าทดสอบระบบและตรวจรับหน้างาน (Test run & BuyOff 60%)',
+        description: 'โครงการพัฒนาระบบ Traceability Solenoid Line Software ตามใบสั่งซื้อ PO: 2505005',
+        quantity: 1,
+        unit: 'งวด',
+        pricePerUnit: 1304051.40,
+        discount: 0,
+        amount: 1304051.40,
+        vatInclusive: false,
+        withholdingTaxRate: 3,
+      }
+    ],
+    subtotal: 1304051.40,
+    discountTotal: 0,
+    vatRate: 7,
+    vatAmount: 91283.60,
+    grandTotal: 1395335.00,
+    withholdingTaxTotal: 39121.54, // 3% of 1,304,051.40
+    netPayment: 1356213.46,
+    status: 'PAID',
+    paymentMethod: 'BANK_TRANSFER',
+    bankAccount: 'KBANK 089-2-54321-9 (บจก. วอร์สเกต)',
+    notes: 'รับชำระเงินครบถ้วนตามใบแจ้งหนี้ INV-2505-005/2 (งวดที่ 2: Test run & BuyOff 60%) โอนเข้าบัญชี KBANK บจก. วอร์สเกต',
+    createdByName: 'คุณจีระวัฒน์ (MD)',
+  },
+
+  // ─── ใบเสร็จรับเงิน ชุดที่ 3/3 (Manual 10%) ──────────────────────────────
+  {
+    id: 'doc-pnp-rec-2505005-3',
+    documentNo: 'REC-2505-005/3',
+    type: 'RECEIPT',
+    issueDate: '2025-08-20',
+    dueDate: '2025-08-20',
+    contact: initialContacts[0],
+    items: [
+      {
+        id: 'item-pnp-rec3-1',
+        code: 'SW-TRACE-001',
+        name: 'รับชำระเงินงวดที่ 3/3 : ส่งมอบคู่มือการใช้งานและจบโครงการ (Manual 10%)',
+        description: 'โครงการพัฒนาระบบ Traceability Solenoid Line Software ตามใบสั่งซื้อ PO: 2505005',
+        quantity: 1,
+        unit: 'งวด',
+        pricePerUnit: 217341.90,
+        discount: 0,
+        amount: 217341.90,
+        vatInclusive: false,
+        withholdingTaxRate: 3,
+      }
+    ],
+    subtotal: 217341.90,
+    discountTotal: 0,
+    vatRate: 7,
+    vatAmount: 15213.93,
+    grandTotal: 232555.83,
+    withholdingTaxTotal: 6520.26, // 3% of 217,341.90
+    netPayment: 226035.57,
+    status: 'PAID',
+    paymentMethod: 'BANK_TRANSFER',
+    bankAccount: 'KBANK 089-2-54321-9 (บจก. วอร์สเกต)',
+    notes: 'รับชำระเงินงวดสุดท้ายครบถ้วนตามใบแจ้งหนี้ INV-2505-005/3 (งวดที่ 3: Manual 10%) จบโครงการ Traceability Solenoid Line เรียบร้อย',
+    createdByName: 'คุณจีระวัฒน์ (MD)',
+  },
+
   // ─── ใบแจ้งหนี้ ชุดที่ 1/3 (Downpayment 30%) ──────────────────────────────
   {
     id: 'doc-pnp-inv-2505005-1',
@@ -268,8 +379,8 @@ export const initialDocuments: AccountingDocument[] = [
     grandTotal: 697667.50,
     withholdingTaxTotal: 19560.77, // 3% of 652,025.70
     netPayment: 678106.73,
-    status: 'APPROVED',
-    notes: 'อ้างอิงใบเสนอราคา QT-2505-005 และใบสั่งซื้อ PO: 2505005 (งวดที่ 1: Downpayment 30%) บจก. พีเอ็นพี เทคโนโลยี เกรท',
+    status: 'PAID',
+    notes: 'อ้างอิงใบเสนอราคา QT-2505-005 และใบสั่งซื้อ PO: 2505005 (งวดที่ 1: Downpayment 30%) บจก. พีเอ็นพี เทคโนโลยี เกรท [ชำระแล้ว - ใบเสร็จ REC-2505-005/1]',
     createdByName: 'คุณจีระวัฒน์ (MD)',
   },
 
@@ -303,8 +414,8 @@ export const initialDocuments: AccountingDocument[] = [
     grandTotal: 1395335.00,
     withholdingTaxTotal: 39121.54, // 3% of 1,304,051.40
     netPayment: 1356213.46,
-    status: 'PENDING',
-    notes: 'อ้างอิงใบเสนอราคา QT-2505-005 และใบสั่งซื้อ PO: 2505005 (งวดที่ 2: Test run & BuyOff 60%) บจก. พีเอ็นพี เทคโนโลยี เกรท',
+    status: 'PAID',
+    notes: 'อ้างอิงใบเสนอราคา QT-2505-005 และใบสั่งซื้อ PO: 2505005 (งวดที่ 2: Test run & BuyOff 60%) บจก. พีเอ็นพี เทคโนโลยี เกรท [ชำระแล้ว - ใบเสร็จ REC-2505-005/2]',
     createdByName: 'คุณจีระวัฒน์ (MD)',
   },
 
@@ -338,8 +449,8 @@ export const initialDocuments: AccountingDocument[] = [
     grandTotal: 232555.83,
     withholdingTaxTotal: 6520.26, // 3% of 217,341.90
     netPayment: 226035.57,
-    status: 'PENDING',
-    notes: 'อ้างอิงใบเสนอราคา QT-2505-005 และใบสั่งซื้อ PO: 2505005 (งวดที่ 3: Manual 10%) บจก. พีเอ็นพี เทคโนโลยี เกรท',
+    status: 'PAID',
+    notes: 'อ้างอิงใบเสนอราคา QT-2505-005 และใบสั่งซื้อ PO: 2505005 (งวดที่ 3: Manual 10%) บจก. พีเอ็นพี เทคโนโลยี เกรท [ชำระแล้ว - ใบเสร็จ REC-2505-005/3]',
     createdByName: 'คุณจีระวัฒน์ (MD)',
   },
   {
