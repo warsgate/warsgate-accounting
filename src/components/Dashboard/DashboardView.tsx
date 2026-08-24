@@ -117,12 +117,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       cashIn: 226035.57,        // รับเงินงวด 3
       expense: 0,
     },
+    {
+      month: 'ธ.ค. 68',
+      poInflow: 3793792.00,   // PO252155 (บจก. ไทย เซกิซุย โฟม)
+      invoiceAmount: 1517516.80, // งวด 1 (40% Down)
+      cashIn: 0,
+      expense: 0,
+    },
+    {
+      month: 'ม.ค. 69',
+      poInflow: 0,
+      invoiceAmount: 2276275.20, // งวด 2 & 3 (30% + 30%)
+      cashIn: 0,
+      expense: 0,
+    }
   ];
 
   const categoryData = [
-    { name: 'ระบบซอฟต์แวร์ Traceability', value: 2325558.33, color: '#e11d48' },
+    { name: 'ระบบอัตโนมัติ Auto Pack LM1 (TSF)', value: 3793792.00, color: '#6366f1' },
+    { name: 'ระบบซอฟต์แวร์ Traceability (PNP)', value: 2325558.33, color: '#e11d48' },
     { name: 'อุปกรณ์ PLC & Automation', value: 254125.00, color: '#0ea5e9' },
-    { name: 'บริการทดสอบและติดตั้ง', value: 166920.00, color: '#10b981' },
   ];
 
   const expenseCategoryData = [
