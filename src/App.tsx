@@ -43,7 +43,15 @@ export function App() {
     const saved = localStorage.getItem('warsgate_documents');
     if (saved !== null) {
       try {
-        return JSON.parse(saved);
+        const parsed: AccountingDocument[] = JSON.parse(saved);
+        const existingIds = new Set(parsed.map(d => d.id));
+        const missing = initialDocuments.filter(d => !existingIds.has(d.id));
+        if (missing.length > 0) {
+          const merged = [...parsed, ...missing];
+          localStorage.setItem('warsgate_documents', JSON.stringify(merged));
+          return merged;
+        }
+        return parsed;
       } catch {
         return initialDocuments;
       }
@@ -55,7 +63,16 @@ export function App() {
     const saved = localStorage.getItem('warsgate_contacts');
     if (saved !== null) {
       try {
-        return JSON.parse(saved);
+        const parsed: Contact[] = JSON.parse(saved);
+        const existingIds = new Set(parsed.map(c => c.id));
+        const missing = initialContacts.filter(c => !existingIds.has(c.id));
+        const updated = parsed.map(c => {
+          const init = initialContacts.find(ic => ic.id === c.id);
+          return init ? { ...c, ...init } : c;
+        });
+        const merged = [...updated, ...missing];
+        localStorage.setItem('warsgate_contacts', JSON.stringify(merged));
+        return merged;
       } catch {
         return initialContacts;
       }
@@ -67,7 +84,15 @@ export function App() {
     const saved = localStorage.getItem('warsgate_products');
     if (saved !== null) {
       try {
-        return JSON.parse(saved);
+        const parsed: ProductService[] = JSON.parse(saved);
+        const existingIds = new Set(parsed.map(p => p.id));
+        const missing = initialProducts.filter(p => !existingIds.has(p.id));
+        if (missing.length > 0) {
+          const merged = [...parsed, ...missing];
+          localStorage.setItem('warsgate_products', JSON.stringify(merged));
+          return merged;
+        }
+        return parsed;
       } catch {
         return initialProducts;
       }
