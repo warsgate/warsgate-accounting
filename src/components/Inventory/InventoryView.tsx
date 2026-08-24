@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package, Plus, Search, Pencil, Trash2, AlertTriangle, Tag, Wrench, Box, TrendingUp } from 'lucide-react';
+import { Package, Plus, Search, Pencil, Trash2, AlertTriangle, Tag, Wrench, Box, TrendingUp, Zap } from 'lucide-react';
 import { ProductService } from '../../types';
 import { formatMoney } from '../../utils/formatters';
 
@@ -84,6 +84,29 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     setModalMode(null);
     setEditingProduct(null);
     setFormData(emptyForm);
+  };
+
+  // ── Auto-generate SKU ──────────────────────────────────────────────────────
+  const SKU_PREFIXES: Record<string, string> = {
+    AUTOMATION_HARDWARE: 'HW',
+    SOFTWARE: 'SW',
+    ENGINEERING_SERVICE: 'ENG',
+    MAINTENANCE: 'MNT',
+  };
+
+  const autoGenerateSKU = () => {
+    const prefix = SKU_PREFIXES[formData.category] || 'SKU';
+    // หา SKU ที่มีอยู่แล้วที่ขึ้นต้นด้วย prefix นี้
+    const existing = products
+      .map(p => p.code)
+      .filter(code => code.startsWith(`${prefix}-`))
+      .map(code => {
+        const num = parseInt(code.split('-').pop() || '0', 10);
+        return isNaN(num) ? 0 : num;
+      });
+    const nextNum = existing.length > 0 ? Math.max(...existing) + 1 : 1;
+    const newSKU = `${prefix}-${String(nextNum).padStart(3, '0')}`;
+    setF('code', newSKU);
   };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
@@ -277,14 +300,23 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
               {/* รหัส + หมวดหมู่ */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-500 font-semibold mb-1">รหัสสินค้า (SKU) *</label>
+                  <label className="block text-slate-500 font-semibold mb-1 flex items-center justify-between">
+                    <span>รหัสสินค้า (SKU) *</span>
+                    <button type="button" onClick={autoGenerateSKU}
+                      className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold text-[10px] transition">
+                      <Zap className="w-3 h-3" />
+                      Auto
+                    </button>
+                  </label>
                   <input required type="text" value={formData.code} onChange={e => setF('code', e.target.value)}
-                    placeholder="PLC-S7-1200"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-mono focus:outline-none focus:border-purple-400" />
+                    placeholder="กด Auto หรือพิมพ์เอง"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-mono font-bold focus:outline-none focus:border-purple-400" />
                 </div>
                 <div>
                   <label className="block text-slate-500 font-semibold mb-1">หมวดหมู่</label>
-                  <select value={formData.category} onChange={e => setF('category', e.target.value)}
+                  <select value={formData.category} onChange={e => {
+                    setF('category', e.target.value);
+                  }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:border-purple-400">
                     <option value="AUTOMATION_HARDWARE">⚙️ Automation Hardware</option>
                     <option value="SOFTWARE">💾 Software</option>
