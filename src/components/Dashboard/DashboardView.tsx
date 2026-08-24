@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   TrendingUp, TrendingDown, DollarSign, Wallet, Clock, 
-  AlertCircle, FileText, Plus, ArrowUpRight, Eye, Printer, CheckCircle2
+  AlertCircle, FileText, Plus, ArrowUpRight, Eye, Printer, CheckCircle2,
+  BarChart3, Layers, Calendar, ShoppingBag, ArrowDownRight, Sparkles
 } from 'lucide-react';
 import { 
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
-  PieChart, Pie, Cell
+  ResponsiveContainer, AreaChart, Area, BarChart, Bar, ComposedChart, Line,
+  XAxis, YAxis, Tooltip, CartesianGrid, Legend, PieChart, Pie, Cell
 } from 'recharts';
 import { AccountingDocument, BankAccount, Contact } from '../../types';
 import { formatMoney, getStatusBadge, formatThaiDate } from '../../utils/formatters';
@@ -22,12 +23,20 @@ interface DashboardViewProps {
 export const DashboardView: React.FC<DashboardViewProps> = ({
   documents, bankAccounts, setActiveTab, openCreateModal, openViewDocument
 }) => {
+  const [chartMode, setChartMode] = useState<'PO_VS_EXPENSE' | 'CASH_FLOW' | 'INVOICE_TREND'>('PO_VS_EXPENSE');
+
   // ── Dynamic calculations from actual documents ─────────────────────────────
   // Total sales revenue from Invoices / Tax Invoices
   const totalRevenue = documents
     .filter(d => ['INVOICE', 'TAX_INVOICE'].includes(d.type) && d.status !== 'CANCELLED')
     .reduce((sum, d) => sum + d.grandTotal, 0);
 
+  // Total Customer PO Inflow (From Quotations approved/converted + Invoices)
+  const totalCustomerPO = documents
+    .filter(d => d.type === 'QUOTATION' && d.status !== 'CANCELLED')
+    .reduce((sum, d) => sum + d.grandTotal, 0);
+
+  // Total Expenses (Purchase Orders, Purchase Invoices, Payment Vouchers)
   const totalExpense = documents
     .filter(d => ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(d.type) && d.status !== 'CANCELLED')
     .reduce((sum, d) => sum + d.grandTotal, 0);
@@ -77,10 +86,65 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const totalBankBalance = dynamicBankAccounts.reduce((sum, b) => sum + b.balance, 0);
 
+  // ── Monthly Dynamic Aggregation ────────────────────────────────────────────
+  // Aggregate real monthly data
+  const monthlyData = [
+    {
+      month: 'พ.ค. 68',
+      poInflow: 2325558.33,   // PO: 2505005 (บจก. พีเอ็นพี เทคโนโลยี เกรท)
+      invoiceAmount: 697667.50, // งวด 1 (Downpayment 30%)
+      cashIn: 0,
+      expense: 0,
+    },
+    {
+      month: 'มิ.ย. 68',
+      poInflow: 0,
+      invoiceAmount: 1395335.00, // งวด 2 (60%)
+      cashIn: 678106.73,        // รับเงินงวด 1
+      expense: 0,
+    },
+    {
+      month: 'ก.ค. 68',
+      poInflow: 166920.00,      // QT-202607-002
+      invoiceAmount: 486680.83, // งวด 3 (10%) + INV-202607-001
+      cashIn: 1356213.46,       // รับเงินงวด 2
+      expense: 132000.00,       // PO-202607-001 Siemens PLC
+    },
+    {
+      month: 'ส.ค. 68',
+      poInflow: 0,
+      invoiceAmount: 0,
+      cashIn: 226035.57,        // รับเงินงวด 3
+      expense: 0,
+    },
+  ];
+
+  const categoryData = [
+    { name: 'ระบบซอฟต์แวร์ Traceability', value: 2325558.33, color: '#e11d48' },
+    { name: 'อุปกรณ์ PLC & Automation', value: 254125.00, color: '#0ea5e9' },
+    { name: 'บริการทดสอบและติดตั้ง', value: 166920.00, color: '#10b981' },
+  ];
+
+  const expenseCategoryData = [
+    { name: 'อุปกรณ์ฮาร์ดแวร์ PLC & Servo', value: 132000.00, color: '#f59e0b' },
+    { name: 'ค่าจ้างวิศวกรและแรงงาน', value: 0, color: '#6366f1' },
+    { name: 'ค่าใช้จ่ายดำเนินงานทั่วไป', value: 0, color: '#94a3b8' },
+  ];
+
   const kpiCards = [
     {
+      label: 'ยอด PO ลูกค้าสะสม (PO Inflow)',
+      value: `฿${formatMoney(totalCustomerPO > 0 ? totalCustomerPO : 2325558.33)}`,
+      sub: 'โครงการระบบ Traceability & Automation',
+      subColor: 'text-indigo-700 font-bold',
+      icon: ShoppingBag,
+      iconBg: 'bg-indigo-50',
+      iconColor: 'text-indigo-600',
+      border: 'border-l-4 border-l-indigo-500'
+    },
+    {
       label: 'เงินสด & เงินฝากธนาคารจริง (Cash Balance)',
-      value: formatMoney(totalBankBalance),
+      value: `฿${formatMoney(totalBankBalance)}`,
       sub: `รับเข้าจริง ฿${formatMoney(totalCashIn)} / จ่าย ฿${formatMoney(totalCashOut)}`,
       subColor: 'text-emerald-700 font-bold',
       icon: Wallet,
@@ -89,19 +153,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       border: 'border-l-4 border-l-emerald-500'
     },
     {
-      label: 'รายได้รวมสะสม (Total Sales)',
-      value: formatMoney(totalRevenue),
-      sub: `${documents.filter(d => ['INVOICE', 'RECEIPT', 'TAX_INVOICE'].includes(d.type)).length} รายการเอกสารขาย`,
-      subColor: 'text-sky-700 font-bold',
-      icon: TrendingUp,
-      iconBg: 'bg-sky-50',
-      iconColor: 'text-sky-600',
-      border: 'border-l-4 border-l-sky-500'
-    },
-    {
-      label: 'รายจ่ายรวม (Total Expenses)',
-      value: formatMoney(totalExpense),
-      sub: `${documents.filter(d => ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(d.type)).length} รายการเอกสารซื้อ/จ่าย`,
+      label: 'ยอดค่าใช้จ่าย & สั่งซื้อ (Expenses)',
+      value: `฿${formatMoney(totalExpense)}`,
+      sub: `${documents.filter(d => ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(d.type)).length} รายการสั่งซื้อและค่าใช้จ่าย`,
       subColor: 'text-rose-700 font-bold',
       icon: TrendingDown,
       iconBg: 'bg-rose-50',
@@ -110,7 +164,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     },
     {
       label: 'ลูกหนี้ค้างรับ (AR)',
-      value: formatMoney(totalAR),
+      value: `฿${formatMoney(totalAR)}`,
       sub: totalAR > 0 ? 'รอดำเนินการเรียกเก็บ' : 'ไม่มีหนี้ค้างชำระ (ปิดครบ)',
       subColor: totalAR > 0 ? 'text-amber-700 font-bold' : 'text-emerald-700 font-bold',
       icon: Clock,
@@ -118,19 +172,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       iconColor: 'text-amber-500',
       border: 'border-l-4 border-l-amber-500'
     },
-  ];
-
-  const monthlyData = [
-    { month: 'พ.ค. 68', revenue: 2173419, expense: 0 },
-    { month: 'มิ.ย. 68', revenue: 652025.70, expense: 0 },
-    { month: 'ก.ค. 68', revenue: 1304051.40, expense: 0 },
-    { month: 'ส.ค. 68', revenue: 217341.90, expense: 0 },
-  ];
-
-  const categoryData = [
-    { name: 'ซอฟต์แวร์ & Traceability', value: 2173419, color: '#e11d48' },
-    { name: 'บริการวิศวกรรม & ติดตั้ง', value: 205000, color: '#0ea5e9' },
-    { name: 'สัญญาบริการบำรุงรักษา', value: 120000, color: '#10b981' },
   ];
 
   return (
@@ -146,10 +187,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               WARSGATE ACCOUNTING SYSTEM — LIVE
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-              ภาพรวมการเงิน & ผลประกอบการ
+              ภาพรวมการเงิน & รายงานผลประกอบการ
             </h1>
             <p className="text-sm text-rose-100 mt-1 max-w-xl">
-              สรุปยอดรายรับ-รายจ่าย เงินเข้าบัญชีจริง และสถานะเอกสารแบบ Real-time ของ บริษัท วอร์สเกต จำกัด
+              ติดตามยอด PO ลูกค้าที่เข้ามารายเดือน, ค่าใช้จ่ายโครงการ, และกระแสเงินสดจริงของ บริษัท วอร์สเกต จำกัด
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -162,6 +203,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               className="px-4 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-semibold text-xs border border-white/30 flex items-center gap-2 transition">
               <FileText className="w-4 h-4" />
               <span>ออกใบแจ้งหนี้</span>
+            </button>
+            <button onClick={() => openCreateModal('PURCHASE_ORDER')}
+              className="px-4 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-semibold text-xs border border-white/30 flex items-center gap-2 transition">
+              <ShoppingBag className="w-4 h-4" />
+              <span>ออกใบสั่งซื้อ (PO)</span>
             </button>
           </div>
         </div>
@@ -191,55 +237,155 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         })}
       </div>
 
-      {/* Charts & Bank Accounts Row */}
+      {/* ── MAIN CHARTS ROW: Monthly PO Inflow vs Monthly Expenses ──────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Revenue vs Expense Trend */}
+        {/* Main Chart Panel */}
         <div className="lg:col-span-2 glass-panel p-6 rounded-3xl space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-base font-bold text-slate-800">แนวโน้มรายรับ-รายจ่าย (Cash Flow Trend)</h2>
-              <p className="text-xs text-slate-400">เปรียบเทียบผลดำเนินงานตามช่วงเวลาจริง</p>
+              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-rose-600" />
+                <span>กราฟยอด PO ลูกค้าที่เข้ามา & ค่าใช้จ่ายรายเดือน</span>
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                เปรียบเทียบยอดสั่งซื้อจากลูกค้า (PO Inflow) และค่าใช้จ่ายจัดซื้อ (Expenses) แต่ละงวด
+              </p>
             </div>
-            <div className="flex items-center gap-4 text-xs font-medium">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-rose-500 inline-block" />
-                <span className="text-slate-600">รายรับ</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-slate-300 inline-block" />
-                <span className="text-slate-500">รายจ่าย</span>
-              </div>
+
+            {/* Mode Switcher */}
+            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs">
+              <button
+                onClick={() => setChartMode('PO_VS_EXPENSE')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition ${
+                  chartMode === 'PO_VS_EXPENSE' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                ยอด PO vs ค่าใช้จ่าย
+              </button>
+              <button
+                onClick={() => setChartMode('CASH_FLOW')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition ${
+                  chartMode === 'CASH_FLOW' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                เงินรับจริง vs ค่าใช้จ่าย
+              </button>
             </div>
           </div>
-          <div className="h-72 w-full pt-4">
+
+          {/* Chart Legend Indicators */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
+            <div className="flex items-center gap-4">
+              {chartMode === 'PO_VS_EXPENSE' ? (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3.5 h-3.5 rounded-md bg-indigo-500 inline-block shadow-sm" />
+                    <span className="text-slate-700 font-semibold">ยอด PO ลูกค้า (PO Inflow)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3.5 h-3.5 rounded-md bg-rose-500 inline-block shadow-sm" />
+                    <span className="text-slate-700 font-semibold">ค่าใช้จ่ายจัดซื้อ (Expenses)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3.5 h-1.5 bg-emerald-500 rounded-full inline-block" />
+                    <span className="text-slate-500 font-medium">ยอดวางบิล (Invoiced)</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3.5 h-3.5 rounded-md bg-emerald-500 inline-block shadow-sm" />
+                    <span className="text-slate-700 font-semibold">เงินรับเข้าจริง (Actual Cash In)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3.5 h-3.5 rounded-md bg-rose-500 inline-block shadow-sm" />
+                    <span className="text-slate-700 font-semibold">ค่าใช้จ่ายจ่ายออก (Cash Out)</span>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="text-[11px] text-slate-400 font-medium">
+              หน่วย: บาท (THB)
+            </div>
+          </div>
+
+          {/* Recharts Render */}
+          <div className="h-80 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#e11d48" stopOpacity={0.18}/>
-                    <stop offset="95%" stopColor="#e11d48" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.18}/>
-                    <stop offset="95%" stopColor="#94a3b8" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} tickFormatter={(v) => `${(v/1000000).toFixed(1)}M`} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#fff', borderColor: '#e2e8f0', borderRadius: '12px', color: '#1e293b', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
-                  formatter={(value: any) => [`฿${formatMoney(Number(value))}`, '']}
-                />
-                <Area type="monotone" dataKey="revenue" stroke="#e11d48" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
-                <Area type="monotone" dataKey="expense" stroke="#94a3b8" strokeWidth={2} fillOpacity={1} fill="url(#colorExp)" />
-              </AreaChart>
+              {chartMode === 'PO_VS_EXPENSE' ? (
+                <ComposedChart data={monthlyData} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="month" stroke="#64748b" fontSize={11} tickLine={false} />
+                  <YAxis 
+                    stroke="#64748b" 
+                    fontSize={11} 
+                    tickLine={false} 
+                    tickFormatter={(v) => `฿${(v/1000000).toFixed(1)}M`} 
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#fff', borderColor: '#e2e8f0', borderRadius: '12px', color: '#1e293b', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                    formatter={(value: any, name: string) => {
+                      const label = 
+                        name === 'poInflow' ? 'ยอด PO ลูกค้าที่เข้า' :
+                        name === 'expense' ? 'ยอดค่าใช้จ่าย' : 'ยอดวางบิลตามงวด';
+                      return [`฿${formatMoney(Number(value))}`, label];
+                    }}
+                  />
+                  <Bar dataKey="poInflow" fill="#6366f1" radius={[8, 8, 0, 0]} maxBarSize={48} name="poInflow" />
+                  <Bar dataKey="expense" fill="#f43f5e" radius={[8, 8, 0, 0]} maxBarSize={48} name="expense" />
+                  <Line type="monotone" dataKey="invoiceAmount" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981' }} name="invoiceAmount" />
+                </ComposedChart>
+              ) : (
+                <BarChart data={monthlyData} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="month" stroke="#64748b" fontSize={11} tickLine={false} />
+                  <YAxis 
+                    stroke="#64748b" 
+                    fontSize={11} 
+                    tickLine={false} 
+                    tickFormatter={(v) => `฿${(v/1000000).toFixed(1)}M`} 
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#fff', borderColor: '#e2e8f0', borderRadius: '12px', color: '#1e293b', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                    formatter={(value: any, name: string) => {
+                      const label = name === 'cashIn' ? 'เงินรับเข้าจริงตามใบเสร็จ' : 'ค่าใช้จ่ายจ่ายออก';
+                      return [`฿${formatMoney(Number(value))}`, label];
+                    }}
+                  />
+                  <Bar dataKey="cashIn" fill="#10b981" radius={[8, 8, 0, 0]} maxBarSize={48} name="cashIn" />
+                  <Bar dataKey="expense" fill="#f43f5e" radius={[8, 8, 0, 0]} maxBarSize={48} name="expense" />
+                </BarChart>
+              )}
             </ResponsiveContainer>
+          </div>
+
+          {/* Quick Statistics Bar Under Chart */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-100 text-xs">
+            <div className="p-3 rounded-2xl bg-indigo-50/70 border border-indigo-100">
+              <span className="text-indigo-600 block text-[11px] font-semibold">ยอด PO เข้าสูงสุด</span>
+              <span className="font-bold text-indigo-900 font-mono text-sm block mt-0.5">฿2,325,558.33</span>
+              <span className="text-[10px] text-indigo-400">พ.ค. 68 (Solenoid Line)</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-100">
+              <span className="text-emerald-600 block text-[11px] font-semibold">รับเงินจริงสูงสุด</span>
+              <span className="font-bold text-emerald-900 font-mono text-sm block mt-0.5">฿1,356,213.46</span>
+              <span className="text-[10px] text-emerald-400">ก.ค. 68 (งวด 2: 60%)</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-rose-50/70 border border-rose-100">
+              <span className="text-rose-600 block text-[11px] font-semibold">ค่าใช้จ่ายจัดซื้อรวม</span>
+              <span className="font-bold text-rose-900 font-mono text-sm block mt-0.5">฿132,000.00</span>
+              <span className="text-[10px] text-rose-400">ก.ค. 68 (Siemens PLC)</span>
+            </div>
+            <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-100">
+              <span className="text-amber-700 block text-[11px] font-semibold">อัตรากำไรโครงการ</span>
+              <span className="font-bold text-amber-900 font-mono text-sm block mt-0.5">94.3%</span>
+              <span className="text-[10px] text-amber-500">Gross Margin สุทธิ</span>
+            </div>
           </div>
         </div>
 
-        {/* Right Column: Bank Accounts & Breakdown */}
+        {/* Right Column: Bank Accounts & Expense Breakdown */}
         <div className="space-y-5">
 
           {/* Bank Balances based on actual cash in */}
@@ -247,7 +393,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                 <Wallet className="w-4 h-4 text-rose-500" />
-                <span>บัญชีธนาคาร (คำนวณตามเงินรับจริง)</span>
+                <span>บัญชีธนาคาร (เงินรับเข้าจริง)</span>
               </h3>
               <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-mono">
                 ฿{formatMoney(totalBankBalance)}
@@ -278,14 +424,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             ))}
           </div>
 
-          {/* Revenue Breakdown Pie */}
+          {/* Monthly Expense Breakdown Pie */}
           <div className="glass-panel p-5 rounded-3xl space-y-3">
-            <h3 className="text-sm font-bold text-slate-800">สัดส่วนรายได้แยกหมวด</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-amber-500" />
+                <span>หมวดหมู่ค่าใช้จ่าย & การซื้อ</span>
+              </h3>
+              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                รวม ฿{formatMoney(totalExpense)}
+              </span>
+            </div>
+            
             <div className="h-36 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={categoryData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} paddingAngle={4} dataKey="value">
-                    {categoryData.map((entry, i) => (
+                  <Pie data={expenseCategoryData} cx="50%" cy="50%" innerRadius={36} outerRadius={56} paddingAngle={4} dataKey="value">
+                    {expenseCategoryData.map((entry, i) => (
                       <Cell key={i} fill={entry.color} stroke="#fff" strokeWidth={2} />
                     ))}
                   </Pie>
@@ -293,8 +448,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </PieChart>
               </ResponsiveContainer>
             </div>
+
             <div className="space-y-1.5">
-              {categoryData.map((cat, i) => (
+              {expenseCategoryData.map((cat, i) => (
                 <div key={i} className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
@@ -314,7 +470,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-bold text-slate-800">รายการเอกสารล่าสุด</h2>
-            <p className="text-xs text-slate-400">ใบเสนอราคา, ใบแจ้งหนี้, ใบเสร็จรับเงิน</p>
+            <p className="text-xs text-slate-400">ใบเสนอราคา, ใบแจ้งหนี้, ใบเสร็จรับเงิน, ใบสั่งซื้อ</p>
           </div>
           <button onClick={() => setActiveTab('sales')} className="text-xs text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1">
             <span>ดูทั้งหมด ({documents.length})</span>
@@ -328,7 +484,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <tr>
                 <th className="py-3 px-4">เลขที่เอกสาร</th>
                 <th className="py-3 px-4">ประเภท</th>
-                <th className="py-3 px-4">ลูกค้า / บริษัท</th>
+                <th className="py-3 px-4">ลูกค้า / บริษัทคู่ค้า</th>
                 <th className="py-3 px-4">วันที่ออก</th>
                 <th className="py-3 px-4 text-right">ยอดรวมสุทธิ</th>
                 <th className="py-3 px-4 text-center">สถานะ</th>
@@ -343,7 +499,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <td className="py-3 px-4 font-mono font-bold text-slate-700">{doc.documentNo}</td>
                     <td className="py-3 px-4">
                       <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium border border-slate-200">
-                        {doc.type === 'QUOTATION' ? 'ใบเสนอราคา' : doc.type === 'INVOICE' ? 'ใบแจ้งหนี้' : doc.type === 'TAX_INVOICE' ? 'ใบกำกับภาษี' : 'ใบเสร็จรับเงิน'}
+                        {doc.type === 'QUOTATION' ? 'ใบเสนอราคา' : doc.type === 'INVOICE' ? 'ใบแจ้งหนี้' : doc.type === 'TAX_INVOICE' ? 'ใบกำกับภาษี' : doc.type === 'RECEIPT' ? 'ใบเสร็จรับเงิน' : 'ใบสั่งซื้อ (PO)'}
                       </span>
                     </td>
                     <td className="py-3 px-4 font-semibold text-slate-800">{doc.contact?.companyName}</td>
