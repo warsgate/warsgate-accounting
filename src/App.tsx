@@ -184,7 +184,13 @@ export function App() {
       <div className="flex flex-1 overflow-hidden">
         
         {/* Left Sidebar Navigation */}
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          documents={documents}
+          contacts={contacts}
+          products={products}
+        />
 
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto p-4 lg:p-8 bg-gray-50">

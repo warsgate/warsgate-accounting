@@ -3,22 +3,87 @@ import {
   LayoutDashboard, TrendingUp, TrendingDown, Users, Package,
   BookOpen, Calculator, Settings, ChevronRight, Zap, BarChart3
 } from 'lucide-react';
+import { AccountingDocument, Contact, ProductService } from '../types';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  documents?: AccountingDocument[];
+  contacts?: Contact[];
+  products?: ProductService[];
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  activeTab,
+  setActiveTab,
+  documents = [],
+  contacts = [],
+  products = []
+}) => {
+  const salesCount = documents.filter(d => ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'RECEIPT'].includes(d.type)).length;
+  const expenseCount = documents.filter(d => ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER', 'WHT_CERTIFICATE'].includes(d.type)).length;
+  const contactsCount = contacts.length;
+  const productsCount = products.length;
+
   const menuItems = [
-    { id: 'dashboard', label: 'ภาพรวมระบบ', subtitle: 'Financial Dashboard', icon: LayoutDashboard, badge: 'LIVE', badgeColor: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-    { id: 'sales', label: 'รายรับ (Sales)', subtitle: 'ใบเสนอราคา / ใบแจ้งหนี้ / ใบเสร็จ', icon: TrendingUp, badge: '3 ใบ', badgeColor: 'bg-sky-50 text-sky-600 border-sky-200' },
-    { id: 'expenses', label: 'รายจ่าย (Expenses)', subtitle: 'ใบสั่งซื้อ / ค่าใช้จ่าย / 50 ทวิ', icon: TrendingDown },
-    { id: 'contacts', label: 'ผู้ติดต่อ (Contacts)', subtitle: 'ลูกค้า / ซัพพลายเออร์', icon: Users },
-    { id: 'inventory', label: 'สินค้า & บริการ', subtitle: 'คลังสินค้า / อะไหล่ / งานบริการ', icon: Package },
-    { id: 'accounting', label: 'การเงิน & บัญชี', subtitle: 'ผังบัญชี / JV / งบทดลอง', icon: BookOpen },
-    { id: 'tax', label: 'รายงานภาษี', subtitle: 'ภ.พ. 30 / ภ.ง.ด. 3, 53', icon: Calculator },
-    { id: 'settings', label: 'ตั้งค่าระบบ', subtitle: 'ข้อมูล WARSGATE / เลขรันเอกสาร', icon: Settings },
+    {
+      id: 'dashboard',
+      label: 'ภาพรวมระบบ',
+      subtitle: 'Financial Dashboard',
+      icon: LayoutDashboard,
+      badge: 'LIVE',
+      badgeColor: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    },
+    {
+      id: 'sales',
+      label: 'รายรับ (Sales)',
+      subtitle: 'ใบเสนอราคา / ใบแจ้งหนี้ / ใบเสร็จ',
+      icon: TrendingUp,
+      badge: `${salesCount} รายการ`,
+      badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
+    },
+    {
+      id: 'expenses',
+      label: 'รายจ่าย (Expenses)',
+      subtitle: 'ใบสั่งซื้อ / ค่าใช้จ่าย / 50 ทวิ',
+      icon: TrendingDown,
+      badge: `${expenseCount} รายการ`,
+      badgeColor: 'bg-rose-50 text-rose-700 border-rose-200',
+    },
+    {
+      id: 'contacts',
+      label: 'ผู้ติดต่อ (Contacts)',
+      subtitle: 'ลูกค้า / ซัพพลายเออร์',
+      icon: Users,
+      badge: `${contactsCount} ราย`,
+      badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+    },
+    {
+      id: 'inventory',
+      label: 'สินค้า & บริการ',
+      subtitle: 'คลังสินค้า / อะไหล่ / งานบริการ',
+      icon: Package,
+      badge: `${productsCount} รายการ`,
+      badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
+    },
+    {
+      id: 'accounting',
+      label: 'การเงิน & บัญชี',
+      subtitle: 'ผังบัญชี / JV / งบทดลอง',
+      icon: BookOpen,
+    },
+    {
+      id: 'tax',
+      label: 'รายงานภาษี',
+      subtitle: 'ภ.พ. 30 / ภ.ง.ด. 3, 53',
+      icon: Calculator,
+    },
+    {
+      id: 'settings',
+      label: 'ตั้งค่าระบบ',
+      subtitle: 'ข้อมูล WARSGATE / ล้างข้อมูล',
+      icon: Settings,
+    },
   ];
 
   return (
@@ -43,30 +108,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg transition ${
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`p-2 rounded-lg transition shrink-0 ${
                   isActive 
                     ? 'bg-rose-600 text-white shadow-sm' 
                     : 'bg-slate-100 text-slate-500 group-hover:text-rose-500 group-hover:bg-rose-50'
                 }`}>
                   <Icon className="w-4 h-4" />
                 </div>
-                <div>
-                  <span className={`block text-xs ${isActive ? 'text-rose-700 font-bold' : 'text-slate-700 font-medium'}`}>
+                <div className="min-w-0">
+                  <span className={`block text-xs truncate ${isActive ? 'text-rose-700 font-bold' : 'text-slate-700 font-semibold'}`}>
                     {item.label}
                   </span>
-                  <span className={`text-[10px] block ${isActive ? 'text-rose-500' : 'text-slate-400'}`}>
+                  <span className={`text-[10px] block truncate ${isActive ? 'text-rose-500' : 'text-slate-400'}`}>
                     {item.subtitle}
                   </span>
                 </div>
               </div>
 
               {item.badge ? (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${item.badgeColor}`}>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono font-bold whitespace-nowrap shrink-0 ml-1 ${item.badgeColor}`}>
                   {item.badge}
                 </span>
               ) : (
-                <ChevronRight className={`w-3.5 h-3.5 transition-transform ${
+                <ChevronRight className={`w-3.5 h-3.5 shrink-0 transition-transform ${
                   isActive ? 'text-rose-400 translate-x-0.5' : 'text-slate-300 opacity-0 group-hover:opacity-100'
                 }`} />
               )}
@@ -87,7 +152,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           </div>
         </div>
         <p className="text-[11px] text-slate-500 leading-tight mb-3">
-          ระบบเชื่อมต่อสรรพากร ภ.พ. 30 & E-Tax Invoice พร้อมใช้งาน
+          ระบบเชื่อมต่อสรรพากร ภ.พ. 30 & 50 ทวิ พร้อมใช้งาน
         </p>
         <button 
           onClick={() => setActiveTab('tax')}
