@@ -91,8 +91,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const monthlyData = [
     {
       month: 'พ.ค. 68',
-      poInflow: 2325558.33,   // PO: 2505005 (บจก. พีเอ็นพี เทคโนโลยี เกรท)
-      invoiceAmount: 697667.50, // งวด 1 (Downpayment 30%)
+      poInflow: 6972558.04,   // PO: 2505004 (฿4,646,999.71) + PO: 2505005 (฿2,325,558.33)
+      invoiceAmount: 5344667.21, // INV-2505-004 (฿4.64M) + งวด 1 (Downpayment 30% ฿697K)
       cashIn: 0,
       expense: 0,
     },
@@ -134,9 +134,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   ];
 
   const categoryData = [
+    { name: 'ระบบ Traceability 5 ไลน์ (Fujipart - PNP)', value: 4646999.71, color: '#0ea5e9' },
     { name: 'ระบบอัตโนมัติ Auto Pack LM1 (TSF)', value: 3793792.00, color: '#6366f1' },
-    { name: 'ระบบซอฟต์แวร์ Traceability (PNP)', value: 2325558.33, color: '#e11d48' },
-    { name: 'อุปกรณ์ PLC & Automation', value: 254125.00, color: '#0ea5e9' },
+    { name: 'ระบบซอฟต์แวร์ Solenoid Line (PNP)', value: 2325558.33, color: '#e11d48' },
   ];
 
   const expenseCategoryData = [
