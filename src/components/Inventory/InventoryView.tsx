@@ -344,8 +344,55 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-slate-500 font-semibold mb-1">หน่วย</label>
-                  <input type="text" value={formData.unit} onChange={e => setF('unit', e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 focus:outline-none focus:border-purple-400" />
+                  <select
+                    value={[
+                      'เครื่อง','ชุด','อัน','ตัว','กล่อง','ใบ','แผ่น','เส้น','ม้วน','กิโลกรัม',
+                      'ลิตร','บาร์เรล','Man-Day','Man-Hour','เดือน','ปี','สัญญา','งวด','โปรเจค','ชิ้น'
+                    ].includes(formData.unit) ? formData.unit : '__custom__'}
+                    onChange={e => {
+                      if (e.target.value !== '__custom__') setF('unit', e.target.value);
+                      else setF('unit', '');
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:border-purple-400"
+                  >
+                    <optgroup label="📦 สินค้า / อุปกรณ์">
+                      <option value="เครื่อง">เครื่อง</option>
+                      <option value="ชุด">ชุด</option>
+                      <option value="อัน">อัน</option>
+                      <option value="ตัว">ตัว</option>
+                      <option value="ชิ้น">ชิ้น</option>
+                      <option value="กล่อง">กล่อง</option>
+                      <option value="ใบ">ใบ</option>
+                      <option value="แผ่น">แผ่น</option>
+                      <option value="เส้น">เส้น</option>
+                      <option value="ม้วน">ม้วน</option>
+                      <option value="กิโลกรัม">กิโลกรัม</option>
+                      <option value="ลิตร">ลิตร</option>
+                      <option value="บาร์เรล">บาร์เรล</option>
+                    </optgroup>
+                    <optgroup label="🔧 บริการ / โปรเจค">
+                      <option value="Man-Day">Man-Day</option>
+                      <option value="Man-Hour">Man-Hour</option>
+                      <option value="เดือน">เดือน</option>
+                      <option value="ปี">ปี</option>
+                      <option value="สัญญา">สัญญา</option>
+                      <option value="งวด">งวด</option>
+                      <option value="โปรเจค">โปรเจค</option>
+                    </optgroup>
+                    <option value="__custom__">✏️ กำหนดเอง...</option>
+                  </select>
+                  {/* Custom unit input */}
+                  {!['เครื่อง','ชุด','อัน','ตัว','กล่อง','ใบ','แผ่น','เส้น','ม้วน','กิโลกรัม',
+                     'ลิตร','บาร์เรล','Man-Day','Man-Hour','เดือน','ปี','สัญญา','งวด','โปรเจค','ชิ้น'].includes(formData.unit) && (
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder="พิมพ์หน่วยที่ต้องการ..."
+                      value={formData.unit}
+                      onChange={e => setF('unit', e.target.value)}
+                      className="mt-2 w-full bg-purple-50 border border-purple-300 rounded-xl p-2.5 text-slate-800 font-semibold focus:outline-none focus:border-purple-500"
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="block text-slate-500 font-semibold mb-1">ราคาทุน (บาท)</label>
