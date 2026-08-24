@@ -18,18 +18,19 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
   };
 
   // ── 1. ภาษีขาย (Output VAT) ────────────────────────────────────────────────
-  // มาจาก INVOICE, TAX_INVOICE, RECEIPT
+  // เกณฑ์เงินสด/รับชำระจริง (Cash Basis สำหรับธุรกิจบริการ/ซอฟต์แวร์):
+  // ดึงเฉพาะ RECEIPT (ใบเสร็จรับเงิน) ที่ชำระแล้ว และ TAX_INVOICE (ใบกำกับภาษี)
   const allSalesVatDocs = documents.filter(d =>
-    ['INVOICE', 'TAX_INVOICE', 'RECEIPT'].includes(d.type) && (d.vatAmount || 0) > 0
+    ['RECEIPT', 'TAX_INVOICE'].includes(d.type) && d.status === 'PAID' && (d.vatAmount || 0) > 0
   );
   const salesVatDocs = filterByMonth(allSalesVatDocs);
   const totalSalesBase = salesVatDocs.reduce((sum, d) => sum + (d.subtotal || 0), 0);
   const totalSalesVat = salesVatDocs.reduce((sum, d) => sum + (d.vatAmount || 0), 0);
 
   // ── 2. ภาษีซื้อ (Input VAT) ────────────────────────────────────────────────
-  // มาจาก PURCHASE_ORDER, PURCHASE_INVOICE, PAYMENT_VOUCHER
+  // มาจาก PURCHASE_INVOICE (ใบแจ้งหนี้/ใบกำกับภาษีซื้อ) และ PAYMENT_VOUCHER (ใบสำคัญจ่าย) ที่มี VAT > 0
   const allPurchaseVatDocs = documents.filter(d =>
-    ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(d.type) && (d.vatAmount || 0) > 0
+    ['PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(d.type) && (d.vatAmount || 0) > 0
   );
   const purchaseVatDocs = filterByMonth(allPurchaseVatDocs);
   const totalPurchaseBase = purchaseVatDocs.reduce((sum, d) => sum + (d.subtotal || 0), 0);
@@ -41,7 +42,7 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
   // ── 4. ภาษีหัก ณ ที่จ่าย ภ.ง.ด. 53 (นิติบุคคล) ───────────────────────────
   // เอกสารรายจ่ายที่มี withholdingTaxTotal > 0 และคู่ค้าเป็นนิติบุคคล
   const allPnd53Docs = documents.filter(d =>
-    ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER', 'WHT_CERTIFICATE'].includes(d.type) &&
+    ['PURCHASE_INVOICE', 'PAYMENT_VOUCHER', 'WHT_CERTIFICATE'].includes(d.type) &&
     (d.withholdingTaxTotal || 0) > 0 &&
     (d.contact?.companyName?.includes('บริษัท') || d.contact?.companyName?.includes('บจก') || d.contact?.companyName?.includes('หจก') || (d.contact?.taxId?.length === 13))
   );
@@ -51,7 +52,7 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
 
   // ── 5. ภาษีหัก ณ ที่จ่าย ภ.ง.ด. 3 (บุคคลธรรมดา) ─────────────────────────
   const allPnd3Docs = documents.filter(d =>
-    ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER', 'WHT_CERTIFICATE'].includes(d.type) &&
+    ['PURCHASE_INVOICE', 'PAYMENT_VOUCHER', 'WHT_CERTIFICATE'].includes(d.type) &&
     (d.withholdingTaxTotal || 0) > 0 &&
     !allPnd53Docs.some(p => p.id === d.id)
   );
@@ -209,6 +210,9 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
                 <h2 className="text-base font-bold text-slate-800">
                   รายงานภาษีขาย (Output VAT Register)
                 </h2>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
+                  เกณฑ์เงินสด / ใบเสร็จรับเงิน (Cash Basis)
+                </span>
               </div>
               <div className="text-xs font-mono text-slate-500">
                 รวมภาษีขาย: <strong className="text-rose-600 font-bold">{formatMoney(totalSalesVat)}</strong>
