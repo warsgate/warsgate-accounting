@@ -165,7 +165,10 @@ export function App() {
               <ExpenseView
                 documents={documents}
                 openCreateModal={(type) => setCreateDocType(type)}
+                openEditDocument={(doc) => setEditingDoc(doc)}
                 openViewDocument={(doc) => setViewDoc(doc)}
+                onUpdateStatus={handleUpdateDocumentStatus}
+                onDeleteDocument={handleDeleteDocument}
               />
             )}
 

@@ -189,7 +189,14 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       };
       onSubmit(updatedDoc);
     } else {
-      const prefix = docType === 'QUOTATION' ? 'QT' : docType === 'INVOICE' ? 'INV' : docType === 'TAX_INVOICE' ? 'TAX' : docType === 'RECEIPT' ? 'REC' : 'PO';
+      const prefix =
+        docType === 'QUOTATION' ? 'QT' :
+        docType === 'INVOICE' ? 'INV' :
+        docType === 'TAX_INVOICE' ? 'TAX' :
+        docType === 'RECEIPT' ? 'REC' :
+        docType === 'PURCHASE_ORDER' ? 'PO' :
+        docType === 'PURCHASE_INVOICE' ? 'PINV' :
+        docType === 'PAYMENT_VOUCHER' ? 'PV' : 'WHT';
       const datePart = issueDate.replace(/-/g, '').slice(0, 6);
       const randomNum = String(Math.floor(100 + Math.random() * 900));
       const docNo = `${prefix}-${datePart}-${randomNum}`;
