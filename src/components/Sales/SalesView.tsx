@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   FileText, Plus, Search, Filter, Eye, Printer, Pencil, Trash2, AlertTriangle, 
-  CheckCircle2, RotateCcw, Calendar, Layers, Receipt, ShieldCheck, Clock, Download
+  CheckCircle2, RotateCcw, Calendar, Receipt, ShieldCheck, Clock, Download
 } from 'lucide-react';
 import { AccountingDocument, DocumentType, DocumentStatus } from '../../types';
 import { formatMoney, getStatusBadge, formatThaiDate } from '../../utils/formatters';
@@ -25,7 +25,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   onUpdateStatus,
   onDeleteDocument
 }) => {
-  const [activeTypeTab, setActiveTypeTab] = useState<string>('ALL');
+  const [activeTypeTab, setActiveTypeTab] = useState<string>('QUOTATION');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [datePreset, setDatePreset] = useState<string>('ALL');
   const [startDate, setStartDate] = useState<string>('');
@@ -87,17 +87,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const totalFilteredVat = filteredDocs.reduce((sum, d) => sum + d.vatAmount, 0);
   const totalFilteredNet = filteredDocs.reduce((sum, d) => sum + (d.netPayment || d.grandTotal - (d.withholdingTaxTotal || 0)), 0);
 
-  // Table Tabs Definition with custom icons & badge styles
+  // Table Tabs Definition (เฉพาะ 4 ประเภทเอกสารชัดเจน ไม่มีแท็บ "ทั้งหมด")
   const tableTabs = [
-    { 
-      id: 'ALL', 
-      label: 'ทั้งหมด', 
-      sublabel: 'All Documents',
-      icon: Layers, 
-      count: salesDocs.length,
-      activeColor: 'bg-rose-600 text-white shadow-rose-200',
-      badgeActive: 'bg-white text-rose-700'
-    },
     { 
       id: 'QUOTATION', 
       label: 'ใบเสนอราคา', 
@@ -137,7 +128,6 @@ export const SalesView: React.FC<SalesViewProps> = ({
   ];
 
   const hasActiveFilters = 
-    activeTypeTab !== 'ALL' || 
     statusFilter !== 'ALL' || 
     datePreset !== 'ALL' || 
     startDate !== '' || 
@@ -145,7 +135,6 @@ export const SalesView: React.FC<SalesViewProps> = ({
     searchTerm.trim() !== '';
 
   const handleResetFilters = () => {
-    setActiveTypeTab('ALL');
     setStatusFilter('ALL');
     setDatePreset('ALL');
     setStartDate('');
@@ -234,14 +223,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
                 className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold flex items-center gap-1.5 transition"
                 title="ล้างตัวกรองทั้งหมด"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
+                <RotateCcw className="w-3 h-3" />
                 <span>ล้างตัวกรอง</span>
               </button>
             )}
 
             {/* Filtered Total Amount Badge */}
             <div className="px-3.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs flex items-center gap-2">
-              <span className="text-emerald-700 font-semibold">ยอดรวมสุทธิ:</span>
+              <span className="text-emerald-700 font-semibold">ยอดรวมในแท็บนี้:</span>
               <span className="font-bold text-emerald-800 font-mono text-sm">฿{formatMoney(totalFilteredNet)}</span>
             </div>
           </div>
@@ -306,7 +295,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
 
       </div>
 
-      {/* ── DOCUMENTS TABLE WITH INTEGRATED TYPE TABS ───────────────────────── */}
+      {/* ── DOCUMENTS TABLE WITH INTEGRATED TYPE TABS (NO 'ALL' TAB) ────────── */}
       <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-200">
         
         {/* Table Type Tabs Header */}
@@ -319,7 +308,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTypeTab(tab.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition whitespace-nowrap active:scale-95 ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition whitespace-nowrap active:scale-95 ${
                     isActive
                       ? `${tab.activeColor} shadow-md`
                       : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100/80 hover:text-slate-800'
