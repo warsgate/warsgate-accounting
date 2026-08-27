@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { Package, Plus, Search, Pencil, Trash2, AlertTriangle, Tag, Wrench, Box, TrendingUp, Zap } from 'lucide-react';
+import { 
+  Package, 
+  Plus, 
+  Search, 
+  Pencil, 
+  Trash2, 
+  AlertTriangle, 
+  Wrench, 
+  Box, 
+  TrendingUp, 
+  Zap, 
+  Cpu, 
+  ShieldCheck, 
+} from 'lucide-react';
 import { ProductService } from '../../types';
 import { formatMoney } from '../../utils/formatters';
 
@@ -29,44 +42,44 @@ const emptyForm: FormData = {
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
-  AUTOMATION_HARDWARE: '⚙️ Hardware',
-  SOFTWARE: '💾 Software',
-  ENGINEERING_SERVICE: '🔧 Engineering',
-  MAINTENANCE: '🛠️ Maintenance',
+  AUTOMATION_HARDWARE: 'ฮาร์ดแวร์ / อุปกรณ์อัตโนมัติ',
+  SOFTWARE: 'ซอฟต์แวร์ / ระบบโปรแกรม',
+  ENGINEERING_SERVICE: 'บริการวิศวกรรม / ติดตั้ง',
+  MAINTENANCE: 'บำรุงรักษา / PM',
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  AUTOMATION_HARDWARE: 'bg-blue-50 text-blue-700 border-blue-200',
-  SOFTWARE: 'bg-purple-50 text-purple-700 border-purple-200',
-  ENGINEERING_SERVICE: 'bg-amber-50 text-amber-700 border-amber-200',
-  MAINTENANCE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  AUTOMATION_HARDWARE: 'bg-blue-500/10 text-blue-700 border-blue-200/80',
+  SOFTWARE: 'bg-purple-500/10 text-purple-700 border-purple-200/80',
+  ENGINEERING_SERVICE: 'bg-emerald-500/10 text-emerald-700 border-emerald-200/80',
+  MAINTENANCE: 'bg-amber-500/10 text-amber-700 border-amber-200/80',
 };
 
 export const InventoryView: React.FC<InventoryViewProps> = ({
-  products, onAddProduct, onUpdateProduct, onDeleteProduct
+  products, onAddProduct, onUpdateProduct, onDeleteProduct,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'PRODUCT' | 'SERVICE'>('ALL');
-
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
-  const [editingProduct, setEditingProduct] = useState<ProductService | null>(null);
+  const [editingItem, setEditingItem] = useState<ProductService | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<ProductService | null>(null);
 
-  // ── Filters ────────────────────────────────────────────────────────────────
+  // ── Filter ──────────────────────────────────────────────────────────────────
   const filtered = products.filter(p => {
-    if (typeFilter !== 'ALL' && p.type !== typeFilter) return false;
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      return p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q);
-    }
-    return true;
+    const matchType = typeFilter === 'ALL' || p.type === typeFilter;
+    const q = searchTerm.toLowerCase();
+    const matchSearch = !searchTerm ||
+      p.code.toLowerCase().includes(q) ||
+      p.name.toLowerCase().includes(q) ||
+      (p.description && p.description.toLowerCase().includes(q));
+    return matchType && matchSearch;
   });
 
-  // ── Open Modals ────────────────────────────────────────────────────────────
+  // ── Open Add / Edit ────────────────────────────────────────────────────────
   const openAdd = () => {
     setFormData(emptyForm);
-    setEditingProduct(null);
+    setEditingItem(null);
     setModalMode('add');
   };
 
@@ -74,15 +87,15 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     setFormData({
       code: p.code, name: p.name, category: p.category, type: p.type,
       unit: p.unit, unitPrice: p.unitPrice, costPrice: p.costPrice,
-      stockQty: p.stockQty, minStockAlert: p.minStockAlert, description: p.description,
+      stockQty: p.stockQty, minStockAlert: p.minStockAlert, description: p.description || '',
     });
-    setEditingProduct(p);
+    setEditingItem(p);
     setModalMode('edit');
   };
 
   const closeModal = () => {
     setModalMode(null);
-    setEditingProduct(null);
+    setEditingItem(null);
     setFormData(emptyForm);
   };
 
@@ -96,7 +109,6 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
 
   const autoGenerateSKU = () => {
     const prefix = SKU_PREFIXES[formData.category] || 'SKU';
-    // หา SKU ที่มีอยู่แล้วที่ขึ้นต้นด้วย prefix นี้
     const existing = products
       .map(p => p.code)
       .filter(code => code.startsWith(`${prefix}-`))
@@ -108,14 +120,38 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     const newSKU = `${prefix}-${String(nextNum).padStart(3, '0')}`;
     setF('code', newSKU);
   };
-
-  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (modalMode === 'edit' && editingProduct) {
-      onUpdateProduct({ ...editingProduct, ...formData });
-    } else {
-      onAddProduct({ id: `prod-${Date.now()}`, ...formData });
+    if (!formData.name.trim()) return;
+    if (modalMode === 'add') {
+      const newItem: ProductService = {
+        id: `PROD-${Date.now()}`,
+        code: formData.code || `ITEM-${Math.floor(Math.random() * 9000 + 1000)}`,
+        name: formData.name.trim(),
+        category: formData.category,
+        type: formData.type,
+        unit: formData.unit || 'ชิ้น',
+        unitPrice: Number(formData.unitPrice) || 0,
+        costPrice: Number(formData.costPrice) || 0,
+        stockQty: formData.type === 'PRODUCT' ? (Number(formData.stockQty) || 0) : 0,
+        minStockAlert: Number(formData.minStockAlert) || 0,
+        description: formData.description.trim(),
+      };
+      onAddProduct(newItem);
+    } else if (modalMode === 'edit' && editingItem) {
+      onUpdateProduct({
+        ...editingItem,
+        code: formData.code,
+        name: formData.name.trim(),
+        category: formData.category,
+        type: formData.type,
+        unit: formData.unit,
+        unitPrice: Number(formData.unitPrice),
+        costPrice: Number(formData.costPrice),
+        stockQty: formData.type === 'PRODUCT' ? Number(formData.stockQty) : 0,
+        minStockAlert: Number(formData.minStockAlert),
+        description: formData.description.trim(),
+      });
     }
     closeModal();
   };
@@ -126,98 +162,228 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   const margin = (p: ProductService) =>
     p.unitPrice > 0 ? (((p.unitPrice - p.costPrice) / p.unitPrice) * 100).toFixed(1) : '0';
 
-  // ── Summary ────────────────────────────────────────────────────────────────
+  // ── Summary Metrics ─────────────────────────────────────────────────────────
   const totalProducts = products.filter(p => p.type === 'PRODUCT').length;
   const totalServices = products.filter(p => p.type === 'SERVICE').length;
   const lowStock = products.filter(p => p.type === 'PRODUCT' && p.stockQty <= p.minStockAlert).length;
+  const totalUnitsInStock = products.filter(p => p.type === 'PRODUCT').reduce((sum, p) => sum + (p.stockQty || 0), 0);
+  const totalInventoryRetailValue = products.filter(p => p.type === 'PRODUCT').reduce((sum, p) => sum + ((p.stockQty || 0) * (p.unitPrice || 0)), 0);
+  const totalInventoryCostValue = products.filter(p => p.type === 'PRODUCT').reduce((sum, p) => sum + ((p.stockQty || 0) * (p.costPrice || 0)), 0);
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-5 pb-12">
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/* ── Futuristic Header & Action Bar ──────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Package className="w-6 h-6 text-purple-500" />
-            <span>คลังสินค้า & บริการ</span>
+          <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2.5 tracking-tight">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-sky-500 flex items-center justify-center text-white shadow-md shadow-purple-200">
+              <Package className="w-4.5 h-4.5" />
+            </div>
+            <span className="bg-gradient-to-r from-slate-900 via-purple-950 to-indigo-900 bg-clip-text text-transparent">
+              คลังสินค้า & รายการบริการ (Inventory Matrix)
+            </span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">จัดการรายการสินค้า อุปกรณ์ และค่าบริการวิศวกรรม</p>
+          <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5 font-medium">
+            <span>ฐานข้อมูลฮาร์ดแวร์ Automation, บอร์ด PLC, ระบบซอฟต์แวร์ และค่าแรงวิศวกรรม</span>
+            <span className="w-1 h-1 rounded-full bg-slate-300 inline-block" />
+            <span className="text-purple-600 font-bold">WARSGATE System</span>
+          </p>
         </div>
-        <button onClick={openAdd}
-          className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-rose-100 transition active:scale-95">
+
+        <button
+          onClick={openAdd}
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-purple-200/80 transition-all hover:scale-[1.02] active:scale-95"
+        >
           <Plus className="w-4 h-4" />
-          + เพิ่มสินค้า / บริการ
+          <span>+ เพิ่มสินค้า / บริการใหม่</span>
         </button>
       </div>
 
-      {/* ── Summary Strip ──────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'รายการสินค้า', count: totalProducts, icon: Box, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
-          { label: 'รายการบริการ', count: totalServices, icon: Wrench, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
-          { label: 'สต็อกต่ำ ⚠️', count: lowStock, icon: AlertTriangle, color: 'text-rose-600', bg: 'bg-rose-50 border-rose-200' },
-        ].map((s, i) => {
-          const Icon = s.icon;
-          return (
-            <div key={i} className={`p-4 rounded-2xl border ${s.bg} text-center`}>
-              <div className={`text-2xl font-bold ${s.color}`}>{s.count}</div>
-              <div className="text-[11px] text-slate-500 font-medium mt-0.5">{s.label}</div>
+      {/* ── Futuristic High-Tech KPI Cards (4 Balanced Cards) ──────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        
+        {/* Card 1: Hardware Products */}
+        <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-white via-sky-50/30 to-blue-50/50 border border-sky-200/80 shadow-sm hover:shadow-md transition-all group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-sky-400/10 rounded-full blur-xl pointer-events-none group-hover:bg-sky-400/20 transition-all" />
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-600">สินค้าและฮาร์ดแวร์</span>
+            <div className="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold shadow-sm">
+              <Cpu className="w-4 h-4" />
             </div>
-          );
-        })}
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-extrabold font-mono text-sky-700">{totalProducts}</span>
+            <span className="text-[11px] font-semibold text-slate-400">รายการ SKU</span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-sky-100/80 flex items-center justify-between text-[10px] text-slate-500">
+            <span>สต็อกคงเหลือรวม:</span>
+            <strong className="font-mono text-slate-700">{totalUnitsInStock} ชิ้น</strong>
+          </div>
+        </div>
+
+        {/* Card 2: Software & Engineering Services */}
+        <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-white via-purple-50/30 to-indigo-50/50 border border-purple-200/80 shadow-sm hover:shadow-md transition-all group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-purple-400/10 rounded-full blur-xl pointer-events-none group-hover:bg-purple-400/20 transition-all" />
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-600">บริการวิศวกรรม & ซอฟต์แวร์</span>
+            <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold shadow-sm">
+              <Zap className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-extrabold font-mono text-purple-700">{totalServices}</span>
+            <span className="text-[11px] font-semibold text-slate-400">รายการบริการ</span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-purple-100/80 flex items-center justify-between text-[10px] text-slate-500">
+            <span>ประเภท:</span>
+            <strong className="text-purple-700">PLC, SCADA, Manpower</strong>
+          </div>
+        </div>
+
+        {/* Card 3: Stock Health Radar */}
+        <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-white via-emerald-50/30 to-teal-50/50 border border-emerald-200/80 shadow-sm hover:shadow-md transition-all group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-400/10 rounded-full blur-xl pointer-events-none group-hover:bg-emerald-400/20 transition-all" />
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-600">สุขภาพสต็อก & การแจ้งเตือน</span>
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold shadow-sm ${lowStock > 0 ? 'bg-rose-100 text-rose-700 animate-pulse' : 'bg-emerald-100 text-emerald-700'}`}>
+              {lowStock > 0 ? <AlertTriangle className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className={`text-2xl font-extrabold font-mono ${lowStock > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
+              {lowStock > 0 ? `${lowStock} รายการ` : '100%'}
+            </span>
+            <span className="text-[11px] font-semibold text-slate-400">
+              {lowStock > 0 ? 'สต็อกต่ำเกณฑ์' : 'สต็อกสมบูรณ์'}
+            </span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-emerald-100/80 flex items-center justify-between text-[10px]">
+            <span className="text-slate-500">สถานะความพร้อม:</span>
+            <span className={`font-bold flex items-center gap-1 ${lowStock > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${lowStock > 0 ? 'bg-rose-500 animate-ping' : 'bg-emerald-500'}`} />
+              {lowStock > 0 ? 'ต้องสั่งซื้อเพิ่ม' : 'พร้อมส่งมอบทันที'}
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4: Inventory Asset Valuation */}
+        <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-white via-amber-50/30 to-orange-50/50 border border-amber-200/80 shadow-sm hover:shadow-md transition-all group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-amber-400/10 rounded-full blur-xl pointer-events-none group-hover:bg-amber-400/20 transition-all" />
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-600">มูลค่าสต็อกคงคลัง (Valuation)</span>
+            <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold shadow-sm">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className="text-xl font-extrabold font-mono text-amber-800 tracking-tight">฿{formatMoney(totalInventoryRetailValue)}</span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-amber-100/80 flex items-center justify-between text-[10px] text-slate-500">
+            <span>ต้นทุนรวมสินค้า:</span>
+            <strong className="font-mono text-slate-700">฿{formatMoney(totalInventoryCostValue)}</strong>
+          </div>
+        </div>
+
       </div>
 
-      {/* ── Filter Bar ─────────────────────────────────────────────────────── */}
-      <div className="glass-panel p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-3">
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-            placeholder="ค้นหารหัส หรือ ชื่อสินค้า..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-700 focus:outline-none focus:border-purple-400" />
+      {/* ── Ultra-Modern Single-Line Cyber-Toolbar ───────────────────────────── */}
+      <div className="glass-panel p-2.5 sm:p-3 rounded-2xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 shadow-sm border border-slate-200/90 bg-white/90">
+        
+        {/* Left: Cyber Search Input */}
+        <div className="relative flex-1 min-w-[260px] max-w-xl">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-500" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="ค้นหารหัส SKU, ชื่อสินค้า, บอร์ด PLC, สเปกบริการ..."
+            className="w-full bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200/90 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-400/20 transition shadow-inner"
+          />
         </div>
-        <div className="flex items-center gap-2">
-          {(['ALL', 'PRODUCT', 'SERVICE'] as const).map(t => (
-            <button key={t} onClick={() => setTypeFilter(t)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
-                typeFilter === t ? 'bg-purple-50 border-purple-300 text-purple-600' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
-              }`}>
-              {t === 'ALL' ? 'ทั้งหมด' : t === 'PRODUCT' ? '📦 สินค้า' : '🔧 บริการ'}
+
+        {/* Right: Futuristic Pill Category Switcher */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          
+          <div className="flex items-center gap-1 p-1 bg-slate-100/90 rounded-xl border border-slate-200 text-xs shadow-inner">
+            <button
+              onClick={() => setTypeFilter('ALL')}
+              className={`px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                typeFilter === 'ALL'
+                  ? 'bg-purple-600 text-white shadow-sm shadow-purple-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <span>ทั้งหมด</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${typeFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                {products.length}
+              </span>
             </button>
-          ))}
+
+            <button
+              onClick={() => setTypeFilter('PRODUCT')}
+              className={`px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                typeFilter === 'PRODUCT'
+                  ? 'bg-purple-600 text-white shadow-sm shadow-purple-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <Box className="w-3.5 h-3.5" />
+              <span>สินค้า ({totalProducts})</span>
+            </button>
+
+            <button
+              onClick={() => setTypeFilter('SERVICE')}
+              className={`px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                typeFilter === 'SERVICE'
+                  ? 'bg-purple-600 text-white shadow-sm shadow-purple-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <Wrench className="w-3.5 h-3.5" />
+              <span>บริการ ({totalServices})</span>
+            </button>
+          </div>
+
         </div>
+
       </div>
 
-        {/* ── Table ──────────────────────────────────────────────────────────── */}
-        <div className="glass-panel p-3 sm:p-5 rounded-2xl">
-          {filtered.length === 0 ? (
-            <div className="py-16 text-center text-slate-400">
-              <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">ไม่พบรายการ</p>
-              <p className="text-xs mt-1">ลองเปลี่ยน filter หรือเพิ่มสินค้าใหม่</p>
-            </div>
-          ) : (
-            <div className="table-scroll max-h-[620px] rounded-2xl border border-slate-200 shadow-inner">
-              <table className="w-full text-left text-xs min-w-[760px]">
-                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-sm text-slate-600 font-semibold border-b border-slate-200 shadow-sm">
-                  <tr>
-                    <th className="py-3 px-4">รหัส</th>
-                    <th className="py-3 px-4">ชื่อสินค้า / บริการ</th>
-                    <th className="py-3 px-4">หมวดหมู่</th>
-                    <th className="py-3 px-4 text-right">ราคาทุน</th>
-                    <th className="py-3 px-4 text-right">ราคาขาย</th>
-                    <th className="py-3 px-4 text-right">กำไร %</th>
-                    <th className="py-3 px-4 text-center">สต็อก</th>
-                    <th className="py-3 px-4 text-center">จัดการ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
+      {/* ── Table ──────────────────────────────────────────────────────────── */}
+      <div className="glass-panel p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+        {filtered.length === 0 ? (
+          <div className="py-16 text-center text-slate-400">
+            <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="font-medium">ไม่พบรายการสินค้าหรือบริการตามคำค้นหา</p>
+            <p className="text-xs mt-1">ลองเปลี่ยนคำค้นหา หรือกดปุ่มเพิ่มรายการใหม่</p>
+          </div>
+        ) : (
+          <div className="table-scroll max-h-[620px] rounded-2xl border border-slate-200 shadow-inner">
+            <table className="w-full text-left text-xs min-w-[800px]">
+              <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-sm text-slate-600 font-semibold border-b border-slate-200 shadow-sm">
+                <tr>
+                  <th className="py-3 px-4">รหัสสินค้า / SKU</th>
+                  <th className="py-3 px-4">ชื่อสินค้า / บริการ</th>
+                  <th className="py-3 px-4">หมวดหมู่ระบบ</th>
+                  <th className="py-3 px-4 text-right">ราคาทุน</th>
+                  <th className="py-3 px-4 text-right">ราคาขาย</th>
+                  <th className="py-3 px-4 text-right">มาร์จิ้น %</th>
+                  <th className="py-3 px-4 text-center">สถานะสต็อก</th>
+                  <th className="py-3 px-4 text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
                 {filtered.map(item => {
                   const isLowStock = item.type === 'PRODUCT' && item.stockQty <= item.minStockAlert;
                   return (
-                    <tr key={item.id} className="hover:bg-purple-50/20 transition group">
-                      <td className="py-3 px-4 font-mono font-bold text-slate-600 text-[11px]">{item.code}</td>
+                    <tr key={item.id} className="hover:bg-purple-50/30 transition group">
+                      <td className="py-3 px-4">
+                        <span className="font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200 text-[11px]">
+                          {item.code}
+                        </span>
+                      </td>
                       <td className="py-3 px-4 max-w-xs">
-                        <div className="font-semibold text-slate-800 truncate">{item.name}</div>
+                        <div className="font-bold text-slate-900 truncate">{item.name}</div>
                         {item.description && <div className="text-[10px] text-slate-400 truncate mt-0.5">{item.description}</div>}
                       </td>
                       <td className="py-3 px-4">
@@ -225,10 +391,12 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                           {CATEGORY_LABELS[item.category]}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right font-mono text-slate-400">{formatMoney(item.costPrice)}</td>
-                      <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600">{formatMoney(item.unitPrice)}</td>
+                      <td className="py-3 px-4 text-right font-mono text-slate-400">฿{formatMoney(item.costPrice)}</td>
+                      <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600">฿{formatMoney(item.unitPrice)}</td>
                       <td className="py-3 px-4 text-right">
-                        <span className="font-mono font-bold text-sky-600">+{margin(item)}%</span>
+                        <span className="font-mono font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                          +{margin(item)}%
+                        </span>
                       </td>
                       <td className="py-3 px-4 text-center">
                         {item.type === 'SERVICE' ? (
@@ -273,7 +441,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
             }`}>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 {modalMode === 'edit' ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                {modalMode === 'edit' ? `แก้ไข: ${editingProduct?.name}` : 'เพิ่มสินค้า / บริการใหม่'}
+                {modalMode === 'edit' ? `แก้ไข: ${editingItem?.name}` : 'เพิ่มสินค้า / บริการใหม่'}
               </h2>
               <button onClick={closeModal} className="text-white/70 hover:text-white text-lg leading-none">✕</button>
             </div>
