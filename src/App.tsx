@@ -41,12 +41,17 @@ export function App() {
 
   const [documents, setDocuments] = useState<AccountingDocument[]>(() => {
     const saved = localStorage.getItem('warsgate_documents');
+    const deletedIds = new Set<string>(JSON.parse(localStorage.getItem('warsgate_deleted_doc_ids') || '[]'));
     if (saved !== null) {
       try {
         const parsed: AccountingDocument[] = JSON.parse(saved);
-        const existingIds = new Set(parsed.map(d => d.id));
-        const missing = initialDocuments.filter(d => !existingIds.has(d.id));
-        const updated = parsed.map(d => {
+        // Exclude any document that was explicitly deleted by the user
+        const filteredParsed = parsed.filter(d => !deletedIds.has(d.id));
+        const existingIds = new Set(filteredParsed.map(d => d.id));
+        
+        // Only load initial documents that are NOT in existing AND NOT in deleted list
+        const missing = initialDocuments.filter(d => !existingIds.has(d.id) && !deletedIds.has(d.id));
+        const updated = filteredParsed.map(d => {
           const init = initialDocuments.find(idoc => idoc.id === d.id);
           if (init) {
             return {
@@ -61,20 +66,24 @@ export function App() {
         localStorage.setItem('warsgate_documents', JSON.stringify(merged));
         return merged;
       } catch {
-        return initialDocuments;
+        return initialDocuments.filter(d => !deletedIds.has(d.id));
       }
     }
-    return initialDocuments;
+    return initialDocuments.filter(d => !deletedIds.has(d.id));
   });
 
   const [contacts, setContacts] = useState<Contact[]>(() => {
     const saved = localStorage.getItem('warsgate_contacts');
+    const deletedIds = new Set<string>(JSON.parse(localStorage.getItem('warsgate_deleted_contact_ids') || '[]'));
     if (saved !== null) {
       try {
         const parsed: Contact[] = JSON.parse(saved);
-        const existingIds = new Set(parsed.map(c => c.id));
-        const missing = initialContacts.filter(c => !existingIds.has(c.id));
-        const updated = parsed.map(c => {
+        const filteredParsed = parsed.filter(c => !deletedIds.has(c.id));
+        const existingIds = new Set(filteredParsed.map(c => c.id));
+        
+        // Only load initial contacts that are NOT in existing AND NOT in deleted list
+        const missing = initialContacts.filter(c => !existingIds.has(c.id) && !deletedIds.has(c.id));
+        const updated = filteredParsed.map(c => {
           const init = initialContacts.find(ic => ic.id === c.id);
           return init ? { ...c, ...init } : c;
         });
@@ -82,30 +91,31 @@ export function App() {
         localStorage.setItem('warsgate_contacts', JSON.stringify(merged));
         return merged;
       } catch {
-        return initialContacts;
+        return initialContacts.filter(c => !deletedIds.has(c.id));
       }
     }
-    return initialContacts;
+    return initialContacts.filter(c => !deletedIds.has(c.id));
   });
 
   const [products, setProducts] = useState<ProductService[]>(() => {
     const saved = localStorage.getItem('warsgate_products');
+    const deletedIds = new Set<string>(JSON.parse(localStorage.getItem('warsgate_deleted_product_ids') || '[]'));
     if (saved !== null) {
       try {
         const parsed: ProductService[] = JSON.parse(saved);
-        const existingIds = new Set(parsed.map(p => p.id));
-        const missing = initialProducts.filter(p => !existingIds.has(p.id));
-        if (missing.length > 0) {
-          const merged = [...parsed, ...missing];
-          localStorage.setItem('warsgate_products', JSON.stringify(merged));
-          return merged;
-        }
-        return parsed;
+        const filteredParsed = parsed.filter(p => !deletedIds.has(p.id));
+        const existingIds = new Set(filteredParsed.map(p => p.id));
+        
+        // Only load initial products that are NOT in existing AND NOT in deleted list
+        const missing = initialProducts.filter(p => !existingIds.has(p.id) && !deletedIds.has(p.id));
+        const merged = [...filteredParsed, ...missing];
+        localStorage.setItem('warsgate_products', JSON.stringify(merged));
+        return merged;
       } catch {
-        return initialProducts;
+        return initialProducts.filter(p => !deletedIds.has(p.id));
       }
     }
-    return initialProducts;
+    return initialProducts.filter(p => !deletedIds.has(p.id));
   });
 
   const [chartOfAccounts] = useState(initialChartOfAccounts);
@@ -148,6 +158,17 @@ export function App() {
 
   // Actions
   const handleSaveDocument = (doc: AccountingDocument) => {
+    // If saving document, remove from deleted blacklist
+    try {
+      const deletedIds = JSON.parse(localStorage.getItem('warsgate_deleted_doc_ids') || '[]');
+      if (deletedIds.includes(doc.id)) {
+        const nextDeleted = deletedIds.filter((id: string) => id !== doc.id);
+        localStorage.setItem('warsgate_deleted_doc_ids', JSON.stringify(nextDeleted));
+      }
+    } catch {
+      // ignore
+    }
+
     setDocuments(prev => {
       const exists = prev.some(d => d.id === doc.id);
       const updated = exists ? prev.map(d => d.id === doc.id ? doc : d) : [doc, ...prev];
@@ -157,6 +178,18 @@ export function App() {
   };
 
   const handleDeleteDocument = (docId: string) => {
+    // 1. Record ID in deleted IDs blacklist to permanently prevent resurrection on deploy/reload
+    try {
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('warsgate_deleted_doc_ids') || '[]');
+      if (!deletedIds.includes(docId)) {
+        deletedIds.push(docId);
+        localStorage.setItem('warsgate_deleted_doc_ids', JSON.stringify(deletedIds));
+      }
+    } catch {
+      localStorage.setItem('warsgate_deleted_doc_ids', JSON.stringify([docId]));
+    }
+
+    // 2. Remove from active state and localStorage
     setDocuments(prev => {
       const updated = prev.filter(d => d.id !== docId);
       localStorage.setItem('warsgate_documents', JSON.stringify(updated));
@@ -173,6 +206,16 @@ export function App() {
   };
 
   const handleAddContact = (newContact: Contact) => {
+    try {
+      const deletedIds = JSON.parse(localStorage.getItem('warsgate_deleted_contact_ids') || '[]');
+      if (deletedIds.includes(newContact.id)) {
+        const nextDeleted = deletedIds.filter((id: string) => id !== newContact.id);
+        localStorage.setItem('warsgate_deleted_contact_ids', JSON.stringify(nextDeleted));
+      }
+    } catch {
+      // ignore
+    }
+
     setContacts(prev => {
       const updated = [newContact, ...prev];
       localStorage.setItem('warsgate_contacts', JSON.stringify(updated));
@@ -189,6 +232,16 @@ export function App() {
   };
 
   const handleDeleteContact = (id: string) => {
+    try {
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('warsgate_deleted_contact_ids') || '[]');
+      if (!deletedIds.includes(id)) {
+        deletedIds.push(id);
+        localStorage.setItem('warsgate_deleted_contact_ids', JSON.stringify(deletedIds));
+      }
+    } catch {
+      localStorage.setItem('warsgate_deleted_contact_ids', JSON.stringify([id]));
+    }
+
     setContacts(prev => {
       const updated = prev.filter(c => c.id !== id);
       localStorage.setItem('warsgate_contacts', JSON.stringify(updated));
@@ -197,6 +250,16 @@ export function App() {
   };
 
   const handleAddProduct = (newProduct: ProductService) => {
+    try {
+      const deletedIds = JSON.parse(localStorage.getItem('warsgate_deleted_product_ids') || '[]');
+      if (deletedIds.includes(newProduct.id)) {
+        const nextDeleted = deletedIds.filter((id: string) => id !== newProduct.id);
+        localStorage.setItem('warsgate_deleted_product_ids', JSON.stringify(nextDeleted));
+      }
+    } catch {
+      // ignore
+    }
+
     setProducts(prev => {
       const updated = [newProduct, ...prev];
       localStorage.setItem('warsgate_products', JSON.stringify(updated));
@@ -213,6 +276,16 @@ export function App() {
   };
 
   const handleDeleteProduct = (id: string) => {
+    try {
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('warsgate_deleted_product_ids') || '[]');
+      if (!deletedIds.includes(id)) {
+        deletedIds.push(id);
+        localStorage.setItem('warsgate_deleted_product_ids', JSON.stringify(deletedIds));
+      }
+    } catch {
+      localStorage.setItem('warsgate_deleted_product_ids', JSON.stringify([id]));
+    }
+
     setProducts(prev => {
       const updated = prev.filter(p => p.id !== id);
       localStorage.setItem('warsgate_products', JSON.stringify(updated));
