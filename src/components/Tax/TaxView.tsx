@@ -164,17 +164,23 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-5 pb-12">
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/* ── Futuristic Header ───────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Calculator className="w-6 h-6 text-amber-500" />
-            <span>ศูนย์วางแผนลดหย่อนภาษี & รายงานสรรพากร (Tax Optimization & RD Center)</span>
+          <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2.5 tracking-tight">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-600 to-rose-600 flex items-center justify-center text-white shadow-md shadow-amber-200">
+              <Calculator className="w-4.5 h-4.5" />
+            </div>
+            <span className="bg-gradient-to-r from-slate-900 via-amber-950 to-orange-900 bg-clip-text text-transparent">
+              ศูนย์วางแผนลดหย่อนภาษี & สรรพากรอัจฉริยะ (Tax & RD AI Matrix)
+            </span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            วางแผนประหยัดภาษีเงินได้นิติบุคคล (ภ.ง.ด.50 / ภ.ง.ด.51) ให้เหลือน้อยที่สุดอย่างถูกต้องตามกฎหมาย และแจ้งเตือนกำหนดเวลาล่วงหน้า
+          <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5 font-medium">
+            <span>กลยุทธ์ประหยัดภาษีนิติบุคคล SME ให้เหลือน้อยที่สุด (ภ.ง.ด.50 / ภ.ง.ด.51) พร้อมเรดาร์แจ้งเตือนภาษีล่วงหน้า</span>
+            <span className="w-1 h-1 rounded-full bg-slate-300 inline-block" />
+            <span className="text-amber-600 font-bold">RD Compliance</span>
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -182,7 +188,7 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
           <select
             value={selectedMonth}
             onChange={e => setSelectedMonth(e.target.value)}
-            className="bg-white border border-slate-200 text-slate-700 font-bold text-xs rounded-xl px-3 py-2 shadow-sm focus:outline-none focus:border-amber-400"
+            className="bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200/90 text-slate-700 font-bold text-xs rounded-xl px-3 py-2 shadow-inner focus:outline-none focus:border-amber-400 cursor-pointer"
           >
             <option value="ALL">🗓️ ทุกช่วงเวลา (ทั้งหมด)</option>
             {availableMonths.map(m => (
@@ -194,10 +200,10 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
 
           <button
             onClick={handlePrint}
-            className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-rose-100 transition active:scale-95"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-amber-200/80 transition-all hover:scale-[1.02] active:scale-95"
           >
             <Printer className="w-4 h-4" />
-            <span>พิมพ์รายงาน</span>
+            <span>พิมพ์รายงานภาษี</span>
           </button>
         </div>
       </div>

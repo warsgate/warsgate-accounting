@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   FileText, Plus, Search, Filter, Eye, Printer, Pencil, Trash2, AlertTriangle, 
-  CheckCircle2, RotateCcw, Calendar, Receipt, ShieldCheck, Clock, Download
+  CheckCircle2, RotateCcw, Calendar, Receipt, ShieldCheck, Clock, Download,
+  TrendingUp, Zap, Sparkles, Building2, Layers, DollarSign, Activity
 } from 'lucide-react';
 import { AccountingDocument, DocumentType, DocumentStatus } from '../../types';
 import { formatMoney, getStatusBadge, formatThaiDate } from '../../utils/formatters';
@@ -33,27 +34,71 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [deleteTarget, setDeleteTarget] = useState<AccountingDocument | null>(null);
 
-  const salesDocs = documents.filter(d => ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'RECEIPT'].includes(d.type));
+  // Sales-only document categories
+  const salesTypes: DocumentType[] = ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'RECEIPT'];
+  const salesDocs = documents.filter(d => salesTypes.includes(d.type));
 
+  // ── High-Tech KPI Computations ──────────────────────────────────────────────
+  const qtDocs = salesDocs.filter(d => d.type === 'QUOTATION');
+  const qtTotal = qtDocs.reduce((s, d) => s + (d.grandTotal || 0), 0);
+  
+  const invDocs = salesDocs.filter(d => d.type === 'INVOICE' || d.type === 'TAX_INVOICE');
+  const invTotal = invDocs.reduce((s, d) => s + (d.grandTotal || 0), 0);
+  
+  const recDocs = salesDocs.filter(d => d.type === 'RECEIPT');
+  const recTotal = recDocs.reduce((s, d) => s + (d.netPayment || d.grandTotal || 0), 0);
+
+  const pendingInv = invDocs.filter(d => d.status !== 'PAID');
+  const pendingTotal = pendingInv.reduce((s, d) => s + (d.netPayment || d.grandTotal || 0), 0);
+
+  // Tabs for table filtering
+  const tableTabs = [
+    {
+      id: 'QUOTATION',
+      label: 'ใบเสนอราคา (Quotation)',
+      icon: FileText,
+      count: salesDocs.filter(d => d.type === 'QUOTATION').length,
+      activeColor: 'bg-emerald-600 text-white',
+      badgeActive: 'bg-emerald-700 text-emerald-100',
+    },
+    {
+      id: 'INVOICE',
+      label: 'ใบแจ้งหนี้ / ใบกำกับภาษี (Invoice)',
+      icon: Receipt,
+      count: salesDocs.filter(d => d.type === 'INVOICE' || d.type === 'TAX_INVOICE').length,
+      activeColor: 'bg-sky-600 text-white',
+      badgeActive: 'bg-sky-700 text-sky-100',
+    },
+    {
+      id: 'RECEIPT',
+      label: 'ใบเสร็จรับเงิน (Receipt)',
+      icon: CheckCircle2,
+      count: salesDocs.filter(d => d.type === 'RECEIPT').length,
+      activeColor: 'bg-rose-600 text-white',
+      badgeActive: 'bg-rose-700 text-rose-100',
+    },
+  ];
+
+  // Quick Date Preset Handler
   const handleDatePresetChange = (preset: string) => {
     setDatePreset(preset);
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth(); // 0-indexed
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
 
     if (preset === 'THIS_MONTH') {
-      const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
-      const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
+      const firstDay = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
+      const lastDay = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
       setStartDate(firstDay);
       setEndDate(lastDay);
     } else if (preset === 'LAST_MONTH') {
-      const firstDay = new Date(year, month - 1, 1).toISOString().split('T')[0];
-      const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
+      const firstDay = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0];
+      const lastDay = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
       setStartDate(firstDay);
       setEndDate(lastDay);
     } else if (preset === 'THIS_YEAR') {
-      const firstDay = `${year}-01-01`;
-      const lastDay = `${year}-12-31`;
+      const firstDay = `${currentYear}-01-01`;
+      const lastDay = `${currentYear}-12-31`;
       setStartDate(firstDay);
       setEndDate(lastDay);
     } else if (preset === 'ALL') {
@@ -62,79 +107,43 @@ export const SalesView: React.FC<SalesViewProps> = ({
     }
   };
 
-  const filteredDocs = salesDocs.filter(doc => {
-    if (activeTypeTab === 'QUOTATION' && doc.type !== 'QUOTATION') return false;
-    if (activeTypeTab === 'INVOICE' && doc.type !== 'INVOICE') return false;
-    if (activeTypeTab === 'TAX_INVOICE' && doc.type !== 'TAX_INVOICE') return false;
-    if (activeTypeTab === 'RECEIPT' && doc.type !== 'RECEIPT') return false;
+  // Filter pipeline
+  const filteredDocs = salesDocs.filter((doc) => {
+    // 1. Table Type Tab Filter
+    if (activeTypeTab === 'INVOICE') {
+      if (doc.type !== 'INVOICE' && doc.type !== 'TAX_INVOICE') return false;
+    } else {
+      if (doc.type !== activeTypeTab) return false;
+    }
+
+    // 2. Status Filter
     if (statusFilter !== 'ALL' && doc.status !== statusFilter) return false;
+
+    // 3. Date Range Filter
     if (startDate && doc.issueDate < startDate) return false;
     if (endDate && doc.issueDate > endDate) return false;
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      return (
-        doc.documentNo.toLowerCase().includes(q) ||
-        (doc.referencePoNo || '').toLowerCase().includes(q) ||
-        (doc.referenceDocNo || '').toLowerCase().includes(q) ||
-        (doc.contact?.companyName || '').toLowerCase().includes(q) ||
-        (doc.contact?.taxId || '').includes(q) ||
-        (doc.contact?.name || '').toLowerCase().includes(q) ||
-        (doc.notes || '').toLowerCase().includes(q)
-      );
+
+    // 4. Search Filter
+    if (searchTerm.trim() !== '') {
+      const term = searchTerm.toLowerCase();
+      const matchDocNo = doc.documentNo.toLowerCase().includes(term);
+      const matchPo = (doc.referencePoNo || '').toLowerCase().includes(term);
+      const matchCustomer = (doc.contact?.companyName || doc.contact?.name || '').toLowerCase().includes(term);
+      const matchTaxId = (doc.contact?.taxId || '').toLowerCase().includes(term);
+      const matchItems = doc.items?.some(i => i.description.toLowerCase().includes(term));
+      if (!matchDocNo && !matchPo && !matchCustomer && !matchTaxId && !matchItems) return false;
     }
+
     return true;
   });
 
-  const totalFilteredGrandTotal = filteredDocs.reduce((sum, d) => sum + d.grandTotal, 0);
-  const totalFilteredVat = filteredDocs.reduce((sum, d) => sum + d.vatAmount, 0);
-  const totalFilteredNet = filteredDocs.reduce((sum, d) => sum + (d.netPayment || d.grandTotal - (d.withholdingTaxTotal || 0)), 0);
+  // Calculate Net Total of Currently Filtered Documents
+  const totalFilteredGrandTotal = filteredDocs.reduce((acc, doc) => acc + (doc.grandTotal || 0), 0);
+  const totalFilteredVat = filteredDocs.reduce((acc, doc) => acc + (doc.vatAmount || 0), 0);
+  const totalFilteredNet = filteredDocs.reduce((acc, doc) => acc + (doc.netPayment || doc.grandTotal || 0), 0);
 
-  // Table Tabs Definition (เฉพาะ 4 ประเภทเอกสารชัดเจน ไม่มีแท็บ "ทั้งหมด")
-  const tableTabs = [
-    { 
-      id: 'QUOTATION', 
-      label: 'ใบเสนอราคา', 
-      sublabel: 'Quotation (QT)',
-      icon: FileText, 
-      count: salesDocs.filter(d => d.type === 'QUOTATION').length,
-      activeColor: 'bg-emerald-600 text-white shadow-emerald-200',
-      badgeActive: 'bg-white text-emerald-700'
-    },
-    { 
-      id: 'INVOICE', 
-      label: 'ใบแจ้งหนี้', 
-      sublabel: 'Invoice (INV)',
-      icon: Receipt, 
-      count: salesDocs.filter(d => d.type === 'INVOICE').length,
-      activeColor: 'bg-sky-600 text-white shadow-sky-200',
-      badgeActive: 'bg-white text-sky-700'
-    },
-    { 
-      id: 'TAX_INVOICE', 
-      label: 'ใบกำกับภาษี', 
-      sublabel: 'Tax Invoice (TAX)',
-      icon: ShieldCheck, 
-      count: salesDocs.filter(d => d.type === 'TAX_INVOICE').length,
-      activeColor: 'bg-indigo-600 text-white shadow-indigo-200',
-      badgeActive: 'bg-white text-indigo-700'
-    },
-    { 
-      id: 'RECEIPT', 
-      label: 'ใบเสร็จรับเงิน', 
-      sublabel: 'Receipt (REC)',
-      icon: CheckCircle2, 
-      count: salesDocs.filter(d => d.type === 'RECEIPT').length,
-      activeColor: 'bg-amber-600 text-white shadow-amber-200',
-      badgeActive: 'bg-white text-amber-700'
-    },
-  ];
-
-  const hasActiveFilters = 
-    statusFilter !== 'ALL' || 
-    datePreset !== 'ALL' || 
-    startDate !== '' || 
-    endDate !== '' || 
-    searchTerm.trim() !== '';
+  // Check if any filter is actively applied
+  const hasActiveFilters = statusFilter !== 'ALL' || datePreset !== 'ALL' || startDate !== '' || endDate !== '' || searchTerm !== '';
 
   const handleResetFilters = () => {
     setStatusFilter('ALL');
@@ -145,19 +154,26 @@ export const SalesView: React.FC<SalesViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-5 pb-12">
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/* ── Futuristic Header ───────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <FileText className="w-6 h-6 text-rose-500" />
-            <span>ระบบรายรับ & การขาย (Sales & Income)</span>
+          <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2.5 tracking-tight">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-600 via-pink-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-rose-200">
+              <FileText className="w-4.5 h-4.5" />
+            </div>
+            <span className="bg-gradient-to-r from-slate-900 via-rose-950 to-pink-900 bg-clip-text text-transparent">
+              ศูนย์ขาย & เอกสารรายได้ (Sales & Revenue Center)
+            </span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            สร้าง ออกเอกสาร แก้ไข ลบ และติดตามสถานะ ใบเสนอราคา (QT), ใบแจ้งหนี้ (INV), ใบกำกับภาษี (TAX), ใบเสร็จรับเงิน (REC)
+          <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5 font-medium">
+            <span>จัดการใบเสนอราคา (QT), ใบแจ้งหนี้ (INV), ใบกำกับภาษี และออกใบเสร็จรับเงิน (REC)</span>
+            <span className="w-1 h-1 rounded-full bg-slate-300 inline-block" />
+            <span className="text-rose-600 font-bold">Automation PO Linked</span>
           </p>
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => openCreateModal('QUOTATION')}
@@ -175,7 +191,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
           </button>
           <button
             onClick={() => openCreateModal('RECEIPT')}
-            className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-rose-100 transition active:scale-95"
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-pink-600 to-rose-700 hover:from-rose-500 hover:to-pink-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-rose-200/80 transition-all hover:scale-[1.02] active:scale-95"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>+ ใบเสร็จรับเงิน</span>

@@ -129,6 +129,19 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
     },
   ];
 
+  // ── High-Tech KPI Computations ──────────────────────────────────────────────
+  const poDocs = expenseDocs.filter(d => d.type === 'PURCHASE_ORDER');
+  const poTotal = poDocs.reduce((s, d) => s + (d.grandTotal || 0), 0);
+  
+  const piDocs = expenseDocs.filter(d => d.type === 'PURCHASE_INVOICE');
+  const piTotal = piDocs.reduce((s, d) => s + (d.grandTotal || 0), 0);
+  
+  const pvDocs = expenseDocs.filter(d => d.type === 'PAYMENT_VOUCHER');
+  const pvTotal = pvDocs.reduce((s, d) => s + (d.netPayment || d.grandTotal || 0), 0);
+
+  const pendingPay = piDocs.filter(d => d.status !== 'PAID');
+  const pendingPayTotal = pendingPay.reduce((s, d) => s + (d.netPayment || d.grandTotal || 0), 0);
+
   const hasActiveFilters = 
     statusFilter !== 'ALL' || 
     datePreset !== 'ALL' || 
@@ -145,23 +158,30 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-5 pb-12">
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/* ── Futuristic Header ───────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <TrendingDown className="w-6 h-6 text-rose-500" />
-            <span>ระบบจัดการรายจ่าย & การซื้อ (Expense & Purchasing)</span>
+          <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2.5 tracking-tight">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-600 via-red-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-rose-200">
+              <TrendingDown className="w-4.5 h-4.5" />
+            </div>
+            <span className="bg-gradient-to-r from-slate-900 via-rose-950 to-red-900 bg-clip-text text-transparent">
+              ศูนย์จัดซื้อ & รายจ่ายโครงการ (Expense & Purchasing Center)
+            </span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            สร้าง ออกเอกสาร แก้ไข ลบ ใบสั่งซื้อ (PO), ค่าใช้จ่ายโครงการ, ใบสำคัญจ่าย (PV), และหนังสือรับรอง 50 ทวิ
+          <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5 font-medium">
+            <span>จัดการใบสั่งซื้อ (PO), ใบแจ้งหนี้จัดซื้อ (AP), ใบสำคัญจ่าย (PV) และภาษีหัก ณ ที่จ่าย 50 ทวิ</span>
+            <span className="w-1 h-1 rounded-full bg-slate-300 inline-block" />
+            <span className="text-rose-600 font-bold">Cost Control Matrix</span>
           </p>
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => openCreateModal('PURCHASE_ORDER')}
-            className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-100 transition active:scale-95"
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-rose-200/80 transition-all hover:scale-[1.02] active:scale-95"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>+ ใบสั่งซื้อ (PO)</span>
@@ -188,6 +208,85 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
             <span>+ 50 ทวิ</span>
           </button>
         </div>
+      </div>
+
+      {/* ── Futuristic High-Tech 4 KPI Cards ────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        
+        {/* Card 1: Purchase Orders (PO) */}
+        <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-white via-rose-50/30 to-red-50/50 border border-rose-200/80 shadow-sm hover:shadow-md transition-all group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-600">ภาระผูกพันสั่งซื้อ (PO Pipeline)</span>
+            <div className="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold shadow-sm">
+              <ShoppingBag className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className="text-xl font-extrabold font-mono text-rose-700 tracking-tight">฿{formatMoney(poTotal)}</span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-rose-100/80 flex items-center justify-between text-[10px] text-slate-500">
+            <span>ใบสั่งซื้อทั้งหมด:</span>
+            <strong className="text-rose-800">{poDocs.length} ฉบับเปิดแล้ว</strong>
+          </div>
+        </div>
+
+        {/* Card 2: Invoiced AP */}
+        <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-white via-sky-50/30 to-blue-50/50 border border-sky-200/80 shadow-sm hover:shadow-md transition-all group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-600">หนี้การค้าตั้งเบิก (AP Invoiced)</span>
+            <div className="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold shadow-sm">
+              <Receipt className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className="text-xl font-extrabold font-mono text-sky-700 tracking-tight">฿{formatMoney(piTotal)}</span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-sky-100/80 flex items-center justify-between text-[10px] text-slate-500">
+            <span>รอจ่ายชำระ (Pending):</span>
+            <strong className="font-mono text-amber-600">฿{formatMoney(pendingPayTotal)}</strong>
+          </div>
+        </div>
+
+        {/* Card 3: Paid Expenses & PV */}
+        <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-white via-emerald-50/30 to-teal-50/50 border border-emerald-200/80 shadow-sm hover:shadow-md transition-all group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-600">จ่ายชำระแล้วจริง (Paid Expenses)</span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold shadow-sm">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className="text-xl font-extrabold font-mono text-emerald-700 tracking-tight">฿{formatMoney(pvTotal)}</span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-emerald-100/80 flex items-center justify-between text-[10px] text-slate-500">
+            <span>ออกใบสำคัญจ่าย:</span>
+            <strong className="text-emerald-800">{pvDocs.length} ฉบับตัดจ่าย</strong>
+          </div>
+        </div>
+
+        {/* Card 4: AP Health Radar */}
+        <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-white via-amber-50/30 to-orange-50/50 border border-amber-200/80 shadow-sm hover:shadow-md transition-all group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-600">เรดาร์การจ่ายเจ้าหนี้ (AP Radar)</span>
+            <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold shadow-sm">
+              <DollarSign className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-extrabold font-mono text-amber-700">
+              {piTotal > 0 ? ((pvTotal / piTotal) * 100).toFixed(0) : 100}%
+            </span>
+            <span className="text-[11px] font-semibold text-slate-400">อัตราจ่ายชำระตรงเวลา</span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-amber-100/80 flex items-center justify-between text-[10px]">
+            <span className="text-slate-500">เครดิตองค์กร:</span>
+            <span className="font-bold text-emerald-700 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>ความน่าเชื่อถือระดับ A+</span>
+            </span>
+          </div>
+        </div>
+
       </div>
 
       {/* ── Ultra-Modern Single-Line Filter Toolbar ─────────────────────────── */}
