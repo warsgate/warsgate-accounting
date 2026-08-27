@@ -187,30 +187,30 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
         </div>
       </div>
 
-      {/* ── Table ──────────────────────────────────────────────────────────── */}
-      <div className="glass-panel rounded-2xl overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="py-16 text-center text-slate-400">
-            <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">ไม่พบรายการ</p>
-            <p className="text-xs mt-1">ลองเปลี่ยน filter หรือเพิ่มสินค้าใหม่</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
-                <tr>
-                  <th className="py-3 px-4">รหัส</th>
-                  <th className="py-3 px-4">ชื่อสินค้า / บริการ</th>
-                  <th className="py-3 px-4">หมวดหมู่</th>
-                  <th className="py-3 px-4 text-right">ราคาทุน</th>
-                  <th className="py-3 px-4 text-right">ราคาขาย</th>
-                  <th className="py-3 px-4 text-right">กำไร %</th>
-                  <th className="py-3 px-4 text-center">สต็อก</th>
-                  <th className="py-3 px-4 text-center">จัดการ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+        {/* ── Table ──────────────────────────────────────────────────────────── */}
+        <div className="glass-panel p-3 sm:p-5 rounded-2xl">
+          {filtered.length === 0 ? (
+            <div className="py-16 text-center text-slate-400">
+              <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">ไม่พบรายการ</p>
+              <p className="text-xs mt-1">ลองเปลี่ยน filter หรือเพิ่มสินค้าใหม่</p>
+            </div>
+          ) : (
+            <div className="table-scroll max-h-[620px] rounded-2xl border border-slate-200 shadow-inner">
+              <table className="w-full text-left text-xs min-w-[760px]">
+                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-sm text-slate-600 font-semibold border-b border-slate-200 shadow-sm">
+                  <tr>
+                    <th className="py-3 px-4">รหัส</th>
+                    <th className="py-3 px-4">ชื่อสินค้า / บริการ</th>
+                    <th className="py-3 px-4">หมวดหมู่</th>
+                    <th className="py-3 px-4 text-right">ราคาทุน</th>
+                    <th className="py-3 px-4 text-right">ราคาขาย</th>
+                    <th className="py-3 px-4 text-right">กำไร %</th>
+                    <th className="py-3 px-4 text-center">สต็อก</th>
+                    <th className="py-3 px-4 text-center">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
                 {filtered.map(item => {
                   const isLowStock = item.type === 'PRODUCT' && item.stockQty <= item.minStockAlert;
                   return (

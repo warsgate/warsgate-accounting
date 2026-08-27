@@ -247,9 +247,9 @@ export function App() {
           products={products}
         />
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8 bg-gray-50">
-          <div className="max-w-7xl mx-auto">
+        {/* Content Area - Full screen flush with edge */}
+        <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 bg-slate-50/70 w-full">
+          <div className="w-full">
             {activeTab === 'dashboard' && (
               <DashboardView
                 documents={documents}

@@ -6,20 +6,45 @@ body {
   @apply bg-gray-50 text-slate-800 font-sans antialiased min-h-screen selection:bg-rose-600 selection:text-white;
 }
 
-/* Custom Scrollbars in WARSGATE Red */
+/* Custom Scrollbars in WARSGATE Style */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
   background: #f1f5f9;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(225, 29, 72, 0.35);
+  background: rgba(225, 29, 72, 0.4);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(225, 29, 72, 0.65);
+  background: rgba(225, 29, 72, 0.75);
+}
+
+/* Custom Table Scrollbar Container */
+.table-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(225, 29, 72, 0.4) #f1f5f9;
+}
+.table-scroll::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+.table-scroll::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 8px;
+}
+.table-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* Card Panel - Clean White Glassmorphism */

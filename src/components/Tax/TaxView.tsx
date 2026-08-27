@@ -634,9 +634,9 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
               </span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden">
-                <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+            <div className="table-scroll max-h-[620px] rounded-2xl border border-slate-200 shadow-inner">
+              <table className="w-full text-left text-xs min-w-[700px]">
+                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-sm text-slate-700 font-semibold border-b border-slate-200 shadow-sm">
                   <tr>
                     <th className="py-3 px-4">รายการคำนวณภาษี (Tax Item)</th>
                     <th className="py-3 px-4 text-right">งบประมาณการเดิม (Baseline)</th>
@@ -915,9 +915,9 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+            <div className="table-scroll max-h-[500px] rounded-2xl border border-slate-200 shadow-inner">
+              <table className="w-full text-left text-xs min-w-[800px]">
+                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-sm text-slate-600 font-semibold border-b border-slate-200 shadow-sm">
                   <tr>
                     <th className="py-3 px-4">ลำดับ</th>
                     <th className="py-3 px-4">วันที่ออก</th>
@@ -929,7 +929,7 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
                     <th className="py-3 px-4 text-right">ภาษีขาย (7%)</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 bg-white">
                   {salesVatDocs.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-8 text-center text-slate-400">
@@ -958,8 +958,8 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
                   )}
                 </tbody>
                 {salesVatDocs.length > 0 && (
-                  <tfoot>
-                    <tr className="bg-slate-50 font-bold border-t-2 border-slate-200">
+                  <tfoot className="sticky bottom-0 z-10 bg-slate-100/95 backdrop-blur-sm font-bold border-t-2 border-slate-200 shadow-sm">
+                    <tr>
                       <td colSpan={6} className="py-3 px-4 text-right">ยอดรวมภาษีขายทั้งสิ้น:</td>
                       <td className="py-3 px-4 text-right font-mono text-slate-800">{formatMoney(totalSalesBase)}</td>
                       <td className="py-3 px-4 text-right font-mono text-rose-600">{formatMoney(totalSalesVat)}</td>
@@ -984,9 +984,9 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+            <div className="table-scroll max-h-[500px] rounded-2xl border border-slate-200 shadow-inner">
+              <table className="w-full text-left text-xs min-w-[800px]">
+                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-sm text-slate-600 font-semibold border-b border-slate-200 shadow-sm">
                   <tr>
                     <th className="py-3 px-4">ลำดับ</th>
                     <th className="py-3 px-4">วันที่สั่ง/ใบกำกับ</th>
@@ -998,7 +998,7 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
                     <th className="py-3 px-4 text-right">ภาษีซื้อ (7%)</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 bg-white">
                   {purchaseVatDocs.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-8 text-center text-slate-400">
@@ -1027,8 +1027,8 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
                   )}
                 </tbody>
                 {purchaseVatDocs.length > 0 && (
-                  <tfoot>
-                    <tr className="bg-slate-50 font-bold border-t-2 border-slate-200">
+                  <tfoot className="sticky bottom-0 z-10 bg-slate-100/95 backdrop-blur-sm font-bold border-t-2 border-slate-200 shadow-sm">
+                    <tr>
                       <td colSpan={6} className="py-3 px-4 text-right">ยอดรวมภาษีซื้อทั้งสิ้น:</td>
                       <td className="py-3 px-4 text-right font-mono text-slate-800">{formatMoney(totalPurchaseBase)}</td>
                       <td className="py-3 px-4 text-right font-mono text-emerald-600">{formatMoney(totalPurchaseVat)}</td>
@@ -1061,9 +1061,9 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+          <div className="table-scroll max-h-[500px] rounded-2xl border border-slate-200 shadow-inner">
+            <table className="w-full text-left text-xs min-w-[800px]">
+              <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-sm text-slate-600 font-semibold border-b border-slate-200 shadow-sm">
                 <tr>
                   <th className="py-3 px-4">ลำดับ</th>
                   <th className="py-3 px-4">วันที่จ่าย</th>
@@ -1076,7 +1076,7 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
                   <th className="py-3 px-4 text-right">ภาษีที่หักและนำส่ง</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 bg-white">
                 {pnd53Docs.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-8 text-center text-slate-400">
@@ -1107,8 +1107,8 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
                 )}
               </tbody>
               {pnd53Docs.length > 0 && (
-                <tfoot>
-                  <tr className="bg-slate-50 font-bold border-t-2 border-slate-200">
+                <tfoot className="sticky bottom-0 z-10 bg-slate-100/95 backdrop-blur-sm font-bold border-t-2 border-slate-200 shadow-sm">
+                  <tr>
                     <td colSpan={6} className="py-3 px-4 text-right">ยอดรวม ภ.ง.ด. 53 ทั้งสิ้น:</td>
                     <td className="py-3 px-4 text-right font-mono text-slate-800">{formatMoney(totalPnd53Payment)}</td>
                     <td className="py-3 px-4"></td>
@@ -1140,9 +1140,9 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+          <div className="table-scroll max-h-[500px] rounded-2xl border border-slate-200 shadow-inner">
+            <table className="w-full text-left text-xs min-w-[800px]">
+              <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-sm text-slate-600 font-semibold border-b border-slate-200 shadow-sm">
                 <tr>
                   <th className="py-3 px-4">ลำดับ</th>
                   <th className="py-3 px-4">วันที่จ่าย</th>
@@ -1155,7 +1155,7 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
                   <th className="py-3 px-4 text-right">ภาษีที่หักและนำส่ง</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 bg-white">
                 {pnd3Docs.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-8 text-center text-slate-400">
@@ -1186,8 +1186,8 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
                 )}
               </tbody>
               {pnd3Docs.length > 0 && (
-                <tfoot>
-                  <tr className="bg-slate-50 font-bold border-t-2 border-slate-200">
+                <tfoot className="sticky bottom-0 z-10 bg-slate-100/95 backdrop-blur-sm font-bold border-t-2 border-slate-200 shadow-sm">
+                  <tr>
                     <td colSpan={6} className="py-3 px-4 text-right">ยอดรวม ภ.ง.ด. 3 ทั้งสิ้น:</td>
                     <td className="py-3 px-4 text-right font-mono text-slate-800">{formatMoney(totalPnd3Payment)}</td>
                     <td className="py-3 px-4"></td>

@@ -509,9 +509,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+        <div className="table-scroll max-h-[450px] rounded-2xl border border-slate-200 shadow-inner">
+          <table className="w-full text-left text-xs min-w-[760px]">
+            <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-sm text-slate-600 font-semibold border-b border-slate-200 shadow-sm">
               <tr>
                 <th className="py-3 px-4">เลขที่เอกสาร</th>
                 <th className="py-3 px-4">ประเภท</th>
@@ -522,7 +522,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <th className="py-3 px-4 text-center">จัดการ</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {documents.slice(0, 8).map((doc) => {
                 const badge = getStatusBadge(doc.status);
                 return (

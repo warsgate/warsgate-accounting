@@ -43,13 +43,13 @@ export const AccountingView: React.FC<AccountingViewProps> = ({ chartOfAccounts,
         </div>
       </div>
 
-      <div className="glass-panel p-6 rounded-3xl">
+      <div className="glass-panel p-4 sm:p-6 rounded-3xl">
         {activeTab === 'COA' && (
           <>
             <h2 className="text-base font-bold text-slate-800 mb-4">ผังบัญชีตามมาตรฐานการบัญชีไทย</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+            <div className="table-scroll max-h-[620px] rounded-2xl border border-slate-200 shadow-inner">
+              <table className="w-full text-left text-xs min-w-[700px]">
+                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-sm text-slate-600 font-semibold border-b border-slate-200 shadow-sm">
                   <tr>
                     <th className="py-3 px-4">รหัสบัญชี</th>
                     <th className="py-3 px-4">ชื่อบัญชี</th>
@@ -59,7 +59,7 @@ export const AccountingView: React.FC<AccountingViewProps> = ({ chartOfAccounts,
                     <th className="py-3 px-4 text-right">ยอดเครดิต</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 bg-white">
                   {chartOfAccounts.map(a => (
                     <tr key={a.code} className="hover:bg-rose-50/30 transition">
                       <td className="py-3 px-4 font-mono font-bold text-slate-700">{a.code}</td>
@@ -88,9 +88,9 @@ export const AccountingView: React.FC<AccountingViewProps> = ({ chartOfAccounts,
                 <CheckCircle2 className="w-3.5 h-3.5" /> Debit & Credit Balanced
               </span>
             </div>
-            <div className="space-y-4">
+            <div className="table-scroll max-h-[620px] space-y-4 p-1">
               {journalEntries.map(jv => (
-                <div key={jv.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div key={jv.id} className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
                   <div className="flex items-center justify-between text-xs border-b border-slate-200 pb-2">
                     <div className="flex items-center gap-3">
                       <span className="font-mono font-bold text-rose-600">{jv.jvNo}</span>
@@ -100,23 +100,23 @@ export const AccountingView: React.FC<AccountingViewProps> = ({ chartOfAccounts,
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">{jv.status}</span>
                   </div>
                   <p className="text-xs text-slate-600 italic">{jv.description}</p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="text-slate-400 font-semibold text-[11px]">
+                  <div className="table-scroll">
+                    <table className="w-full text-left text-xs min-w-[500px]">
+                      <thead className="text-slate-500 font-semibold text-[11px] bg-slate-50">
                         <tr>
-                          <th className="py-1">รหัสบัญชี</th>
-                          <th className="py-1">ชื่อบัญชี</th>
-                          <th className="py-1 text-right">เดบิต (Dr)</th>
-                          <th className="py-1 text-right">เครดิต (Cr)</th>
+                          <th className="py-2 px-2">รหัสบัญชี</th>
+                          <th className="py-2 px-2">ชื่อบัญชี</th>
+                          <th className="py-2 px-2 text-right">เดบิต (Dr)</th>
+                          <th className="py-2 px-2 text-right">เครดิต (Cr)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {jv.entries.map((entry, idx) => (
                           <tr key={idx}>
-                            <td className="py-1.5 font-mono text-slate-600">{entry.accountCode}</td>
-                            <td className="py-1.5 text-slate-700 font-medium">{entry.accountName}</td>
-                            <td className="py-1.5 text-right font-mono text-emerald-600 font-semibold">{entry.debit > 0 ? formatMoney(entry.debit) : '-'}</td>
-                            <td className="py-1.5 text-right font-mono text-sky-600 font-semibold">{entry.credit > 0 ? formatMoney(entry.credit) : '-'}</td>
+                            <td className="py-1.5 px-2 font-mono text-slate-600">{entry.accountCode}</td>
+                            <td className="py-1.5 px-2 text-slate-700 font-medium">{entry.accountName}</td>
+                            <td className="py-1.5 px-2 text-right font-mono text-emerald-600 font-semibold">{entry.debit > 0 ? formatMoney(entry.debit) : '-'}</td>
+                            <td className="py-1.5 px-2 text-right font-mono text-sky-600 font-semibold">{entry.credit > 0 ? formatMoney(entry.credit) : '-'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -134,9 +134,9 @@ export const AccountingView: React.FC<AccountingViewProps> = ({ chartOfAccounts,
               <h2 className="text-base font-bold text-slate-800">รายงานงบทดลอง (Trial Balance)</h2>
               <span className="text-xs text-slate-400 font-mono">ณ วันที่ 12 สิงหาคม 2569</span>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+            <div className="table-scroll max-h-[620px] rounded-2xl border border-slate-200 shadow-inner">
+              <table className="w-full text-left text-xs min-w-[650px]">
+                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-sm text-slate-600 font-semibold border-b border-slate-200 shadow-sm">
                   <tr>
                     <th className="py-3 px-4">รหัสบัญชี</th>
                     <th className="py-3 px-4">รายการบัญชี</th>
@@ -144,7 +144,7 @@ export const AccountingView: React.FC<AccountingViewProps> = ({ chartOfAccounts,
                     <th className="py-3 px-4 text-right">เครดิต (Credit)</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 bg-white">
                   {chartOfAccounts.map(a => (
                     <tr key={a.code} className="hover:bg-rose-50/30">
                       <td className="py-2.5 px-4 font-mono text-slate-600">{a.code}</td>
@@ -153,12 +153,14 @@ export const AccountingView: React.FC<AccountingViewProps> = ({ chartOfAccounts,
                       <td className="py-2.5 px-4 text-right font-mono text-sky-600 font-semibold">{a.credit > 0 ? formatMoney(a.credit) : '-'}</td>
                     </tr>
                   ))}
-                  <tr className="bg-rose-50 font-bold border-t-2 border-rose-200">
+                </tbody>
+                <tfoot className="sticky bottom-0 z-10 bg-slate-100/95 backdrop-blur-sm font-bold border-t-2 border-slate-200 shadow-sm">
+                  <tr>
                     <td colSpan={2} className="py-3 px-4 text-slate-800 font-bold">ยอดรวมดุลการชำระ (Total Balance)</td>
                     <td className="py-3 px-4 text-right font-mono text-emerald-700 text-sm font-bold">{formatMoney(totalDebit)}</td>
                     <td className="py-3 px-4 text-right font-mono text-sky-700 text-sm font-bold">{formatMoney(totalCredit)}</td>
                   </tr>
-                </tbody>
+                </tfoot>
               </table>
             </div>
           </>
