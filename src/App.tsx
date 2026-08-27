@@ -46,12 +46,20 @@ export function App() {
         const parsed: AccountingDocument[] = JSON.parse(saved);
         const existingIds = new Set(parsed.map(d => d.id));
         const missing = initialDocuments.filter(d => !existingIds.has(d.id));
-        if (missing.length > 0) {
-          const merged = [...parsed, ...missing];
-          localStorage.setItem('warsgate_documents', JSON.stringify(merged));
-          return merged;
-        }
-        return parsed;
+        const updated = parsed.map(d => {
+          const init = initialDocuments.find(idoc => idoc.id === d.id);
+          if (init) {
+            return {
+              ...d,
+              referencePoNo: d.referencePoNo || init.referencePoNo,
+              referenceDocNo: d.referenceDocNo || init.referenceDocNo,
+            };
+          }
+          return d;
+        });
+        const merged = [...updated, ...missing];
+        localStorage.setItem('warsgate_documents', JSON.stringify(merged));
+        return merged;
       } catch {
         return initialDocuments;
       }

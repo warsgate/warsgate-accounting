@@ -74,6 +74,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
       const q = searchTerm.toLowerCase();
       return (
         doc.documentNo.toLowerCase().includes(q) ||
+        (doc.referencePoNo || '').toLowerCase().includes(q) ||
+        (doc.referenceDocNo || '').toLowerCase().includes(q) ||
         (doc.contact?.companyName || '').toLowerCase().includes(q) ||
         (doc.contact?.taxId || '').includes(q) ||
         (doc.contact?.name || '').toLowerCase().includes(q) ||
@@ -368,7 +370,21 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     return (
                       <tr key={doc.id} className="hover:bg-rose-50/40 transition">
                         <td className="py-3.5 px-4 font-mono font-bold text-slate-700">
-                          {doc.documentNo}
+                          <div>{doc.documentNo}</div>
+                          {doc.referencePoNo && (
+                            <div className="mt-1">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200" title={`เลขที่ PO ลูกค้า: ${doc.referencePoNo}`}>
+                                <span className="font-bold">PO:</span> {doc.referencePoNo}
+                              </span>
+                            </div>
+                          )}
+                          {doc.referenceDocNo && !doc.referencePoNo && (
+                            <div className="mt-1">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                                Ref: {doc.referenceDocNo}
+                              </span>
+                            </div>
+                          )}
                         </td>
                         <td className="py-3.5 px-4">
                           <span

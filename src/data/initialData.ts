@@ -453,6 +453,8 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'RECEIPT',
     issueDate: '2025-06-20',
     dueDate: '2025-06-20',
+    referencePoNo: '2505005',
+    referenceDocNo: 'INV-2505-005/1',
     contact: initialContacts[0],
     items: [
       {
@@ -490,6 +492,8 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'RECEIPT',
     issueDate: '2025-07-20',
     dueDate: '2025-07-20',
+    referencePoNo: '2505005',
+    referenceDocNo: 'INV-2505-005/2',
     contact: initialContacts[0],
     items: [
       {
@@ -527,6 +531,8 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'RECEIPT',
     issueDate: '2025-08-20',
     dueDate: '2025-08-20',
+    referencePoNo: '2505005',
+    referenceDocNo: 'INV-2505-005/3',
     contact: initialContacts[0],
     items: [
       {
@@ -564,6 +570,8 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'INVOICE',
     issueDate: '2025-05-26',
     dueDate: '2025-06-25',
+    referencePoNo: '2505005',
+    referenceDocNo: 'QT-2505-005',
     contact: initialContacts[0], // บจก. พีเอ็นพี เทคโนโลยี เกรท
     items: [
       {
@@ -599,6 +607,8 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'INVOICE',
     issueDate: '2025-06-26',
     dueDate: '2025-07-25',
+    referencePoNo: '2505005',
+    referenceDocNo: 'QT-2505-005',
     contact: initialContacts[0],
     items: [
       {
@@ -634,6 +644,8 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'INVOICE',
     issueDate: '2025-07-26',
     dueDate: '2025-08-25',
+    referencePoNo: '2505005',
+    referenceDocNo: 'QT-2505-005',
     contact: initialContacts[0],
     items: [
       {
@@ -667,6 +679,7 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'QUOTATION',
     issueDate: '2025-05-20',
     dueDate: '2025-06-19',
+    referencePoNo: '2505005',
     contact: initialContacts[0],
     items: [
       {
@@ -841,6 +854,8 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'QUOTATION',
     issueDate: '2025-12-24',
     dueDate: '2026-01-23',
+    referencePoNo: 'PO252155',
+    referenceDocNo: 'CAP250095/',
     contact: initialContacts[1], // บริษัท ไทย เซกิซุย โฟม จำกัด
     items: [
       {
@@ -954,6 +969,8 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'INVOICE',
     issueDate: '2025-12-24',
     dueDate: '2026-01-25',
+    referencePoNo: 'PO252155',
+    referenceDocNo: 'QT-2512-2155',
     contact: initialContacts[1],
     items: [
       {
@@ -990,6 +1007,8 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'INVOICE',
     issueDate: '2026-01-09',
     dueDate: '2026-01-25',
+    referencePoNo: 'PO252155',
+    referenceDocNo: 'QT-2512-2155',
     contact: initialContacts[1],
     items: [
       {
@@ -1026,6 +1045,8 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'INVOICE',
     issueDate: '2026-01-25',
     dueDate: '2026-02-25',
+    referencePoNo: 'PO252155',
+    referenceDocNo: 'QT-2512-2155',
     contact: initialContacts[1],
     items: [
       {
@@ -1142,6 +1163,94 @@ export const initialDocuments: AccountingDocument[] = [
     createdByName: 'คุณจีระวัฒน์ (MD)',
   },
 
+  // ─── ใบเสนอราคา / รับ PO ลูกค้า: บจก. พีเอ็นพี เทคโนโลยี เกรท (PO: 2505004) ────
+  {
+    id: 'doc-pnp-qt-2505004',
+    documentNo: 'QT-2505-004',
+    type: 'QUOTATION',
+    issueDate: '2025-05-07',
+    dueDate: '2025-06-06',
+    referencePoNo: '2505004',
+    contact: initialContacts[0], // บจก. พีเอ็นพี เทคโนโลยี เกรท
+    items: [
+      {
+        id: 'item-pnp-po4-1',
+        code: 'SW-TRACE-CORR',
+        name: 'Traceability Corrugating Line',
+        description: 'ระบบซอฟต์แวร์ตรวจสอบย้อนกลับไลน์ผลิต Corrugating Line โครงการ Fujipart (Thailand) Co., Ltd.',
+        quantity: 1,
+        unit: 'Job',
+        pricePerUnit: 1005002.64,
+        discount: 0,
+        amount: 1005002.64,
+        vatInclusive: false,
+        withholdingTaxRate: 3,
+      },
+      {
+        id: 'item-pnp-po4-2',
+        code: 'SW-TRACE-WIND',
+        name: 'Traceability Winding Line',
+        description: 'ระบบซอฟต์แวร์ตรวจสอบย้อนกลับไลน์ผลิต Winding Line โครงการ Fujipart (Thailand) Co., Ltd.',
+        quantity: 1,
+        unit: 'Job',
+        pricePerUnit: 707304.38,
+        discount: 0,
+        amount: 707304.38,
+        vatInclusive: false,
+        withholdingTaxRate: 3,
+      },
+      {
+        id: 'item-pnp-po4-3',
+        code: 'SW-TRACE-ADH',
+        name: 'Traceability Adhesive & Spin Winding Line',
+        description: 'ระบบซอฟต์แวร์ตรวจสอบย้อนกลับไลน์ผลิต Adhesive & Spin Winding Line โครงการ Fujipart (Thailand) Co., Ltd.',
+        quantity: 1,
+        unit: 'Job',
+        pricePerUnit: 874426.94,
+        discount: 0,
+        amount: 874426.94,
+        vatInclusive: false,
+        withholdingTaxRate: 3,
+      },
+      {
+        id: 'item-pnp-po4-4',
+        code: 'SW-TRACE-DF4',
+        name: 'Traceability DF4 Line',
+        description: 'ระบบซอฟต์แวร์ตรวจสอบย้อนกลับไลน์ผลิต DF4 Line โครงการ Fujipart (Thailand) Co., Ltd.',
+        quantity: 1,
+        unit: 'Job',
+        pricePerUnit: 1203060.14,
+        discount: 0,
+        amount: 1203060.14,
+        vatInclusive: false,
+        withholdingTaxRate: 3,
+      },
+      {
+        id: 'item-pnp-po4-5',
+        code: 'SW-TRACE-PACK',
+        name: 'Traceability Packing Line',
+        description: 'ระบบซอฟต์แวร์ตรวจสอบย้อนกลับไลน์ผลิต Packing Line โครงการ Fujipart (Thailand) Co., Ltd.',
+        quantity: 1,
+        unit: 'Job',
+        pricePerUnit: 553196.28,
+        discount: 0,
+        amount: 553196.28,
+        vatInclusive: false,
+        withholdingTaxRate: 3,
+      }
+    ],
+    subtotal: 4342990.38,
+    discountTotal: 0,
+    vatRate: 7,
+    vatAmount: 304009.33,
+    grandTotal: 4646999.71,
+    withholdingTaxTotal: 130289.71, // 3% of 4,342,990.38
+    netPayment: 4516710.00,
+    status: 'APPROVED',
+    notes: 'โครงการพัฒนาระบบ Traceability 5 ไลน์ผลิต (Fujipart Thailand Co., Ltd.) ตามใบสั่งซื้อลูกค้า PO: 2505004 ลงวันที่ 7 พ.ค. 2568 (เงื่อนไขชำระเงิน: ชำระเมื่อส่งของครบตามใบสั่งซื้อ, วางบิลวันที่ 1-25 ของทุกเดือน, ใบกำกับภาษี + สำเนา 5 ใบ)',
+    createdByName: 'คุณจีระวัฒน์ (MD)',
+  },
+
   // ─── ใบแจ้งหนี้: บจก. พีเอ็นพี เทคโนโลยี เกรท (PO: 2505004) ────────────────────
   {
     id: 'doc-pnp-inv-2505004',
@@ -1149,6 +1258,8 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'INVOICE',
     issueDate: '2025-05-07',
     dueDate: '2025-06-25',
+    referencePoNo: '2505004',
+    referenceDocNo: 'QT-2505-004',
     contact: initialContacts[0],
     items: [
       {
@@ -1237,6 +1348,7 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'QUOTATION',
     issueDate: '2026-05-02',
     dueDate: '2026-06-01',
+    referencePoNo: '2605001',
     contact: initialContacts[0],
     items: [
       {
@@ -1311,6 +1423,8 @@ export const initialDocuments: AccountingDocument[] = [
     type: 'INVOICE',
     issueDate: '2026-05-02',
     dueDate: '2026-05-25',
+    referencePoNo: '2605001',
+    referenceDocNo: 'QT-2605-001',
     contact: initialContacts[0],
     items: [
       {

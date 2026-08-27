@@ -60,6 +60,9 @@ export interface AccountingDocument {
   type: DocumentType;
   issueDate: string; // YYYY-MM-DD
   dueDate: string;   // YYYY-MM-DD
+  referencePoNo?: string;  // เลขที่ใบสั่งซื้อลูกค้า (Customer PO Ref No.)
+  referenceDocNo?: string; // เลขที่เอกสารอ้างอิงภายใน (Internal Reference Doc No.)
+  projectNote?: string;    // ชื่อโครงการ/งาน
   contact: Contact;
   items: DocumentItem[];
   subtotal: number;

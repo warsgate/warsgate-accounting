@@ -151,11 +151,25 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                   <h2 className="text-lg font-bold text-rose-600 tracking-tight">{title.main}</h2>
                   <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">{title.sub}</span>
                   
-                  <div className="mt-3 p-2 bg-slate-50 rounded border border-slate-200 font-mono text-[11px] space-y-1 text-right">
+                  <div className="mt-3 p-2.5 bg-slate-50 rounded-lg border border-slate-200 font-mono text-[11px] space-y-1 text-right">
                     <div>
                       <span className="text-slate-500">เลขที่ / No: </span>
-                      <strong className="text-slate-900">{doc.documentNo}</strong>
+                      <strong className="text-slate-900 font-bold">{doc.documentNo}</strong>
                     </div>
+                    {doc.referencePoNo && (
+                      <div className="pt-0.5">
+                        <span className="text-rose-600 font-bold">อ้างอิง PO ลูกค้า / PO Ref: </span>
+                        <strong className="text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 font-bold">
+                          {doc.referencePoNo}
+                        </strong>
+                      </div>
+                    )}
+                    {doc.referenceDocNo && (
+                      <div>
+                        <span className="text-slate-500">อ้างอิงเอกสาร / Ref Doc: </span>
+                        <span className="text-slate-800 font-semibold">{doc.referenceDocNo}</span>
+                      </div>
+                    )}
                     <div>
                       <span className="text-slate-500">วันที่ / Date: </span>
                       <span>{formatThaiDate(doc.issueDate)}</span>

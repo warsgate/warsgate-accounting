@@ -94,6 +94,13 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     }
   }, [docType, issueDate]);
 
+  const [referencePoNo, setReferencePoNo] = useState<string>(
+    initialDocument?.referencePoNo || fromDocument?.referencePoNo || ''
+  );
+  const [referenceDocNo, setReferenceDocNo] = useState<string>(
+    initialDocument?.referenceDocNo || fromDocument?.documentNo || ''
+  );
+
   const [paymentMethod, setPaymentMethod] = useState<'BANK_TRANSFER' | 'CASH' | 'CHEQUE' | 'CREDIT_CARD'>(
     initialDocument?.paymentMethod || 'BANK_TRANSFER'
   );
@@ -141,6 +148,12 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         ...i,
         id: `item-${Date.now()}-${Math.random()}`
       })));
+    }
+    if (src.referencePoNo) {
+      setReferencePoNo(src.referencePoNo);
+    }
+    if (src.documentNo) {
+      setReferenceDocNo(src.documentNo);
     }
     if (docType === 'RECEIPT') {
       setStatus('PAID');
@@ -249,6 +262,8 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         type: docType,
         issueDate,
         dueDate,
+        referencePoNo: referencePoNo.trim() || undefined,
+        referenceDocNo: referenceDocNo.trim() || undefined,
         contact,
         items,
         subtotal,
@@ -289,6 +304,8 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         type: docType,
         issueDate,
         dueDate,
+        referencePoNo: referencePoNo.trim() || undefined,
+        referenceDocNo: referenceDocNo.trim() || undefined,
         contact,
         items,
         subtotal,
@@ -443,6 +460,43 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                 onChange={e => setDueDate(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-mono focus:outline-none focus:border-rose-400"
               />
+            </div>
+          </div>
+
+          {/* ── Customer PO Ref & Internal Ref Row ───────────────────────────── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-rose-50/50 via-slate-50 to-sky-50/50 border border-slate-200">
+            <div>
+              <label className="block text-slate-700 font-bold text-xs mb-1 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-rose-600" />
+                <span>เลขที่ใบสั่งซื้อลูกค้า (Customer PO Ref No.)</span>
+              </label>
+              <input
+                type="text"
+                value={referencePoNo}
+                onChange={e => setReferencePoNo(e.target.value)}
+                placeholder="เช่น PO252155, 2505004, 2505005, 2605001"
+                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-mono font-bold text-xs focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30 shadow-sm"
+              />
+              <span className="text-[10px] text-slate-400 mt-0.5 block">
+                ระบุเลขที่ PO ของลูกค้า เพื่อแสดงและพิมพ์ลงในใบแจ้งหนี้ / ใบเสนอราคา
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-bold text-xs mb-1 flex items-center gap-1.5">
+                <Link2 className="w-3.5 h-3.5 text-sky-600" />
+                <span>เลขที่เอกสารอ้างอิงภายใน (Internal Ref No.)</span>
+              </label>
+              <input
+                type="text"
+                value={referenceDocNo}
+                onChange={e => setReferenceDocNo(e.target.value)}
+                placeholder="เช่น QT-2505-005, CAP250095/"
+                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-mono text-xs focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 shadow-sm"
+              />
+              <span className="text-[10px] text-slate-400 mt-0.5 block">
+                เลขอ้างอิงใบเสนอราคา หรือเลขโครงการภายใน
+              </span>
             </div>
           </div>
 
