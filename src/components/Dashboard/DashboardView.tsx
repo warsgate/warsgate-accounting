@@ -137,12 +137,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       invoiceAmount: 2958378.80, // INV-2605-001 (฿2.58M) + INV-2605-002/1 (฿378K DP 30%)
       cashIn: 378073.80,      // REC-2605-002/1 (รับชำระ 30% Downpayment Zone 7)
       expense: 0,
+    },
+    {
+      month: 'ก.ค. 69',
+      poInflow: 2610620.24,   // PO 2607001 (บจก. พีเอ็นพี เทคโนโลยี เกรท - PLC Control Board)
+      invoiceAmount: 0,
+      cashIn: 0,
+      expense: 0,
     }
   ];
 
   const categoryData = [
     { name: 'ระบบ Traceability 5 ไลน์ (Fujipart - PNP)', value: 4646999.71, color: '#0ea5e9' },
     { name: 'ระบบอัตโนมัติ Auto Pack LM1 (TSF)', value: 3793792.00, color: '#6366f1' },
+    { name: 'ระบบควบคุม PLC Ethernet IP (PNP)', value: 2610620.24, color: '#ec4899' },
     { name: 'ระบบโครงสร้าง Zone 1-6 (Fujipart - PNP)', value: 2580305.00, color: '#10b981' },
     { name: 'ระบบโครงสร้าง Zone 7 (Fujipart - PNP)', value: 1260246.00, color: '#8b5cf6' },
     { name: 'ระบบซอฟต์แวร์ Solenoid Line (PNP)', value: 2325558.33, color: '#e11d48' },
