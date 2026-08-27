@@ -74,7 +74,10 @@ export function App() {
 
   const [contacts, setContacts] = useState<Contact[]>(() => {
     const saved = localStorage.getItem('warsgate_contacts');
-    const deletedIds = new Set<string>(JSON.parse(localStorage.getItem('warsgate_deleted_contact_ids') || '[]'));
+    const deletedIds = new Set<string>([
+      'cont-1', 'cont-2', 'cont-3',
+      ...JSON.parse(localStorage.getItem('warsgate_deleted_contact_ids') || '[]')
+    ]);
     if (saved !== null) {
       try {
         const parsed: Contact[] = JSON.parse(saved);
