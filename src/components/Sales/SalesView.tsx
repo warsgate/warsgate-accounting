@@ -183,116 +183,89 @@ export const SalesView: React.FC<SalesViewProps> = ({
         </div>
       </div>
 
-      {/* ── Search & Filter Toolbar ─────────────────────────────────────────── */}
-      <div className="glass-panel p-4 rounded-2xl space-y-3">
+      {/* ── Ultra-Modern Single-Line Filter Toolbar ─────────────────────────── */}
+      <div className="glass-panel p-2.5 sm:p-3 rounded-2xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 shadow-sm border border-slate-200/90">
         
-        {/* Row 1: Search & Status Filter */}
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-3">
-          
-          {/* Search Input */}
-          <div className="relative w-full lg:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="ค้นหาเลขที่เอกสาร, ชื่อลูกค้า, Tax ID, รายละเอียด..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-700 focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400/30"
-            />
-          </div>
-
-          {/* Quick Filters & Reset */}
-          <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-between lg:justify-end">
-            
-            {/* Status Dropdown Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-rose-400"
-            >
-              <option value="ALL">🏷️ สถานะทั้งหมด</option>
-              <option value="PENDING">⏳ รอดำเนินการ / รอชำระ</option>
-              <option value="APPROVED">✓ อนุมัติแล้ว</option>
-              <option value="PAID">✓ ชำระเงินแล้ว</option>
-              <option value="OVERDUE">⚠️ เกินกำหนด</option>
-              <option value="CANCELLED">✕ ยกเลิก</option>
-            </select>
-
-            {/* Reset Filters Button */}
-            {hasActiveFilters && (
-              <button
-                onClick={handleResetFilters}
-                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold flex items-center gap-1.5 transition"
-                title="ล้างตัวกรองทั้งหมด"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>ล้างตัวกรอง</span>
-              </button>
-            )}
-
-            {/* Filtered Total Amount Badge */}
-            <div className="px-3.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs flex items-center gap-2">
-              <span className="text-emerald-700 font-semibold">ยอดรวมในแท็บนี้:</span>
-              <span className="font-bold text-emerald-800 font-mono text-sm">฿{formatMoney(totalFilteredNet)}</span>
-            </div>
-          </div>
+        {/* Left: Futuristic Search Bar */}
+        <div className="relative flex-1 min-w-[240px] max-w-xl">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="ค้นหาเลขที่เอกสาร, Refer PO, ลูกค้า, Tax ID..."
+            className="w-full bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200/90 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-400/20 transition"
+          />
         </div>
 
-        {/* Row 2: Date Range Filter Bar */}
-        <div className="pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-slate-600 flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-rose-500" />
-              <span>ช่วงวันที่:</span>
-            </span>
-
-            {/* Preset selector */}
+        {/* Right: Controls & Badges on Single Line */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          
+          {/* Date Filter Group */}
+          <div className="flex items-center gap-1.5 bg-slate-50/80 border border-slate-200/90 rounded-xl px-2 py-1">
+            <Calendar className="w-3.5 h-3.5 text-rose-500 shrink-0" />
             <select
               value={datePreset}
               onChange={(e) => handleDatePresetChange(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-2.5 py-1.5 font-medium focus:outline-none focus:border-rose-400"
+              className="bg-transparent text-slate-700 text-xs font-medium focus:outline-none cursor-pointer"
             >
-              <option value="ALL">📅 ทุกช่วงเวลา (ทั้งหมด)</option>
+              <option value="ALL">📅 ทุกช่วงเวลา</option>
               <option value="THIS_MONTH">เดือนนี้</option>
               <option value="LAST_MONTH">เดือนที่แล้ว</option>
-              <option value="THIS_YEAR">ปีนี้ (2026 / 2569)</option>
-              <option value="CUSTOM">กำหนดช่วงวันที่เอง</option>
+              <option value="THIS_YEAR">ปีนี้ (2569)</option>
+              <option value="CUSTOM">กำหนดวันที่เอง</option>
             </select>
 
-            {/* Start Date */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-400 text-[11px]">ตั้งแต่:</span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  setDatePreset('CUSTOM');
-                }}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-slate-700 text-xs focus:outline-none focus:border-rose-400"
-              />
-            </div>
-
-            {/* End Date */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-400 text-[11px]">ถึง:</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  setDatePreset('CUSTOM');
-                }}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-slate-700 text-xs focus:outline-none focus:border-rose-400"
-              />
-            </div>
+            {datePreset === 'CUSTOM' && (
+              <div className="flex items-center gap-1 pl-1 border-l border-slate-200">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-lg px-1.5 py-0.5 text-[11px] text-slate-700 focus:outline-none focus:border-rose-400"
+                />
+                <span className="text-slate-400 text-[10px]">-</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-lg px-1.5 py-0.5 text-[11px] text-slate-700 focus:outline-none focus:border-rose-400"
+                />
+              </div>
+            )}
           </div>
 
-          {(startDate || endDate) && (
-            <div className="text-[11px] text-rose-600 font-medium bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-              กรองช่วงวันที่: {startDate ? formatThaiDate(startDate) : 'เริ่มต้น'} — {endDate ? formatThaiDate(endDate) : 'ปัจจุบัน'} ({filteredDocs.length} รายการ)
-            </div>
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-slate-50/80 hover:bg-slate-50 border border-slate-200/90 text-slate-700 text-xs rounded-xl px-2.5 py-1.5 font-medium focus:outline-none focus:border-rose-400 cursor-pointer"
+          >
+            <option value="ALL">🏷️ สถานะทั้งหมด</option>
+            <option value="PENDING">⏳ รอดำเนินการ</option>
+            <option value="APPROVED">✓ อนุมัติแล้ว</option>
+            <option value="PAID">✓ ชำระแล้ว</option>
+            <option value="OVERDUE">⚠️ เกินกำหนด</option>
+            <option value="CANCELLED">✕ ยกเลิก</option>
+          </select>
+
+          {/* Reset Filters */}
+          {hasActiveFilters && (
+            <button
+              onClick={handleResetFilters}
+              className="p-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 transition"
+              title="ล้างตัวกรองทั้งหมด"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
           )}
+
+          {/* Total Amount Badge */}
+          <div className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/80 text-xs flex items-center gap-1.5 shadow-sm">
+            <span className="text-emerald-700 font-semibold text-[11px]">ยอดรวมในแท็บนี้:</span>
+            <span className="font-bold text-emerald-800 font-mono text-xs sm:text-sm">฿{formatMoney(totalFilteredNet)}</span>
+          </div>
+
         </div>
 
       </div>
