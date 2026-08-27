@@ -4,11 +4,12 @@ import {
   Loader2, CheckCircle2, XCircle, ShieldCheck,
   Pencil, Trash2, Building2, MapPin, AlertTriangle
 } from 'lucide-react';
-import { Contact } from '../../types';
+import { Contact, AccountingDocument } from '../../types';
 import { formatMoney } from '../../utils/formatters';
 
 interface ContactsViewProps {
   contacts: Contact[];
+  documents?: AccountingDocument[];
   onAddContact: (contact: Contact) => void;
   onUpdateContact: (contact: Contact) => void;
   onDeleteContact: (id: string) => void;
@@ -52,7 +53,7 @@ const emptyForm: FormData = {
 };
 
 export const ContactsView: React.FC<ContactsViewProps> = ({
-  contacts, onAddContact, onUpdateContact, onDeleteContact
+  contacts, documents = [], onAddContact, onUpdateContact, onDeleteContact
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'CUSTOMER' | 'SUPPLIER'>('ALL');
@@ -68,6 +69,57 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
   // RD Lookup
   const [rdLoading, setRdLoading] = useState(false);
   const [rdResult, setRdResult] = useState<RDResult | null>(null);
+
+  // ── Dynamic Contact Balance & Transaction Calculation from Real Documents ──
+  const getContactBalanceDue = (contact: Contact): number => {
+    if (!documents || documents.length === 0) return contact.balanceDue || 0;
+
+    const contactDocs = documents.filter(d => 
+      (d.contact?.id && d.contact.id === contact.id) ||
+      (d.contact?.taxId && contact.taxId && d.contact.taxId.replace(/[-\s]/g, '') === contact.taxId.replace(/[-\s]/g, '')) ||
+      (d.contact?.companyName && contact.companyName && d.contact.companyName.trim().toLowerCase() === contact.companyName.trim().toLowerCase())
+    );
+
+    if (contactDocs.length === 0) return contact.balanceDue || 0;
+
+    if (contact.type === 'CUSTOMER' || contact.type === 'BOTH') {
+      const unpaidInvoices = contactDocs.filter(d => 
+        (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') && 
+        d.status !== 'PAID' && d.status !== 'CANCELLED'
+      );
+      if (unpaidInvoices.length > 0) {
+        return unpaidInvoices.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
+      }
+      // If there are invoices and all are paid:
+      const anyInvoices = contactDocs.filter(d => d.type === 'INVOICE' || d.type === 'TAX_INVOICE');
+      if (anyInvoices.length > 0) return 0;
+      return contact.balanceDue || 0;
+    } else if (contact.type === 'SUPPLIER') {
+      const unpaidPurchaseInvoices = contactDocs.filter(d => 
+        d.type === 'PURCHASE_INVOICE' && 
+        d.status !== 'PAID' && d.status !== 'CANCELLED'
+      );
+      if (unpaidPurchaseInvoices.length > 0) {
+        return unpaidPurchaseInvoices.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
+      }
+      const anyPI = contactDocs.filter(d => d.type === 'PURCHASE_INVOICE');
+      if (anyPI.length > 0) return 0;
+      return contact.balanceDue || 0;
+    }
+    return contact.balanceDue || 0;
+  };
+
+  const getContactDocCount = (contact: Contact): number => {
+    if (!documents || documents.length === 0) return contact.totalTransactions || 0;
+
+    const count = documents.filter(d => 
+      (d.contact?.id && d.contact.id === contact.id) ||
+      (d.contact?.taxId && contact.taxId && d.contact.taxId.replace(/[-\s]/g, '') === contact.taxId.replace(/[-\s]/g, '')) ||
+      (d.contact?.companyName && contact.companyName && d.contact.companyName.trim().toLowerCase() === contact.companyName.trim().toLowerCase())
+    ).length;
+
+    return count > 0 ? count : (contact.totalTransactions || 0);
+  };
 
   // ── Filters ────────────────────────────────────────────────────────────────
   const filteredContacts = contacts.filter(c => {
@@ -367,98 +419,122 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredContacts.map(contact => (
-            <div key={contact.id} className="glass-card glass-card-hover p-5 rounded-2xl space-y-3.5 group relative border border-slate-200/90 shadow-sm hover:shadow-md transition-all">
+          {filteredContacts.map(contact => {
+            const dynamicBalance = getContactBalanceDue(contact);
+            const docCount = getContactDocCount(contact);
+            const hasOverdue = dynamicBalance > 0;
 
-              {/* Action buttons — hover reveal */}
-              <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => openEdit(contact)}
-                  className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50 transition shadow-sm"
-                  title="แก้ไข"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setDeleteTarget(contact)}
-                  className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition shadow-sm"
-                  title="ลบ"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
+            return (
+              <div key={contact.id} className="glass-card glass-card-hover p-5 rounded-2xl space-y-3.5 group relative border border-slate-200/90 shadow-sm hover:shadow-md transition-all">
 
-              {/* Card Header & Avatar */}
-              <div className="flex items-start gap-3 pr-16">
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-sm ${
-                  contact.type === 'CUSTOMER'
-                    ? 'bg-gradient-to-tr from-sky-500 to-blue-600 text-white'
-                    : 'bg-gradient-to-tr from-amber-500 to-orange-600 text-white'
-                }`}>
-                  {contact.companyName.charAt(0)}
+                {/* Action buttons — hover reveal */}
+                <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => openEdit(contact)}
+                    className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50 transition shadow-sm"
+                    title="แก้ไข"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(contact)}
+                    className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition shadow-sm"
+                    title="ลบ"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
-                      contact.type === 'CUSTOMER'
-                        ? 'bg-sky-50 text-sky-700 border-sky-200'
-                        : 'bg-amber-50 text-amber-700 border-amber-200'
-                    }`}>
-                      {contact.type === 'CUSTOMER' ? '🧑‍💼 ลูกค้า' : '🏭 ซัพพลายเออร์'}
-                    </span>
-                    {contact.creditDays && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono">
-                        {contact.creditDays} วัน
+
+                {/* Card Header & Avatar */}
+                <div className="flex items-start gap-3 pr-16">
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-sm ${
+                    contact.type === 'CUSTOMER'
+                      ? 'bg-gradient-to-tr from-sky-500 to-blue-600 text-white'
+                      : 'bg-gradient-to-tr from-amber-500 to-orange-600 text-white'
+                  }`}>
+                    {contact.companyName.charAt(0)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                        contact.type === 'CUSTOMER'
+                          ? 'bg-sky-50 text-sky-700 border-sky-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
+                      }`}>
+                        {contact.type === 'CUSTOMER' ? '🧑‍💼 ลูกค้า' : '🏭 ซัพพลายเออร์'}
                       </span>
+                      {contact.creditDays && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono">
+                          {contact.creditDays} วัน
+                        </span>
+                      )}
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-50 text-slate-500 border border-slate-200 font-mono">
+                        {docCount} เอกสาร
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-extrabold text-slate-900 mt-1 truncate">{contact.companyName}</h3>
+                    <span className="text-[11px] text-slate-500 font-medium">{contact.name || 'ฝ่ายจัดซื้อ / บัญชี'}</span>
+                  </div>
+                </div>
+
+                {/* Card Body & Details */}
+                <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <FileText className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                      <span className="font-mono font-bold text-slate-800">{contact.taxId}</span>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium">
+                      {contact.branchCode === '00000' ? 'สำนักงานใหญ่' : `สาขา ${contact.branchCode}`}
+                    </span>
+                  </div>
+
+                  {contact.address && (
+                    <div className="flex items-start gap-2 text-[11px] text-slate-500">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                      <span className="line-clamp-2 leading-tight">{contact.address}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-0.5 text-[11px]">
+                    {contact.phone ? (
+                      <div className="flex items-center gap-1 text-slate-600 font-medium">
+                        <Phone className="w-3 h-3 text-slate-400" />
+                        <span>{contact.phone}</span>
+                      </div>
+                    ) : <span />}
+
+                    {contact.email && (
+                      <div className="flex items-center gap-1 text-slate-600 font-medium">
+                        <Mail className="w-3 h-3 text-slate-400" />
+                        <span className="truncate max-w-[130px]">{contact.email}</span>
+                      </div>
                     )}
                   </div>
-                  <h3 className="text-sm font-extrabold text-slate-900 mt-1 truncate">{contact.companyName}</h3>
-                  <span className="text-[11px] text-slate-500 font-medium">{contact.name || 'ฝ่ายจัดซื้อ / บัญชี'}</span>
                 </div>
-              </div>
 
-              {/* Card Body & Details */}
-              <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                <div className="flex items-start gap-2 text-[11px] text-slate-600">
-                  <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                  <span className="font-mono leading-tight">
-                    {contact.taxId}
-                    <span className="ml-1.5 text-slate-400">
-                      ({contact.branchCode === '00000' ? 'สำนักงานใหญ่' : `สาขา ${contact.branchCode}`})
+                {/* Card Footer: Real-time Balance Due */}
+                <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${hasOverdue ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`} />
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      {contact.type === 'CUSTOMER' ? (hasOverdue ? 'มียอดรอเก็บเงิน' : 'ชำระครบถ้วน') : (hasOverdue ? 'มียอดรอจ่ายชำระ' : 'จ่ายครบถ้วน')}
                     </span>
-                  </span>
-                </div>
-                {contact.phone && (
-                  <div className="flex items-center gap-2 text-[11px] text-slate-600">
-                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>{contact.phone}</span>
                   </div>
-                )}
-                {contact.email && (
-                  <div className="flex items-center gap-2 text-[11px] text-slate-600">
-                    <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{contact.email}</span>
-                  </div>
-                )}
-                {contact.address && (
-                  <div className="flex items-start gap-2 text-[11px] text-slate-500">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                    <span className="line-clamp-2 leading-tight">{contact.address}</span>
-                  </div>
-                )}
-              </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                <span className="text-slate-400">เครดิต: <span className="font-bold text-slate-600">{contact.creditDays} วัน</span></span>
-                <div className="text-right">
-                  <span className="text-[10px] text-slate-400 block">ยอดค้างชำระ</span>
-                  <span className={`font-mono font-bold ${contact.balanceDue > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                    ฿{formatMoney(contact.balanceDue)}
-                  </span>
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      {contact.type === 'CUSTOMER' ? 'ยอดลูกหนี้ค้างชำระ' : 'ยอดเจ้าหนี้คงค้าง'}
+                    </span>
+                    <span className={`font-mono font-bold text-sm ${hasOverdue ? 'text-rose-600' : 'text-emerald-600'}`}>
+                      ฿{formatMoney(dynamicBalance)}
+                    </span>
+                  </div>
                 </div>
+
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

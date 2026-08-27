@@ -378,6 +378,7 @@ export function App() {
             {activeTab === 'contacts' && (
               <ContactsView
                 contacts={contacts}
+                documents={documents}
                 onAddContact={handleAddContact}
                 onUpdateContact={handleUpdateContact}
                 onDeleteContact={handleDeleteContact}

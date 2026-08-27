@@ -50,8 +50,8 @@ export const initialContacts: Contact[] = [
     email: 'numpj@hotmail.com',
     type: 'CUSTOMER',
     creditDays: 30,
-    totalTransactions: 3,
-    balanceDue: 0.00,
+    totalTransactions: 7,
+    balanceDue: 1154530.00,
   },
   {
     id: 'cont-tsf-1',
