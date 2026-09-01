@@ -31,9 +31,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     .filter(d => ['INVOICE', 'TAX_INVOICE'].includes(d.type) && d.status !== 'CANCELLED')
     .reduce((sum, d) => sum + d.grandTotal, 0);
 
-  // Total Customer PO Inflow (From Quotations approved/converted + Invoices)
+  // Total Customer PO Inflow (From actual customer POs linked with Quotations)
   const totalCustomerPO = documents
-    .filter(d => d.type === 'QUOTATION' && d.status !== 'CANCELLED')
+    .filter(d => d.type === 'QUOTATION' && d.referencePoNo && d.status !== 'CANCELLED')
     .reduce((sum, d) => sum + d.grandTotal, 0);
 
   // Total Expenses (Purchase Orders, Purchase Invoices, Payment Vouchers)

@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { 
   FileText, Plus, Search, Filter, Eye, Printer, Pencil, Trash2, AlertTriangle, 
   CheckCircle2, RotateCcw, Calendar, Receipt, ShieldCheck, Clock, Download,
-  TrendingUp, Zap, Sparkles, Building2, Layers, DollarSign, Activity
+  TrendingUp, Zap, Sparkles, Building2, Layers, DollarSign, Activity,
+  FileSpreadsheet, ChevronDown
 } from 'lucide-react';
 import { AccountingDocument, DocumentType, DocumentStatus } from '../../types';
 import { formatMoney, getStatusBadge, formatThaiDate } from '../../utils/formatters';
+import { exportSalesToExcel } from '../../utils/excelExport';
 
 interface SalesViewProps {
   documents: AccountingDocument[];
@@ -33,6 +35,18 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const [endDate, setEndDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [deleteTarget, setDeleteTarget] = useState<AccountingDocument | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
+
+  // ── Excel Export Handlers ──────────────────────────────────────────────────
+  const handleExportFiltered = () => {
+    const activeTab = tableTabs.find(t => t.id === activeTypeTab);
+    const tabName = activeTab ? activeTab.label.split(' ')[0] : 'เอกสารขาย';
+    exportSalesToExcel(filteredDocs, `รายงาน_${tabName}`);
+  };
+
+  const handleExportAllSales = () => {
+    exportSalesToExcel(salesDocs, 'รายงานเอกสารขายและรายได้ทั้งหมด');
+  };
 
   // Sales-only document categories
   const salesTypes: DocumentType[] = ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'RECEIPT'];
@@ -196,6 +210,60 @@ export const SalesView: React.FC<SalesViewProps> = ({
             <Plus className="w-3.5 h-3.5" />
             <span>+ ใบเสร็จรับเงิน</span>
           </button>
+
+          {/* Export Excel Button & Dropdown Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-200 flex items-center gap-1.5 transition-all hover:scale-[1.02] active:scale-95"
+              title="ส่งออกข้อมูลเป็นไฟล์ Excel (.xlsx)"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Export Excel</span>
+              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showExportMenu && (
+              <div 
+                className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-150"
+                onMouseLeave={() => setShowExportMenu(false)}
+              >
+                <div className="px-3.5 py-1.5 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  ตัวเลือก Export Excel (.xlsx)
+                </div>
+                <button
+                  onClick={() => {
+                    handleExportFiltered();
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 flex items-center gap-2.5 transition"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
+                    <Download className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-800">ส่งออกตามที่กรองอยู่ ({filteredDocs.length} รายการ)</div>
+                    <div className="text-[10px] text-slate-500">แท็บ {tableTabs.find(t => t.id === activeTypeTab)?.label.split(' ')[0]}</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => {
+                    handleExportAllSales();
+                    setShowExportMenu(false);
+                  }}
+                  className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 flex items-center gap-2.5 transition border-t border-slate-100"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center text-teal-700 shrink-0">
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-800">ส่งออกเอกสารขายทั้งหมด ({salesDocs.length} รายการ)</div>
+                    <div className="text-[10px] text-slate-500">รวม QT, INV, TAX, REC ทุกสถานะ</div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -281,6 +349,16 @@ export const SalesView: React.FC<SalesViewProps> = ({
             <span className="text-emerald-700 font-semibold text-[11px]">ยอดรวมในแท็บนี้:</span>
             <span className="font-bold text-emerald-800 font-mono text-xs sm:text-sm">฿{formatMoney(totalFilteredNet)}</span>
           </div>
+
+          {/* Quick Export Button */}
+          <button
+            onClick={handleExportFiltered}
+            className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 hover:border-emerald-300 text-emerald-800 border border-emerald-200 text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+            title={`ส่งออก Excel (${filteredDocs.length} รายการ)`}
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Excel ({filteredDocs.length})</span>
+          </button>
 
         </div>
 
