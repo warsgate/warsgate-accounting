@@ -107,7 +107,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     },
     {
       month: 'ก.ค. 68',
-      poInflow: 166920.00,      // QT-202607-002
+      poInflow: 0,              // QT-202607-002 (Unconfirmed Quotation)
       invoiceAmount: 486680.83, // งวด 3 (10%) + INV-202607-001
       cashIn: 1356213.46,       // รับเงินงวด 2
       expense: 132000.00,       // PO-202607-001 Siemens PLC

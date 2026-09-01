@@ -52,19 +52,28 @@ export function App() {
         // Only load initial documents that are NOT in existing AND NOT in deleted list
         const missing = initialDocuments.filter(d => !existingIds.has(d.id) && !deletedIds.has(d.id));
         const updated = filteredParsed.map(d => {
-          const init = initialDocuments.find(idoc => idoc.id === d.id);
+          const init = initialDocuments.find(idoc => idoc.id === d.id || idoc.documentNo === d.documentNo);
           if (init) {
             return {
               ...d,
-              referencePoNo: d.referencePoNo || init.referencePoNo,
-              referenceDocNo: d.referenceDocNo || init.referenceDocNo,
+              ...init,
+              status: d.status || init.status,
             };
           }
           return d;
         });
-        const merged = [...updated, ...missing];
-        localStorage.setItem('warsgate_documents', JSON.stringify(merged));
-        return merged;
+        // Deduplicate documents by type + documentNo
+        const seenKeys = new Set<string>();
+        const deduplicated: AccountingDocument[] = [];
+        for (const doc of [...updated, ...missing]) {
+          const key = doc.documentNo ? `${doc.type}_${doc.documentNo}` : doc.id;
+          if (!seenKeys.has(key)) {
+            seenKeys.add(key);
+            deduplicated.push(doc);
+          }
+        }
+        localStorage.setItem('warsgate_documents', JSON.stringify(deduplicated));
+        return deduplicated;
       } catch {
         return initialDocuments.filter(d => !deletedIds.has(d.id));
       }
