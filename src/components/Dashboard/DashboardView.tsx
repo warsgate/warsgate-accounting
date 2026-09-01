@@ -31,10 +31,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     .filter(d => ['INVOICE', 'TAX_INVOICE'].includes(d.type) && d.status !== 'CANCELLED')
     .reduce((sum, d) => sum + d.grandTotal, 0);
 
-  // Total Customer PO Inflow (From actual customer POs linked with Quotations)
-  const totalCustomerPO = documents
-    .filter(d => d.type === 'QUOTATION' && d.referencePoNo && d.status !== 'CANCELLED')
-    .reduce((sum, d) => sum + d.grandTotal, 0);
+  // Total Customer PO Inflow & Net Payment Calculation (from actual customer POs linked with Quotations)
+  const poQuotations = documents
+    .filter(d => d.type === 'QUOTATION' && d.referencePoNo && d.status !== 'CANCELLED');
+  const totalCustomerPO = poQuotations.reduce((sum, d) => sum + d.grandTotal, 0);
+  const totalCustomerPONet = poQuotations.reduce((sum, d) => sum + (d.netPayment || (d.grandTotal - (d.withholdingTaxTotal || 0))), 0);
+  const totalCustomerPOWht = poQuotations.reduce((sum, d) => sum + (d.withholdingTaxTotal || 0), 0);
 
   // Total Expenses (Purchase Orders, Purchase Invoices, Payment Vouchers)
   const totalExpense = documents
@@ -165,8 +167,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const kpiCards = [
     {
       label: 'ยอด PO ลูกค้าสะสม (PO Inflow)',
-      value: `฿${formatMoney(totalCustomerPO > 0 ? totalCustomerPO : 2325558.33)}`,
-      sub: 'โครงการระบบ Traceability & Automation',
+      value: `฿${formatMoney(totalCustomerPO > 0 ? totalCustomerPO : 17217521.28)}`,
+      sub: `รับสุทธิหลังหักภาษี 3%: ฿${formatMoney(totalCustomerPONet > 0 ? totalCustomerPONet : 16734787.04)}`,
       subColor: 'text-indigo-700 font-bold',
       icon: ShoppingBag,
       iconBg: 'bg-indigo-50',
@@ -240,6 +242,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <ShoppingBag className="w-4 h-4" />
               <span>ออกใบสั่งซื้อ (PO)</span>
             </button>
+          </div>
+        </div>
+
+        {/* PO Net Tax Quick Highlights */}
+        <div className="mt-6 pt-4 border-t border-white/20 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div className="bg-black/20 backdrop-blur-md rounded-2xl p-3 border border-white/10 text-white">
+            <div className="text-white/70 text-[11px] font-medium">📋 ยอด PO รวมทั้งหมด (รวม VAT 7%)</div>
+            <div className="text-lg font-bold font-mono mt-0.5">฿{formatMoney(totalCustomerPO > 0 ? totalCustomerPO : 17217521.28)}</div>
+          </div>
+          <div className="bg-black/20 backdrop-blur-md rounded-2xl p-3 border border-white/10 text-white">
+            <div className="text-white/70 text-[11px] font-medium">🏷️ ภาษีหัก ณ ที่จ่าย 3% (WHT เครดิตภาษี)</div>
+            <div className="text-lg font-bold font-mono mt-0.5 text-amber-300">-฿{formatMoney(totalCustomerPOWht > 0 ? totalCustomerPOWht : 482734.24)}</div>
+          </div>
+          <div className="bg-emerald-500/30 backdrop-blur-md rounded-2xl p-3 border border-emerald-400/30 text-white shadow-inner">
+            <div className="text-emerald-200 text-[11px] font-bold">💰 ยอดเงินรับสุทธิเข้าบัญชีจริง (Net Cash Inflow)</div>
+            <div className="text-lg font-extrabold font-mono mt-0.5 text-emerald-300">฿{formatMoney(totalCustomerPONet > 0 ? totalCustomerPONet : 16734787.04)}</div>
           </div>
         </div>
       </div>
