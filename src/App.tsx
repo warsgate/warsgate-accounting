@@ -45,8 +45,12 @@ export function App() {
     if (saved !== null) {
       try {
         const parsed: AccountingDocument[] = JSON.parse(saved);
-        // Exclude any document that was explicitly deleted by the user
-        const filteredParsed = parsed.filter(d => !deletedIds.has(d.id));
+        const obsoleteDocNos = new Set([
+          'INV-2505-004', 'INV-2605-001', 'INV-2605-002/1', 
+          'INV-2505-005/2', 'INV-2505-005/3', 'INV-2512-2155/1'
+        ]);
+        // Exclude any document that was explicitly deleted by the user or obsolete draft invoice
+        const filteredParsed = parsed.filter(d => !deletedIds.has(d.id) && !obsoleteDocNos.has(d.documentNo));
         const existingIds = new Set(filteredParsed.map(d => d.id));
         
         // Only load initial documents that are NOT in existing AND NOT in deleted list
