@@ -1,11 +1,10 @@
 // Helper for formatting currency in Thai Baht (THB)
-export const formatMoney = (amount: number): string => {
+export const formatMoney = (amount: number | null | undefined): string => {
+  const num = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
   return new Intl.NumberFormat('th-TH', {
-    style: 'currency',
-    currency: 'THB',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount);
+  }).format(num);
 };
 
 export const formatNumber = (amount: number): string => {
