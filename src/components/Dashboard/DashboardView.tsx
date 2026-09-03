@@ -21,41 +21,47 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
-  documents, bankAccounts, setActiveTab, openCreateModal, openViewDocument
+  documents, bankAccounts, contacts, setActiveTab, openCreateModal, openViewDocument
 }) => {
   const [chartMode, setChartMode] = useState<'PO_VS_EXPENSE' | 'CASH_FLOW' | 'INVOICE_TREND'>('PO_VS_EXPENSE');
 
   // ── Dynamic calculations from actual documents ─────────────────────────────
   // Total sales revenue from Invoices / Tax Invoices
-  const totalRevenue = documents
-    .filter(d => ['INVOICE', 'TAX_INVOICE'].includes(d.type) && d.status !== 'CANCELLED')
-    .reduce((sum, d) => sum + d.grandTotal, 0);
+  const allInvoices = documents.filter(d => (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') && d.status !== 'CANCELLED');
+  const totalInvoicedAmount = allInvoices.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
 
-  // Total Customer PO Inflow & Net Payment Calculation (from actual customer POs linked with Quotations)
-  const poQuotations = documents
-    .filter(d => d.type === 'QUOTATION' && d.referencePoNo && d.status !== 'CANCELLED');
-  const totalCustomerPO = poQuotations.reduce((sum, d) => sum + d.grandTotal, 0);
-  const totalCustomerPONet = poQuotations.reduce((sum, d) => sum + (d.netPayment || (d.grandTotal - (d.withholdingTaxTotal || 0))), 0);
-  const totalCustomerPOWht = poQuotations.reduce((sum, d) => sum + (d.withholdingTaxTotal || 0), 0);
+  const paidInvoices = allInvoices.filter(d => d.status === 'PAID');
+  const totalPaidInvoicesAmount = paidInvoices.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
 
-  // Total Expenses (Purchase Orders, Purchase Invoices, Payment Vouchers)
-  const totalExpense = documents
-    .filter(d => ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(d.type) && d.status !== 'CANCELLED')
-    .reduce((sum, d) => sum + d.grandTotal, 0);
+  const pendingInvoices = allInvoices.filter(d => d.status === 'PENDING' || d.status === 'OVERDUE');
+  const totalPendingInvoicesAmount = pendingInvoices.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
 
-  // Cash In: ONLY recognize money received into bank accounts when official RECEIPT is issued and marked PAID (net after 3% WHT)
-  const totalCashIn = documents
-    .filter(d => d.type === 'RECEIPT' && d.status === 'PAID')
-    .reduce((sum, d) => sum + (d.netPayment || d.grandTotal - (d.withholdingTaxTotal || 0)), 0);
+  const totalRevenue = totalInvoicedAmount;
+  const totalAR = totalPendingInvoicesAmount;
 
-  // Cash Out: ONLY recognize money paid out from bank accounts when PAYMENT_VOUCHER is marked PAID
-  const totalCashOut = documents
-    .filter(d => d.type === 'PAYMENT_VOUCHER' && d.status === 'PAID')
-    .reduce((sum, d) => sum + (d.netPayment || d.grandTotal - (d.withholdingTaxTotal || 0)), 0);
-
-  const totalAR = documents
-    .filter(d => d.type === 'INVOICE' && d.status === 'PENDING')
-    .reduce((sum, d) => sum + d.grandTotal, 0);
+  // Customer outstanding breakdown
+  const customerBreakdown = contacts
+    .filter(c => c.type === 'CUSTOMER' || c.type === 'BOTH')
+    .map(c => {
+      const cInvoices = allInvoices.filter(d => 
+        (d.contact?.id && d.contact.id === c.id) ||
+        (d.contact?.taxId && c.taxId && d.contact.taxId.replace(/[-\s]/g, '') === c.taxId.replace(/[-\s]/g, '')) ||
+        (d.contact?.companyName && c.companyName && d.contact.companyName.trim().toLowerCase() === c.companyName.trim().toLowerCase())
+      );
+      const cPending = cInvoices.filter(d => d.status === 'PENDING' || d.status === 'OVERDUE');
+      const cPendingAmount = cPending.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
+      const cPaid = cInvoices.filter(d => d.status === 'PAID');
+      const cPaidAmount = cPaid.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
+      const cTotal = cInvoices.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
+      return {
+        contact: c,
+        totalInvoices: cInvoices.length,
+        pendingCount: cPending.length,
+        pendingAmount: cPendingAmount,
+        paidAmount: cPaidAmount,
+        totalAmount: cTotal,
+      };
+    });
 
   // Calculate actual dynamic balance per bank account strictly from RECEIPT and PAYMENT_VOUCHER
   const dynamicBankAccounts = bankAccounts.map(account => {
@@ -196,9 +202,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       border: 'border-l-4 border-l-rose-500'
     },
     {
-      label: 'ลูกหนี้ค้างรับ (AR)',
+      label: 'ยอดคงเหลือรอเก็บเงิน (AR)',
       value: `฿${formatMoney(totalAR)}`,
-      sub: totalAR > 0 ? 'รอดำเนินการเรียกเก็บ' : 'ไม่มีหนี้ค้างชำระ (ปิดครบ)',
+      sub: totalAR > 0 ? `${pendingInvoices.length} ใบแจ้งหนี้รอดำเนินการเรียกเก็บ` : 'ไม่มีหนี้ค้างชำระ (เก็บครบ 100%)',
       subColor: totalAR > 0 ? 'text-amber-700 font-bold' : 'text-emerald-700 font-bold',
       icon: Clock,
       iconBg: 'bg-amber-50',
@@ -512,6 +518,163 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
         </div>
+      </div>
+
+      {/* ── AR Summary & Outstanding Invoices Matrix ─────────────────────────── */}
+      <div className="glass-panel p-6 rounded-3xl space-y-5 border border-amber-200/80 shadow-sm bg-gradient-to-br from-white via-amber-50/20 to-orange-50/30">
+        
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-100 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-md shadow-amber-200">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <span>สรุปยอดคงเหลือรอเก็บเงินจากลูกค้า (Accounts Receivable)</span>
+                <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 border border-amber-200 font-mono">
+                  {pendingInvoices.length} ฉบับ
+                </span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                ติดตามยอดเงินตามใบแจ้งหนี้ที่เปิดแล้ว รอลูกค้าโอนชำระเงินเข้าบัญชี
+              </p>
+            </div>
+          </div>
+
+          <button 
+            onClick={() => setActiveTab('sales')}
+            className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95"
+          >
+            <span>ไปที่ศูนย์การขาย</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* 3 Overview Metric Pills */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-semibold text-slate-500 block">ยอดเปิดบิลทั้งหมด</span>
+              <span className="text-lg font-bold font-mono text-slate-800 block mt-0.5">฿{formatMoney(totalInvoicedAmount)}</span>
+              <span className="text-[10px] text-slate-400 font-medium">{allInvoices.length} ใบแจ้งหนี้</span>
+            </div>
+            <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
+              <FileText className="w-4 h-4" />
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-emerald-700 block">รับชำระเงินแล้ว (Paid)</span>
+              <span className="text-lg font-extrabold font-mono text-emerald-700 block mt-0.5">฿{formatMoney(totalPaidInvoicesAmount)}</span>
+              <span className="text-[10px] text-emerald-600 font-semibold">{paidInvoices.length} ใบแจ้งหนี้ ({totalInvoicedAmount > 0 ? ((totalPaidInvoicesAmount / totalInvoicedAmount) * 100).toFixed(1) : 0}%)</span>
+            </div>
+            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-200 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-amber-100 block">⏳ ยอดคงเหลือรอเก็บเงิน (AR)</span>
+              <span className="text-xl font-black font-mono block mt-0.5">฿{formatMoney(totalPendingInvoicesAmount)}</span>
+              <span className="text-[10px] text-amber-100 font-medium">{pendingInvoices.length} ใบแจ้งหนี้รอลูกค้าโอน ({totalInvoicedAmount > 0 ? ((totalPendingInvoicesAmount / totalInvoicedAmount) * 100).toFixed(1) : 0}%)</span>
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-white/20 text-white flex items-center justify-center font-bold">
+              <Clock className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Customer Breakdown Badges */}
+        <div className="p-3.5 rounded-2xl bg-white/90 border border-amber-100 space-y-2">
+          <span className="text-xs font-bold text-slate-700 block">ยอดคงเหลือจำแนกตามรายชื่อลูกค้า:</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            {customerBreakdown.map((item, idx) => (
+              <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-xs ${
+                    item.pendingAmount > 0 ? 'bg-amber-500' : 'bg-emerald-500'
+                  }`}>
+                    {item.contact.companyName.charAt(0)}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block truncate max-w-[200px]">{item.contact.companyName}</span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {item.pendingCount > 0 ? `รอรับชำระ ${item.pendingCount} ฉบับ` : 'ชำระครบถ้วน 100%'}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className={`text-xs font-extrabold font-mono block ${
+                    item.pendingAmount > 0 ? 'text-amber-700' : 'text-emerald-600'
+                  }`}>
+                    ฿{formatMoney(item.pendingAmount)}
+                  </span>
+                  <span className={`text-[10px] font-semibold px-2 py-0.2 rounded-full inline-block ${
+                    item.pendingAmount > 0 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    {item.pendingAmount > 0 ? 'มียอดรอเก็บเงิน' : 'ชำระครบแล้ว'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pending Invoices Table */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-700">รายการใบแจ้งหนี้ที่อยู่ระหว่างรอเก็บเงิน ({pendingInvoices.length} รายการ):</span>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-inner">
+            <table className="w-full text-left text-xs min-w-[650px]">
+              <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                <tr>
+                  <th className="py-2.5 px-3.5">เลขที่ใบแจ้งหนี้</th>
+                  <th className="py-2.5 px-3.5">อ้างอิง PO</th>
+                  <th className="py-2.5 px-3.5">ลูกค้า</th>
+                  <th className="py-2.5 px-3.5">วันที่ออก / ครบกำหนด</th>
+                  <th className="py-2.5 px-3.5 text-right">ยอดรอเก็บเงิน</th>
+                  <th className="py-2.5 px-3.5 text-center">ดูเอกสาร</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {pendingInvoices.map(doc => (
+                  <tr key={doc.id} className="hover:bg-amber-50/40 transition">
+                    <td className="py-2.5 px-3.5 font-mono font-bold text-slate-800">{doc.documentNo}</td>
+                    <td className="py-2.5 px-3.5">
+                      {doc.referencePoNo ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
+                          PO: {doc.referencePoNo}
+                        </span>
+                      ) : '-'}
+                    </td>
+                    <td className="py-2.5 px-3.5 font-medium text-slate-700">{doc.contact?.companyName}</td>
+                    <td className="py-2.5 px-3.5 text-slate-500 font-mono text-[11px]">
+                      {formatThaiDate(doc.issueDate)} {doc.dueDate && `(ครบ ${formatThaiDate(doc.dueDate)})`}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-right font-mono font-bold text-amber-700">
+                      ฿{formatMoney(doc.netPayment || doc.grandTotal)}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-center">
+                      <button 
+                        onClick={() => openViewDocument(doc)} 
+                        className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 hover:bg-amber-50 hover:text-amber-700 text-slate-500 transition shadow-sm"
+                        title="ดูใบแจ้งหนี้"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
       {/* Recent Documents Table */}
