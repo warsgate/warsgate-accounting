@@ -21,13 +21,13 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
-  documents, bankAccounts, contacts, setActiveTab, openCreateModal, openViewDocument
+  documents = [], bankAccounts = [], contacts = [], setActiveTab, openCreateModal, openViewDocument
 }) => {
   const [chartMode, setChartMode] = useState<'PO_VS_EXPENSE' | 'CASH_FLOW' | 'INVOICE_TREND'>('PO_VS_EXPENSE');
 
   // ── Dynamic calculations from actual documents ─────────────────────────────
   // Total sales revenue from Invoices / Tax Invoices
-  const allInvoices = documents.filter(d => (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') && d.status !== 'CANCELLED');
+  const allInvoices = (documents || []).filter(d => (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') && d.status !== 'CANCELLED');
   const totalInvoicedAmount = allInvoices.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
 
   const paidInvoices = allInvoices.filter(d => d.status === 'PAID');
@@ -40,8 +40,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const totalAR = totalPendingInvoicesAmount;
 
   // Customer outstanding breakdown
-  const customerBreakdown = contacts
-    .filter(c => c.type === 'CUSTOMER' || c.type === 'BOTH')
+  const customerBreakdown = (contacts || [])
+    .filter(c => c && (c.type === 'CUSTOMER' || c.type === 'BOTH'))
     .map(c => {
       const cInvoices = allInvoices.filter(d => 
         (d.contact?.id && d.contact.id === c.id) ||
@@ -64,7 +64,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     });
 
   // Calculate actual dynamic balance per bank account strictly from RECEIPT and PAYMENT_VOUCHER
-  const dynamicBankAccounts = bankAccounts.map(account => {
+  const dynamicBankAccounts = (bankAccounts || []).map(account => {
     const isMain = account.isDefault || account.bankName.includes('กสิกร');
     if (isMain) {
       const kbankCashIn = documents
@@ -597,10 +597,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-xs ${
                     item.pendingAmount > 0 ? 'bg-amber-500' : 'bg-emerald-500'
                   }`}>
-                    {item.contact.companyName.charAt(0)}
+                    {(item.contact?.companyName || 'C').charAt(0)}
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-slate-800 block truncate max-w-[200px]">{item.contact.companyName}</span>
+                    <span className="text-xs font-bold text-slate-800 block truncate max-w-[200px]">
+                      {item.contact?.companyName || 'ลูกค้าองค์กร'}
+                    </span>
                     <span className="text-[10px] text-slate-400 font-medium">
                       {item.pendingCount > 0 ? `รอรับชำระ ${item.pendingCount} ฉบับ` : 'ชำระครบถ้วน 100%'}
                     </span>
