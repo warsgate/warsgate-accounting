@@ -11,6 +11,7 @@ import { TaxView } from './components/Tax/TaxView';
 import { SettingsView } from './components/Settings/SettingsView';
 import { DocumentViewerModal } from './components/DocumentViewerModal';
 import { CreateDocumentModal } from './components/CreateDocumentModal';
+import { CustomerBalancesView } from './components/CustomerAnalytics/CustomerBalancesView';
 
 import { 
   initialCompanyProfile, 
@@ -399,6 +400,21 @@ export function App() {
                 onAddContact={handleAddContact}
                 onUpdateContact={handleUpdateContact}
                 onDeleteContact={handleDeleteContact}
+              />
+            )}
+
+            {activeTab === 'customer-balances' && (
+              <CustomerBalancesView
+                documents={documents}
+                contacts={contacts}
+                company={company}
+                setActiveTab={setActiveTab}
+                openCreateModal={(type) => {
+                  setFromDoc(null);
+                  setEditingDoc(null);
+                  setCreateDocType(type);
+                }}
+                openViewDocument={(doc) => setViewDoc(doc)}
               />
             )}
 

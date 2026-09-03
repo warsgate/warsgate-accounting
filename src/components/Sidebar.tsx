@@ -59,6 +59,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
     },
     {
+      id: 'customer-balances',
+      label: 'เจาะลึกยอดลูกหนี้ & PO',
+      subtitle: 'ยอดคงเหลือ & สัญญา PO รายลูกค้า',
+      icon: BarChart3,
+      badge: '฿9.9M รอเปิด',
+      badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    },
+    {
       id: 'inventory',
       label: 'สินค้า & บริการ',
       subtitle: 'คลังสินค้า / อะไหล่ / งานบริการ',

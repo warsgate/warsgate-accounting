@@ -564,13 +564,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          <button 
-            onClick={() => setActiveTab('sales')}
-            className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95"
-          >
-            <span>ไปที่ศูนย์การขาย</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button 
+              onClick={() => setActiveTab('customer-balances')}
+              className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95"
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>เจาะลึกสัญญา PO รายลูกค้า</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('sales')}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95"
+            >
+              <span>ไปที่ศูนย์การขาย</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         {/* 3 Overview Metric Pills */}
