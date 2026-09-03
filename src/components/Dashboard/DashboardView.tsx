@@ -39,6 +39,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const totalRevenue = totalInvoicedAmount;
   const totalAR = totalPendingInvoicesAmount;
 
+  // Total Customer PO Inflow & Net Payment Calculation (from actual customer POs linked with Quotations)
+  const poQuotations = (documents || [])
+    .filter(d => d.type === 'QUOTATION' && d.referencePoNo && d.status !== 'CANCELLED');
+  const totalCustomerPO = poQuotations.reduce((sum, d) => sum + d.grandTotal, 0);
+  const totalCustomerPONet = poQuotations.reduce((sum, d) => sum + (d.netPayment || (d.grandTotal - (d.withholdingTaxTotal || 0))), 0);
+  const totalCustomerPOWht = poQuotations.reduce((sum, d) => sum + (d.withholdingTaxTotal || 0), 0);
+
+  // Total Expenses (Purchase Orders, Purchase Invoices, Payment Vouchers)
+  const totalExpense = (documents || [])
+    .filter(d => ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(d.type) && d.status !== 'CANCELLED')
+    .reduce((sum, d) => sum + d.grandTotal, 0);
+
+  // Cash In: ONLY recognize money received into bank accounts when official RECEIPT is issued and marked PAID (net after 3% WHT)
+  const totalCashIn = (documents || [])
+    .filter(d => d.type === 'RECEIPT' && d.status === 'PAID')
+    .reduce((sum, d) => sum + (d.netPayment || d.grandTotal - (d.withholdingTaxTotal || 0)), 0);
+
+  // Cash Out: ONLY recognize money paid out from bank accounts when PAYMENT_VOUCHER is marked PAID
+  const totalCashOut = (documents || [])
+    .filter(d => d.type === 'PAYMENT_VOUCHER' && d.status === 'PAID')
+    .reduce((sum, d) => sum + (d.netPayment || d.grandTotal - (d.withholdingTaxTotal || 0)), 0);
+
   // Customer outstanding breakdown
   const customerBreakdown = (contacts || [])
     .filter(c => c && (c.type === 'CUSTOMER' || c.type === 'BOTH'))
