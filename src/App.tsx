@@ -47,7 +47,8 @@ export function App() {
         const parsed: AccountingDocument[] = JSON.parse(saved);
         const obsoleteDocNos = new Set([
           'INV-2505-004', 'INV-2605-001', 'INV-2605-002/1', 
-          'INV-2505-005/2', 'INV-2505-005/3', 'INV-2512-2155/1'
+          'INV-2505-005/2', 'INV-2505-005/3', 'INV-2512-2155/1',
+          'INV-2512-2155/2', 'INV-2512-2155/3'
         ]);
         // Exclude any document that was explicitly deleted by the user or obsolete draft invoice
         const filteredParsed = parsed.filter(d => !deletedIds.has(d.id) && !obsoleteDocNos.has(d.documentNo));
