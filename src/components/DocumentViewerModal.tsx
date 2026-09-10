@@ -46,7 +46,97 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
   const thaiBahtText = arabicToThaiBahtText(doc.netPayment || doc.grandTotal);
 
   const handlePrint = () => {
-    window.print();
+    const printableElement = document.getElementById('printable-document-content');
+    if (!printableElement) {
+      window.print();
+      return;
+    }
+
+    // Create an invisible iframe to print ONLY the document without modal scroll clipping
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.right = '0';
+    printFrame.style.bottom = '0';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    printFrame.style.border = '0';
+    document.body.appendChild(printFrame);
+
+    const frameDoc = printFrame.contentWindow?.document;
+    if (!frameDoc) {
+      window.print();
+      return;
+    }
+
+    frameDoc.open();
+    frameDoc.write(`
+      <!DOCTYPE html>
+      <html lang="th">
+      <head>
+        <meta charset="UTF-8">
+        <title>${title.main} - ${doc.documentNo}</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 6mm 8mm 8mm 8mm;
+          }
+          *, ::before, ::after {
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .font-mono {
+            font-family: 'JetBrains Mono', monospace !important;
+          }
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+          }
+          tr, td, th {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .print-avoid-break {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+        </style>
+      </head>
+      <body>
+        <div style="width: 100%; max-width: 210mm; margin: 0 auto; padding: 4px;">
+          ${printableElement.innerHTML}
+        </div>
+      </body>
+      </html>
+    `);
+    frameDoc.close();
+
+    setTimeout(() => {
+      try {
+        printFrame.contentWindow?.focus();
+        printFrame.contentWindow?.print();
+      } catch {
+        window.print();
+      }
+      setTimeout(() => {
+        try {
+          document.body.removeChild(printFrame);
+        } catch {
+          // ignore
+        }
+      }, 1500);
+    }, 450);
   };
 
   return (
@@ -125,7 +215,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
           {viewMode === 'WHT_50_TAWI' ? (
             <WhtCertificateView document={doc} company={company} />
           ) : (
-            <div className="print-document-container max-w-[210mm] mx-auto bg-white text-slate-900 p-6 sm:p-8 rounded-lg shadow-xl print-shadow-none text-xs leading-normal font-sans border border-slate-200">
+            <div id="printable-document-content" className="print-document-container max-w-[210mm] mx-auto bg-white text-slate-900 p-6 sm:p-8 rounded-lg shadow-xl print-shadow-none text-xs leading-normal font-sans border border-slate-200">
               
               {/* Header: Official WARSGATE Logo & Document Title */}
               <div className={`flex items-start justify-between pb-5 border-b-2 gap-4 ${
