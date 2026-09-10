@@ -125,18 +125,26 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
           {viewMode === 'WHT_50_TAWI' ? (
             <WhtCertificateView document={doc} company={company} />
           ) : (
-            <div className="max-w-[210mm] mx-auto bg-white text-slate-900 p-8 rounded-lg shadow-xl print-shadow-none text-xs leading-normal font-sans border border-slate-200">
+            <div className="print-document-container max-w-[210mm] mx-auto bg-white text-slate-900 p-6 sm:p-8 rounded-lg shadow-xl print-shadow-none text-xs leading-normal font-sans border border-slate-200">
               
               {/* Header: Official WARSGATE Logo & Document Title */}
-              <div className="flex items-start justify-between pb-6 border-b-2 border-rose-600 gap-4">
+              <div className={`flex items-start justify-between pb-5 border-b-2 gap-4 ${
+                doc.type === 'DELIVERY_ORDER' ? 'border-indigo-600' : 'border-rose-600'
+              }`}>
                 
                 {/* WARSGATE Logo Component (Light Mode) & Company Details */}
-                <div className="flex flex-col gap-2">
-                  <img src="/warsgate-logo.png" alt="WARSGATE" className="h-12 w-auto object-contain" />
-                  <div className="space-y-0.5 pt-1">
-                    <h1 className="text-sm font-bold text-slate-900">{company.name}</h1>
-                    <span className="text-[11px] font-semibold text-rose-700 block">{company.nameEn}</span>
-                    <p className="text-[10px] text-slate-600 max-w-sm mt-0.5">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2.5">
+                    <img src="/warsgate-logo.png" alt="WARSGATE" className="h-10 w-auto object-contain" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+                    <div>
+                      <h1 className="text-sm font-extrabold text-slate-900">{company.name}</h1>
+                      <span className={`text-[11px] font-bold block ${
+                        doc.type === 'DELIVERY_ORDER' ? 'text-indigo-700' : 'text-rose-700'
+                      }`}>{company.nameEn}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-0.5 pt-0.5">
+                    <p className="text-[10px] text-slate-600 max-w-sm">
                       {company.address}
                     </p>
                     <div className="text-[10px] text-slate-600 flex flex-wrap gap-x-3 pt-0.5 font-mono">
@@ -149,25 +157,33 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 
                 {/* Document Title Box */}
                 <div className="text-right shrink-0">
-                  <h2 className="text-lg font-bold text-rose-600 tracking-tight">{title.main}</h2>
+                  <h2 className={`text-lg font-black tracking-tight ${
+                    doc.type === 'DELIVERY_ORDER' ? 'text-indigo-700' : 'text-rose-600'
+                  }`}>{title.main}</h2>
                   <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">{title.sub}</span>
                   
-                  <div className="mt-3 p-2.5 bg-slate-50 rounded-lg border border-slate-200 font-mono text-[11px] space-y-1 text-right">
+                  <div className="mt-2.5 p-2 bg-slate-50 rounded-lg border border-slate-200 font-mono text-[11px] space-y-0.5 text-right">
                     <div>
                       <span className="text-slate-500">เลขที่ / No: </span>
                       <strong className="text-slate-900 font-bold">{doc.documentNo}</strong>
                     </div>
                     {doc.referencePoNo && (
                       <div className="pt-0.5">
-                        <span className="text-rose-600 font-bold">อ้างอิง PO ลูกค้า / PO Ref: </span>
-                        <strong className="text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 font-bold">
+                        <span className={`font-bold ${doc.type === 'DELIVERY_ORDER' ? 'text-indigo-700' : 'text-rose-600'}`}>
+                          อ้างอิง PO ลูกค้า: 
+                        </span>
+                        <strong className={`px-1.5 py-0.2 rounded border font-bold ${
+                          doc.type === 'DELIVERY_ORDER' 
+                            ? 'text-indigo-800 bg-indigo-50 border-indigo-200' 
+                            : 'text-rose-700 bg-rose-50 border-rose-200'
+                        }`}>
                           {doc.referencePoNo}
                         </strong>
                       </div>
                     )}
                     {doc.referenceDocNo && (
                       <div>
-                        <span className="text-slate-500">อ้างอิงเอกสาร / Ref Doc: </span>
+                        <span className="text-slate-500">อ้างอิงเอกสาร: </span>
                         <span className="text-slate-800 font-semibold">{doc.referenceDocNo}</span>
                       </div>
                     )}
@@ -185,9 +201,9 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               </div>
 
               {/* Customer Details Box */}
-              <div className="my-6 p-4 rounded-lg bg-slate-50 border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="my-4 p-3.5 rounded-lg bg-slate-50 border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-3 print-avoid-break">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
                     ชื่อและที่อยู่ลูกค้า (Customer Details)
                   </span>
                   <h3 className="text-sm font-bold text-slate-900">{doc.contact?.companyName || '-'}</h3>
@@ -197,7 +213,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                   </div>
                 </div>
 
-                <div className="space-y-1 text-right md:border-l md:border-slate-200 md:pl-4">
+                <div className="space-y-0.5 text-right md:border-l md:border-slate-200 md:pl-4">
                   <div>
                     <span className="text-slate-500">ผู้ติดต่อ: </span>
                     <span className="font-semibold text-slate-800">{doc.contact?.name || '-'}</span>
@@ -207,41 +223,50 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                     <span className="font-mono text-slate-800">{doc.contact?.phone || '-'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500">เครดิตเทอม: </span>
-                    <span className="font-semibold text-slate-800">{doc.contact?.creditDays || 30} วัน</span>
+                    <span className="text-slate-500">เงื่อนไข: </span>
+                    <span className="font-semibold text-slate-800">{doc.contact?.creditDays ? `เครดิต ${doc.contact.creditDays} วัน` : 'ส่งมอบตรวจรับหน้างาน'}</span>
                   </div>
+                  {doc.projectNote && (
+                    <div className="pt-0.5">
+                      <span className="text-indigo-700 font-medium text-[10px]">โครงการ: {doc.projectNote}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Items Table */}
-              <div className="my-6 overflow-hidden rounded-lg border border-slate-200">
+              <div className="my-4 overflow-hidden rounded-lg border border-slate-200">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
                     <tr>
-                      <th className="py-2.5 px-3 text-center w-10">ลำดับ</th>
-                      <th className="py-2.5 px-3">รหัสสินค้า / รายการ (Description)</th>
-                      <th className="py-2.5 px-3 text-right w-16">จำนวน</th>
-                      <th className="py-2.5 px-3 text-center w-16">หน่วย</th>
-                      <th className="py-2.5 px-3 text-right w-24">ราคา/หน่วย</th>
-                      <th className="py-2.5 px-3 text-right w-24">ส่วนลด</th>
-                      <th className="py-2.5 px-3 text-right w-28">จำนวนเงิน (บาท)</th>
+                      <th className="py-2 px-2.5 text-center w-10">ลำดับ</th>
+                      <th className="py-2 px-2.5">รหัสสินค้า / รายการ (Description)</th>
+                      <th className="py-2 px-2.5 text-center w-16">จำนวน</th>
+                      <th className="py-2 px-2.5 text-center w-14">หน่วย</th>
+                      <th className="py-2 px-2.5 text-right w-24">ราคา/หน่วย</th>
+                      <th className="py-2 px-2.5 text-right w-20">ส่วนลด</th>
+                      <th className="py-2 px-2.5 text-right w-28">จำนวนเงิน (บาท)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     {doc.items.map((item, index) => (
                       <tr key={item.id || index} className="hover:bg-slate-50">
-                        <td className="py-3 px-3 text-center text-slate-500 font-mono">{index + 1}</td>
-                        <td className="py-3 px-3">
-                          <div className="font-semibold text-slate-900">{item.name}</div>
-                          {item.description && <div className="text-[10px] text-slate-500">{item.description}</div>}
+                        <td className="py-2 px-2.5 text-center text-slate-500 font-mono align-top">{index + 1}</td>
+                        <td className="py-2 px-2.5 align-top">
+                          <div className="font-bold text-slate-900">{item.name}</div>
+                          {item.description && (
+                            <div className="text-[10px] text-slate-600 whitespace-pre-line leading-relaxed mt-0.5 font-mono pl-1 border-l-2 border-indigo-200">
+                              {item.description}
+                            </div>
+                          )}
                         </td>
-                        <td className="py-3 px-3 text-right font-mono font-medium">{item.quantity}</td>
-                        <td className="py-3 px-3 text-center text-slate-600">{item.unit}</td>
-                        <td className="py-3 px-3 text-right font-mono">{formatNumber(item.pricePerUnit)}</td>
-                        <td className="py-3 px-3 text-right font-mono text-slate-500">
+                        <td className="py-2 px-2.5 text-center font-mono font-semibold align-top">{item.quantity}</td>
+                        <td className="py-2 px-2.5 text-center text-slate-600 align-top">{item.unit}</td>
+                        <td className="py-2 px-2.5 text-right font-mono align-top">{formatNumber(item.pricePerUnit)}</td>
+                        <td className="py-2 px-2.5 text-right font-mono text-slate-500 align-top">
                           {item.discount > 0 ? formatNumber(item.discount) : '-'}
                         </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                        <td className="py-2 px-2.5 text-right font-mono font-bold text-slate-900 align-top">
                           {formatNumber(item.amount)}
                         </td>
                       </tr>
@@ -251,51 +276,65 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               </div>
 
               {/* Financial Summary & Thai Baht Text */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4 print-avoid-break">
                 
                 {/* Baht Text Box */}
-                <div className="p-4 rounded-lg bg-rose-50 border border-rose-200 flex flex-col justify-between">
+                <div className={`p-3.5 rounded-lg border flex flex-col justify-between ${
+                  doc.type === 'DELIVERY_ORDER' 
+                    ? 'bg-indigo-50/70 border-indigo-200 text-indigo-950' 
+                    : 'bg-rose-50 border-rose-200 text-rose-950'
+                }`}>
                   <div>
-                    <span className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider block ${
+                      doc.type === 'DELIVERY_ORDER' ? 'text-indigo-800' : 'text-rose-800'
+                    }`}>
                       จำนวนเงินตัวอักษร (Baht Text)
                     </span>
-                    <p className="text-sm font-bold text-rose-900 mt-1 font-serif">
+                    <p className={`text-xs font-bold mt-1 font-serif ${
+                      doc.type === 'DELIVERY_ORDER' ? 'text-indigo-900' : 'text-rose-900'
+                    }`}>
                       ({thaiBahtText})
                     </p>
                   </div>
-                  <div className="mt-4 pt-2 border-t border-rose-200 text-[10px] text-slate-600">
-                    <span className="block font-semibold">เงื่อนไขการชำระเงิน:</span>
+                  <div className={`mt-3 pt-2 border-t text-[10px] text-slate-600 ${
+                    doc.type === 'DELIVERY_ORDER' ? 'border-indigo-200' : 'border-rose-200'
+                  }`}>
+                    <span className="block font-semibold">หมายเหตุ / เงื่อนไข:</span>
                     <span>{doc.notes || '-'}</span>
                   </div>
                 </div>
 
                 {/* Total Calculation Table */}
-                <div className="space-y-1.5 font-mono text-xs">
+                <div className="space-y-1 font-mono text-xs">
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-600">รวมเป็นเงิน (Subtotal):</span>
+                    <span className="text-slate-600 font-sans">รวมเป็นเงิน (Subtotal):</span>
                     <span className="font-semibold text-slate-900">{formatMoney(doc.subtotal)}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-600">ส่วนลดรวม (Discount):</span>
+                    <span className="text-slate-600 font-sans">ส่วนลดรวม (Discount):</span>
                     <span className="text-slate-600">-{formatMoney(doc.discountTotal || 0)}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-600">ภาษีมูลค่าเพิ่ม VAT 7%:</span>
+                    <span className="text-slate-600 font-sans">ภาษีมูลค่าเพิ่ม VAT 7%:</span>
                     <span className="font-semibold text-slate-900">{formatMoney(doc.vatAmount)}</span>
                   </div>
-                  <div className="flex justify-between py-1.5 border-b-2 border-slate-900 text-sm font-bold">
-                    <span className="text-slate-900">จำนวนเงินรวมทั้งสิ้น (Grand Total):</span>
-                    <span className="text-rose-700">{formatMoney(doc.grandTotal)}</span>
+                  <div className="flex justify-between py-1 border-b-2 border-slate-900 text-xs font-bold">
+                    <span className="text-slate-900 font-sans">จำนวนเงินรวมทั้งสิ้น (Grand Total):</span>
+                    <span className={doc.type === 'DELIVERY_ORDER' ? 'text-indigo-700' : 'text-rose-700'}>
+                      {formatMoney(doc.grandTotal)}
+                    </span>
                   </div>
                   {doc.withholdingTaxTotal > 0 && (
-                    <div className="flex justify-between py-1 text-rose-600">
-                      <span>หัก ภาษี ณ ที่จ่าย (Withholding Tax):</span>
+                    <div className="flex justify-between py-0.5 text-rose-600 text-[11px]">
+                      <span className="font-sans">หัก ภาษี ณ ที่จ่าย (Withholding Tax 3%):</span>
                       <span>-{formatMoney(doc.withholdingTaxTotal)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between py-2 bg-slate-900 text-white px-3 rounded-lg font-bold text-sm">
-                    <span>ยอดชำระสุทธิ (Net Payment):</span>
-                    <span className="text-emerald-400">{formatMoney(doc.netPayment || doc.grandTotal)}</span>
+                  <div className={`flex justify-between py-1.5 px-3 rounded-lg font-bold text-xs ${
+                    doc.type === 'DELIVERY_ORDER' ? 'bg-indigo-950 text-white' : 'bg-slate-900 text-white'
+                  }`}>
+                    <span className="font-sans">ยอดชำระสุทธิ (Net Payment):</span>
+                    <span className="text-emerald-400 font-bold">{formatMoney(doc.netPayment || doc.grandTotal)}</span>
                   </div>
                 </div>
 
