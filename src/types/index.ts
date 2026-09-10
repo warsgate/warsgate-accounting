@@ -3,6 +3,7 @@ export type DocumentType =
   | 'INVOICE' 
   | 'TAX_INVOICE' 
   | 'RECEIPT' 
+  | 'DELIVERY_ORDER'
   | 'PURCHASE_ORDER' 
   | 'PURCHASE_INVOICE'
   | 'PAYMENT_VOUCHER'

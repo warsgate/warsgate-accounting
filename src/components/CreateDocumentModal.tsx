@@ -21,6 +21,7 @@ const DOCUMENT_TYPE_NAMES: Record<DocumentType, string> = {
   INVOICE: 'ใบแจ้งหนี้ (Invoice)',
   TAX_INVOICE: 'ใบกำกับภาษี (Tax Invoice)',
   RECEIPT: 'ใบเสร็จรับเงิน (Receipt)',
+  DELIVERY_ORDER: 'ใบส่งของชั่วคราว (Delivery Note)',
   PURCHASE_ORDER: 'ใบสั่งซื้อ (Purchase Order)',
   PURCHASE_INVOICE: 'ใบแจ้งหนี้ค่าใช้จ่าย (Purchase Invoice)',
   PAYMENT_VOUCHER: 'ใบสำคัญจ่าย (Payment Voucher)',

@@ -29,6 +29,13 @@ export const defaultNumberingConfig: DocumentNumberingConfig = {
     nextNumber: 1,
     separator: '-',
   },
+  DELIVERY_ORDER: {
+    prefix: 'DO',
+    dateFormat: 'YYYYMM',
+    digits: 3,
+    nextNumber: 1,
+    separator: '-',
+  },
   PURCHASE_ORDER: {
     prefix: 'PO',
     dateFormat: 'YYYYMM',

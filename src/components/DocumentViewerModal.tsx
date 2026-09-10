@@ -36,6 +36,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
       case 'PURCHASE_ORDER': return { main: 'ใบสั่งซื้อ', sub: 'PURCHASE ORDER' };
       case 'PURCHASE_INVOICE': return { main: 'ใบแจ้งหนี้ค่าใช้จ่าย', sub: 'PURCHASE INVOICE' };
       case 'PAYMENT_VOUCHER': return { main: 'ใบสำคัญจ่าย', sub: 'PAYMENT VOUCHER' };
+      case 'DELIVERY_ORDER': return { main: 'ใบส่งของชั่วคราว / ใบส่งสินค้า', sub: 'TEMPORARY DELIVERY ORDER / DELIVERY NOTE' };
       case 'WHT_CERTIFICATE': return { main: 'หนังสือรับรองการหักภาษี ณ ที่จ่าย (50 ทวิ)', sub: 'WITHHOLDING TAX CERTIFICATE' };
       default: return { main: 'เอกสารทางการเงิน', sub: 'DOCUMENT' };
     }
@@ -301,30 +302,66 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               </div>
 
               {/* Official Signature Boxes */}
-              <div className="mt-12 pt-6 border-t border-slate-200 grid grid-cols-2 gap-8 text-center text-xs">
-                <div className="space-y-8">
-                  <p className="text-slate-600 font-medium">ในนาม {doc.contact?.companyName || 'ลูกค้า'}</p>
-                  <div className="border-b border-dashed border-slate-400 w-48 mx-auto" />
-                  <div>
-                    <p className="font-semibold text-slate-800">ผู้รับบริการ / ผู้สั่งซื้อ</p>
-                    <span className="text-[10px] text-slate-400 block font-mono">วันที่ ...... / ...... / ..........</span>
-                  </div>
-                </div>
-
-                <div className="space-y-8">
-                  <p className="text-slate-600 font-medium">ในนาม {company.name}</p>
-                  <div className="relative w-48 mx-auto">
-                    <div className="border-b border-dashed border-slate-400 w-full" />
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-rose-600 font-serif italic text-xs font-bold opacity-85 rotate-[-4deg] border border-rose-500 px-2 py-0.5 rounded">
-                      WARSGATE AUTOMATION
+              {doc.type === 'DELIVERY_ORDER' ? (
+                <div className="mt-12 pt-6 border-t border-slate-200 grid grid-cols-3 gap-6 text-center text-xs">
+                  <div className="space-y-8">
+                    <p className="text-slate-600 font-medium">ผู้ส่งของ / เจ้าหน้าที่จัดส่ง</p>
+                    <div className="border-b border-dashed border-slate-400 w-36 mx-auto" />
+                    <div>
+                      <p className="font-semibold text-slate-800">ผู้ส่งมอบสินค้า</p>
+                      <span className="text-[10px] text-slate-400 block font-mono">วันที่ ...... / ...... / ..........</span>
                     </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-slate-900">{company.authorizedSignatory}</p>
-                    <span className="text-[10px] text-slate-500 block">{company.signatoryPosition}</span>
+
+                  <div className="space-y-8">
+                    <p className="text-slate-600 font-medium">ในนาม {doc.contact?.companyName || 'ผู้รับสินค้า'}</p>
+                    <div className="border-b border-dashed border-slate-400 w-36 mx-auto" />
+                    <div>
+                      <p className="font-semibold text-slate-800">ผู้รับสินค้า / ตรวจรับของถูกต้อง</p>
+                      <span className="text-[10px] text-slate-400 block font-mono">วันที่ ...... / ...... / ..........</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-8">
+                    <p className="text-slate-600 font-medium">ในนาม {company.name}</p>
+                    <div className="relative w-36 mx-auto">
+                      <div className="border-b border-dashed border-slate-400 w-full" />
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-rose-600 font-serif italic text-xs font-bold opacity-85 rotate-[-4deg] border border-rose-500 px-2 py-0.5 rounded">
+                        WARSGATE AUTOMATION
+                      </div>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900">{company.authorizedSignatory}</p>
+                      <span className="text-[10px] text-slate-500 block">{company.signatoryPosition}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="mt-12 pt-6 border-t border-slate-200 grid grid-cols-2 gap-8 text-center text-xs">
+                  <div className="space-y-8">
+                    <p className="text-slate-600 font-medium">ในนาม {doc.contact?.companyName || 'ลูกค้า'}</p>
+                    <div className="border-b border-dashed border-slate-400 w-48 mx-auto" />
+                    <div>
+                      <p className="font-semibold text-slate-800">ผู้รับบริการ / ผู้สั่งซื้อ</p>
+                      <span className="text-[10px] text-slate-400 block font-mono">วันที่ ...... / ...... / ..........</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-8">
+                    <p className="text-slate-600 font-medium">ในนาม {company.name}</p>
+                    <div className="relative w-48 mx-auto">
+                      <div className="border-b border-dashed border-slate-400 w-full" />
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-rose-600 font-serif italic text-xs font-bold opacity-85 rotate-[-4deg] border border-rose-500 px-2 py-0.5 rounded">
+                        WARSGATE AUTOMATION
+                      </div>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900">{company.authorizedSignatory}</p>
+                      <span className="text-[10px] text-slate-500 block">{company.signatoryPosition}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
             </div>
           )}

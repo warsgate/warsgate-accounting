@@ -49,7 +49,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   };
 
   // Sales-only document categories
-  const salesTypes: DocumentType[] = ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'RECEIPT'];
+  const salesTypes: DocumentType[] = ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'RECEIPT', 'DELIVERY_ORDER'];
   const salesDocs = documents.filter(d => salesTypes.includes(d.type));
 
   // ── High-Tech KPI Computations ──────────────────────────────────────────────
@@ -82,6 +82,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
       count: salesDocs.filter(d => d.type === 'INVOICE' || d.type === 'TAX_INVOICE').length,
       activeColor: 'bg-sky-600 text-white',
       badgeActive: 'bg-sky-700 text-sky-100',
+    },
+    {
+      id: 'DELIVERY_ORDER',
+      label: 'ใบส่งของชั่วคราว (Delivery Note)',
+      icon: Layers,
+      count: salesDocs.filter(d => d.type === 'DELIVERY_ORDER').length,
+      activeColor: 'bg-indigo-600 text-white',
+      badgeActive: 'bg-indigo-700 text-indigo-100',
     },
     {
       id: 'RECEIPT',
@@ -462,6 +470,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
                                 ? 'bg-sky-50 text-sky-700 border-sky-200'
                                 : doc.type === 'TAX_INVOICE'
                                 ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                : doc.type === 'DELIVERY_ORDER'
+                                ? 'bg-purple-50 text-purple-700 border-purple-200'
                                 : 'bg-amber-50 text-amber-700 border-amber-200'
                             }`}
                           >
@@ -471,6 +481,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
                               ? 'ใบแจ้งหนี้'
                               : doc.type === 'TAX_INVOICE'
                               ? 'ใบกำกับภาษี'
+                              : doc.type === 'DELIVERY_ORDER'
+                              ? 'ใบส่งของชั่วคราว'
                               : 'ใบเสร็จรับเงิน'}
                           </span>
                         </td>
