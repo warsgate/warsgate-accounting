@@ -49,7 +49,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   };
 
   // Sales-only document categories
-  const salesTypes: DocumentType[] = ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'RECEIPT', 'DELIVERY_ORDER'];
+  const salesTypes: DocumentType[] = ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'RECEIPT'];
   const salesDocs = documents.filter(d => salesTypes.includes(d.type));
 
   // ── High-Tech KPI Computations ──────────────────────────────────────────────
@@ -82,14 +82,6 @@ export const SalesView: React.FC<SalesViewProps> = ({
       count: salesDocs.filter(d => d.type === 'INVOICE' || d.type === 'TAX_INVOICE').length,
       activeColor: 'bg-sky-600 text-white',
       badgeActive: 'bg-sky-700 text-sky-100',
-    },
-    {
-      id: 'DELIVERY_ORDER',
-      label: 'ใบส่งของชั่วคราว (Delivery Note)',
-      icon: Layers,
-      count: salesDocs.filter(d => d.type === 'DELIVERY_ORDER').length,
-      activeColor: 'bg-indigo-600 text-white',
-      badgeActive: 'bg-indigo-700 text-indigo-100',
     },
     {
       id: 'RECEIPT',
