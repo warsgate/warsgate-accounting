@@ -150,37 +150,8 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               {doc.documentNo}
             </span>
             <span className="text-sm font-semibold text-slate-800">
-              {viewMode === 'WHT_50_TAWI' ? 'หนังสือรับรองการหักภาษี ณ ที่จ่าย (50 ทวิ)' : title.main}
+              {title.main}
             </span>
-
-            {/* Toggle Tabs if document has WHT */}
-            {(hasWht || isWhtCertificate) && (
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
-                {!isWhtCertificate && (
-                  <button
-                    onClick={() => setViewMode('STANDARD')}
-                    className={`px-3 py-1 rounded-lg font-bold transition ${
-                      viewMode === 'STANDARD'
-                        ? 'bg-white text-slate-800 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    📄 เอกสารหลัก
-                  </button>
-                )}
-                <button
-                  onClick={() => setViewMode('WHT_50_TAWI')}
-                  className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1 transition ${
-                    viewMode === 'WHT_50_TAWI'
-                      ? 'bg-amber-500 text-white shadow-sm'
-                      : 'text-amber-700 hover:bg-amber-100'
-                  }`}
-                >
-                  <Award className="w-3.5 h-3.5" />
-                  <span>📑 ใบ 50 ทวิ</span>
-                </button>
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-2">
