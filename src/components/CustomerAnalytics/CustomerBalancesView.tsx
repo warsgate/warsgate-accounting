@@ -87,6 +87,7 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
       const pendingInvoices = linkedInvoices.filter(inv => inv.status !== 'PAID' && inv.status !== 'CANCELLED');
       const pendingTotal = pendingInvoices.reduce((sum, inv) => sum + (inv.netPayment || inv.grandTotal || 0), 0);
 
+      const linkedDeliveryOrders = (documents || []).filter(d => d.type === 'DELIVERY_ORDER' && d.referencePoNo === poNo);
       const isInvoicedComplete = invoicedTotal >= totalPoAmount - 1;
 
       return {
@@ -101,6 +102,7 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
         whtTotal: po.withholdingTaxTotal || 0,
         netPayment: po.netPayment || (totalPoAmount - (po.withholdingTaxTotal || 0)),
         invoices: linkedInvoices,
+        deliveryOrders: linkedDeliveryOrders,
         invoicedTotal,
         uninvoicedAmount,
         paidTotal,
@@ -541,6 +543,49 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                                   </div>
                                 )}
                               </div>
+
+                              {/* Linked Delivery Notes */}
+                              {poItem.deliveryOrders && poItem.deliveryOrders.length > 0 && (
+                                <div className="space-y-2 pt-1">
+                                  <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                    <span>📦 ใบส่งของชั่วคราว / ใบส่งมอบงาน ({poItem.deliveryOrders.length} ฉบับ):</span>
+                                  </span>
+                                  <div className="space-y-2">
+                                    {poItem.deliveryOrders.map(doDoc => (
+                                      <div key={doDoc.id} className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm">
+                                        <div className="flex items-center gap-2.5">
+                                          <span className="font-mono font-bold text-indigo-900 text-xs px-2.5 py-1 rounded-lg bg-white border border-indigo-200 shadow-sm">
+                                            {doDoc.documentNo}
+                                          </span>
+                                          <div>
+                                            <span className="text-xs text-slate-800 font-bold block">
+                                              {doDoc.projectNote || 'รายการ Part ที่จัดส่ง Line ADC'}
+                                            </span>
+                                            <span className="text-[11px] text-slate-500 font-mono">
+                                              วันที่ส่งมอบ: {formatThaiDate(doDoc.issueDate)}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 self-end sm:self-auto">
+                                          <div className="text-right">
+                                            <span className="text-[10px] text-slate-500 block font-medium">มูลค่าสินค้าก่อนภาษี</span>
+                                            <span className="font-mono font-bold text-xs text-slate-800">
+                                              ฿{formatMoney(doDoc.subtotal || doDoc.grandTotal)}
+                                            </span>
+                                          </div>
+                                          <button
+                                            onClick={() => openViewDocument(doDoc)}
+                                            className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition shadow-sm active:scale-95"
+                                          >
+                                            <Eye className="w-3.5 h-3.5" />
+                                            <span>ดู / พิมพ์ใบส่งของ</span>
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
                               {/* 2. Next Action & Unbilled Milestone Card */}
                               {hasUninvoiced ? (

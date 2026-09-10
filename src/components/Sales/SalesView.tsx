@@ -49,7 +49,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   };
 
   // Sales-only document categories
-  const salesTypes: DocumentType[] = ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'RECEIPT'];
+  const salesTypes: DocumentType[] = ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'DELIVERY_ORDER', 'RECEIPT'];
   const salesDocs = documents.filter(d => salesTypes.includes(d.type));
 
   // ── High-Tech KPI Computations ──────────────────────────────────────────────
@@ -82,6 +82,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
       count: salesDocs.filter(d => d.type === 'INVOICE' || d.type === 'TAX_INVOICE').length,
       activeColor: 'bg-sky-600 text-white',
       badgeActive: 'bg-sky-700 text-sky-100',
+    },
+    {
+      id: 'DELIVERY_ORDER',
+      label: 'ใบส่งของชั่วคราว (Delivery Note)',
+      icon: Layers,
+      count: salesDocs.filter(d => d.type === 'DELIVERY_ORDER').length,
+      activeColor: 'bg-indigo-600 text-white',
+      badgeActive: 'bg-indigo-700 text-indigo-100',
     },
     {
       id: 'RECEIPT',
@@ -491,10 +499,10 @@ export const SalesView: React.FC<SalesViewProps> = ({
                           <span className="text-[10px] text-slate-400">ครบกำหนด: {formatThaiDate(doc.dueDate)}</span>
                         </td>
                         <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-800">
-                          <div>{formatMoney(doc.grandTotal)}</div>
-                          {doc.withholdingTaxTotal > 0 && (
+                          <div>฿{formatMoney(doc.grandTotal)}</div>
+                          {doc.withholdingTaxTotal > 0 && doc.type !== 'DELIVERY_ORDER' && (
                             <span className="text-[10px] text-rose-500 block font-normal">
-                              หัก ณ ที่จ่าย 3%: -{formatMoney(doc.withholdingTaxTotal)}
+                              หัก ณ ที่จ่าย 3%: -฿{formatMoney(doc.withholdingTaxTotal)}
                             </span>
                           )}
                         </td>
@@ -562,7 +570,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
           {filteredDocs.length > 0 && (
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
               <div className="text-slate-500 font-medium">
-                แสดงผล <span className="font-bold text-slate-800">{filteredDocs.length}</span> รายการ ในแท็บ <span className="font-bold text-rose-600">{tableTabs.find(t => t.id === activeTypeTab)?.label}</span>
+                แสดงผล <span className="font-bold text-slate-800">{filteredDocs.length}</span> รายการ ในแท็บ <span className="font-bold text-indigo-600">{tableTabs.find(t => t.id === activeTypeTab)?.label}</span>
               </div>
               <div className="flex flex-wrap items-center gap-4 text-xs font-mono">
                 <div>
@@ -573,9 +581,11 @@ export const SalesView: React.FC<SalesViewProps> = ({
                   <span className="text-slate-400">ยอดรวมทั้งสิ้น: </span>
                   <span className="font-bold text-slate-800">฿{formatMoney(totalFilteredGrandTotal)}</span>
                 </div>
-                <div className="px-3 py-1 rounded-xl bg-emerald-100/80 text-emerald-800 font-bold border border-emerald-200">
-                  <span>รับสุทธิ: ฿{formatMoney(totalFilteredNet)}</span>
-                </div>
+                {activeTypeTab !== 'DELIVERY_ORDER' && (
+                  <div className="px-3 py-1 rounded-xl bg-emerald-100/80 text-emerald-800 font-bold border border-emerald-200">
+                    <span>รับสุทธิ: ฿{formatMoney(totalFilteredNet)}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
