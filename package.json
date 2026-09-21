@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "proxy": "node proxy-server.cjs"
+    "proxy": "node proxy-server.cjs",
+    "backup": "node --experimental-strip-types scripts/backup.js",
+    "restore": "node scripts/restore.js"
   },
   "dependencies": {
     "axios": "^1.19.0",

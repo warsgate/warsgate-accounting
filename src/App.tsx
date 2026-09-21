@@ -446,6 +446,9 @@ export function App() {
                 onUpdateCompany={(updated) => setCompany(updated)}
                 numberingConfig={numberingConfig}
                 onUpdateNumberingConfig={(cfg) => setNumberingConfig(cfg)}
+                documents={documents}
+                contacts={contacts}
+                products={products}
               />
             )}
           </div>

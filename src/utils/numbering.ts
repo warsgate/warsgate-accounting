@@ -1,4 +1,4 @@
-import { DocumentType, DocumentNumberingConfig, DocumentNumberSetting } from '../types';
+import type { DocumentType, DocumentNumberingConfig, DocumentNumberSetting } from '../types/index.ts';
 
 export const defaultNumberingConfig: DocumentNumberingConfig = {
   QUOTATION: {

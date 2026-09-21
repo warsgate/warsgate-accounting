@@ -1,4 +1,4 @@
-import { CompanyProfile, Contact, ProductService, AccountingDocument, BankAccount, ChartOfAccount, JournalEntry } from '../types';
+import type { CompanyProfile, Contact, ProductService, AccountingDocument, BankAccount, ChartOfAccount, JournalEntry } from '../types/index.ts';
 
 export const initialCompanyProfile: CompanyProfile = {
   name: 'บริษัท วอร์สเกต จำกัด',
