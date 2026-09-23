@@ -30,8 +30,8 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
   const getDocTitle = () => {
     switch (doc.type) {
       case 'QUOTATION': return { main: 'ใบเสนอราคา', sub: 'QUOTATION' };
-      case 'INVOICE': return { main: 'ใบแจ้งหนี้ / ใบกำกับภาษี', sub: 'INVOICE / TAX INVOICE' };
-      case 'TAX_INVOICE': return { main: 'ใบกำกับภาษี / ใบเสร็จรับเงิน', sub: 'TAX INVOICE / RECEIPT' };
+      case 'INVOICE': return { main: 'ใบแจ้งหนี้ / ใบวางบิล', sub: 'INVOICE / BILLING NOTE' };
+      case 'TAX_INVOICE': return { main: 'ใบกำกับภาษี', sub: 'TAX INVOICE' };
       case 'RECEIPT': return { main: 'ใบเสร็จรับเงิน', sub: 'RECEIPT' };
       case 'PURCHASE_ORDER': return { main: 'ใบสั่งซื้อ', sub: 'PURCHASE ORDER' };
       case 'PURCHASE_INVOICE': return { main: 'ใบแจ้งหนี้ค่าใช้จ่าย', sub: 'PURCHASE INVOICE' };
