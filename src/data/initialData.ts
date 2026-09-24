@@ -82,10 +82,38 @@ export const initialContacts: Contact[] = [
     creditDays: 30,
     totalTransactions: 19,
     balanceDue: 94000.00,
+  },
+  {
+    id: 'cont-ptech-1',
+    name: 'ฝ่ายขาย / ประสานงานขาย',
+    companyName: 'บริษัท พี-เทค แอนด์ คอนซัลติ้ง จำกัด',
+    taxId: '0105568020018',
+    isBranch: false,
+    branchCode: '00000',
+    address: '234/107 ถนน01 กาญจนาภิเษก แขวงสามวาตะวันตก เขตคลองสามวา กรุงเทพมหานคร 10510',
+    phone: '+(66) 81 184 6590',
+    email: 'saintentex@gmail.com',
+    type: 'SUPPLIER',
+    creditDays: 30,
+    totalTransactions: 1,
+    balanceDue: 0.00,
   }
 ];
 
 export const initialProducts: ProductService[] = [
+  {
+    id: 'prod-spindle-01',
+    code: 'SPINDLE-ROLL-01',
+    name: 'Roller Paper Printer Spindle (แกนหมุนกระดาษเครื่องพิมพ์อัปเกรด)',
+    category: 'AUTOMATION_HARDWARE',
+    type: 'PRODUCT',
+    unit: 'Set',
+    unitPrice: 1100.00,
+    costPrice: 1100.00,
+    stockQty: 15,
+    minStockAlert: 2,
+    description: 'แกนหมุนกระดาษเครื่องพิมพ์อัปเกรด (Roller Paper Printer Spindle)',
+  },
   {
     id: 'prod-1',
     code: 'PLC-S7-1200',
@@ -2277,6 +2305,41 @@ export const initialDocuments: AccountingDocument[] = [
     status: 'APPROVED',
     notes: 'ใบกำกับภาษี ตามใบสั่งซื้อ PO: 2607001, ใบส่งของชั่วคราว DO-2608-001 และใบแจ้งหนี้ INV-2608-001 รายการ Part Line ADC โครงการ PLC Control Board (Ethernet IP)',
     createdByName: 'คุณจีระวัฒน์ (MD)',
+  },
+
+  // ─── ใบสั่งซื้อ: PO-2609-001 (บจก. พี-เทค แอนด์ คอนซัลติ้ง) ───────────────
+  {
+    id: 'doc-po-ptech-260901',
+    documentNo: 'PO-2609-001',
+    type: 'PURCHASE_ORDER',
+    issueDate: '2026-09-24',
+    dueDate: '2026-10-24',
+    contact: initialContacts[3], // บริษัท พี-เทค แอนด์ คอนซัลติ้ง จำกัด
+    items: [
+      {
+        id: 'item-po-ptech-1',
+        code: 'SPINDLE-ROLL-01',
+        name: 'Roller Paper Printer Spindle (แกนหมุนกระดาษเครื่องพิมพ์อัปเกรด)',
+        description: 'Roller Paper Printer Spindle (แกนหมุนกระดาษเครื่องพิมพ์อัปเกรด)',
+        quantity: 15,
+        unit: 'Set',
+        pricePerUnit: 1100.00,
+        discount: 0,
+        amount: 16500.00,
+        vatInclusive: false,
+        withholdingTaxRate: 0,
+      }
+    ],
+    subtotal: 16500.00,
+    discountTotal: 0.00,
+    vatRate: 7,
+    vatAmount: 1155.00,
+    grandTotal: 17655.00,
+    withholdingTaxTotal: 0,
+    netPayment: 17655.00,
+    status: 'APPROVED',
+    notes: 'จัดส่งที่: บริษัท วอร์สเกต จำกัด (สำนักงานใหญ่) หมู่บ้าน พฤกษาวิลล์ 46/1 เลขที่ 50/8 หมู่ 4 ตำบลคลองสาม อำเภอคลองหลวง จังหวัดปทุมธานี 12120 โทร. 083-066-7309',
+    createdByName: 'แผนกจัดซื้อ / คุณจีระวัฒน์ (MD)',
   }
 ];
 

@@ -5,11 +5,11 @@
 
 ## 📁 ไฟล์สำรองข้อมูลล่าสุด (Latest Backups)
 
-1. **`warsgate_backup_latest.json`** (และไฟล์ตามวันที่ `warsgate_backup_2026-09-23.json`)
+1. **`warsgate_backup_latest.json`** (และไฟล์ตามวันที่ `warsgate_backup_2026-09-24.json`)
    - ไฟล์ JSON ครบถ้วน 100% รวมเอกสารทั้งหมด, รายการสินค้า, ลูกค้า, ผังบัญชี, เลขที่เอกสารรัน
    - ใช้สำหรับกู้คืนระบบ (Restore) ผ่านทางหน้าเว็บ หรือผ่านสคริปต์อัตโนมัติ
 
-2. **`warsgate_accounting_backup_latest.xlsx`** (และไฟล์ตามวันที่ `warsgate_accounting_backup_2026-09-23.xlsx`)
+2. **`warsgate_accounting_backup_latest.xlsx`** (และไฟล์ตามวันที่ `warsgate_accounting_backup_2026-09-24.xlsx`)
    - ไฟล์ Excel สรุปข้อมูลแยก Sheet ชัดเจน ได้แก่:
      - **Company**: ข้อมูลองค์กร และเลขประจำตัวผู้เสียภาษี
      - **Contacts**: รายชื่อลูกค้า / ซัพพลายเออร์ และยอดคงเหลือ
@@ -35,4 +35,4 @@
 ผู้ใช้งานสามารถกดเข้าไปที่เมนู **"ตั้งค่าระบบ (Settings)" -> "สำรอง & กู้คืนข้อมูล (Backup & Restore)"** เพื่อดาวน์โหลดไฟล์ JSON / Excel หรือเลือกอัปโหลดไฟล์ JSON เพื่อกู้คืนข้อมูลได้ทันทีในคลิกเดียว
 
 ---
-*สร้างอัตโนมัติเมื่อ: 2026-09-23T12:40:29+07:00 โดย WARSGATE Accounting Backup Utility*
+*สร้างอัตโนมัติเมื่อ: 2026-09-24T07:28:55+07:00 โดย WARSGATE Accounting Backup Utility*

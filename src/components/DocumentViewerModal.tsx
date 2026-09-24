@@ -261,11 +261,13 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 
               </div>
 
-              {/* Customer Details Box */}
+              {/* Customer / Supplier Details Box */}
               <div className="my-4 p-3.5 rounded-lg bg-slate-50 border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-3 print-avoid-break">
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
-                    ชื่อและที่อยู่ลูกค้า (Customer Details)
+                    {['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(doc.type) 
+                      ? 'ชื่อและที่อยู่ผู้จำหน่าย / ผู้ให้บริการ (Supplier Details)' 
+                      : 'ชื่อและที่อยู่ลูกค้า (Customer Details)'}
                   </span>
                   <h3 className="text-sm font-bold text-slate-900">{doc.contact?.companyName || '-'}</h3>
                   <p className="text-[11px] text-slate-600 mt-0.5">{doc.contact?.address || '-'}</p>
@@ -439,10 +441,16 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               ) : (
                 <div className="mt-12 pt-6 border-t border-slate-200 grid grid-cols-2 gap-8 text-center text-xs">
                   <div className="space-y-8">
-                    <p className="text-slate-600 font-medium">ในนาม {doc.contact?.companyName || 'ลูกค้า'}</p>
+                    <p className="text-slate-600 font-medium">ในนาม {doc.contact?.companyName || (doc.type === 'PURCHASE_ORDER' ? 'ผู้จำหน่าย' : 'ลูกค้า')}</p>
                     <div className="border-b border-dashed border-slate-400 w-48 mx-auto" />
                     <div>
-                      <p className="font-semibold text-slate-800">ผู้รับบริการ / ผู้สั่งซื้อ</p>
+                      <p className="font-semibold text-slate-800">
+                        {doc.type === 'PURCHASE_ORDER' 
+                          ? 'ผู้รับใบสั่งซื้อ / ผู้จำหน่าย' 
+                          : ['PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(doc.type)
+                          ? 'ผู้รับเงิน / ผู้ให้บริการ'
+                          : 'ผู้รับบริการ / ลูกค้า'}
+                      </p>
                       <span className="text-[10px] text-slate-400 block font-mono">วันที่ ...... / ...... / ..........</span>
                     </div>
                   </div>
@@ -457,7 +465,9 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                     </div>
                     <div>
                       <p className="font-semibold text-slate-900">{company.authorizedSignatory}</p>
-                      <span className="text-[10px] text-slate-500 block">{company.signatoryPosition}</span>
+                      <span className="text-[10px] text-slate-500 block">
+                        {doc.type === 'PURCHASE_ORDER' ? 'ผู้มีอำนาจสั่งซื้อ / กรรมการผู้จัดการ' : company.signatoryPosition}
+                      </span>
                     </div>
                   </div>
                 </div>
