@@ -568,7 +568,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
-              {documents.slice(0, 8).map((doc) => {
+              {[...documents].sort((a, b) => (b.issueDate || '').localeCompare(a.issueDate || '')).slice(0, 8).map((doc) => {
                 const badge = getStatusBadge(doc.status);
                 return (
                   <tr key={doc.id} className="hover:bg-rose-50/40 transition">

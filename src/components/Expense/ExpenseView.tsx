@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   TrendingDown, Plus, Search, Filter, Printer, Pencil, Trash2, AlertTriangle, 
   FileText, CheckCircle2, RotateCcw, Calendar, ShoppingBag, Receipt, DollarSign, ShieldAlert
 } from 'lucide-react';
 import { AccountingDocument, DocumentType, DocumentStatus } from '../../types';
-import { formatMoney, getStatusBadge, formatThaiDate } from '../../utils/formatters';
+import { formatMoney, getStatusBadge, formatThaiDate, getLatestYearMonthInfo } from '../../utils/formatters';
 
 interface ExpenseViewProps {
   documents: AccountingDocument[];
@@ -27,35 +27,32 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
 }) => {
   const [activeTypeTab, setActiveTypeTab] = useState<string>('PURCHASE_ORDER');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [datePreset, setDatePreset] = useState<string>('ALL');
+  const [datePreset, setDatePreset] = useState<string>('LATEST_MONTH');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [deleteTarget, setDeleteTarget] = useState<AccountingDocument | null>(null);
 
-  const expenseDocs = documents.filter(d => EXPENSE_DOC_TYPES.includes(d.type));
+  const expenseDocs = useMemo(() => documents.filter(d => EXPENSE_DOC_TYPES.includes(d.type)), [documents]);
+
+  // Documents belonging to active tab
+  const activeTabDocs = useMemo(() => {
+    return expenseDocs.filter(d => d.type === activeTypeTab);
+  }, [expenseDocs, activeTypeTab]);
+
+  // Calculate latest year-month for the active tab (fallback to all expense docs)
+  const activeTabLatest = useMemo(() => {
+    return getLatestYearMonthInfo(activeTabDocs.length > 0 ? activeTabDocs : expenseDocs);
+  }, [activeTabDocs, expenseDocs]);
 
   const handleDatePresetChange = (preset: string) => {
     setDatePreset(preset);
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth(); // 0-indexed
-
-    if (preset === 'THIS_MONTH') {
-      const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
-      const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
-      setStartDate(firstDay);
-      setEndDate(lastDay);
-    } else if (preset === 'LAST_MONTH') {
-      const firstDay = new Date(year, month - 1, 1).toISOString().split('T')[0];
-      const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
-      setStartDate(firstDay);
-      setEndDate(lastDay);
+    if (preset === 'LATEST_MONTH') {
+      setStartDate(activeTabLatest.firstDay);
+      setEndDate(activeTabLatest.lastDay);
     } else if (preset === 'THIS_YEAR') {
-      const firstDay = `${year}-01-01`;
-      const lastDay = `${year}-12-31`;
-      setStartDate(firstDay);
-      setEndDate(lastDay);
+      setStartDate(`${activeTabLatest.year}-01-01`);
+      setEndDate(`${activeTabLatest.year}-12-31`);
     } else if (preset === 'ALL') {
       setStartDate('');
       setEndDate('');
@@ -68,8 +65,12 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
     if (activeTypeTab === 'PAYMENT_VOUCHER' && doc.type !== 'PAYMENT_VOUCHER') return false;
     if (activeTypeTab === 'WHT_CERTIFICATE' && doc.type !== 'WHT_CERTIFICATE') return false;
     if (statusFilter !== 'ALL' && doc.status !== statusFilter) return false;
-    if (startDate && doc.issueDate < startDate) return false;
-    if (endDate && doc.issueDate > endDate) return false;
+    if (datePreset === 'LATEST_MONTH') {
+      if (!(doc.issueDate || '').startsWith(activeTabLatest.ym)) return false;
+    } else {
+      if (startDate && doc.issueDate < startDate) return false;
+      if (endDate && doc.issueDate > endDate) return false;
+    }
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       return (
@@ -81,6 +82,11 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
       );
     }
     return true;
+  }).sort((a, b) => {
+    // Always sort descending by date (latest date first)
+    const dateDiff = (b.issueDate || '').localeCompare(a.issueDate || '');
+    if (dateDiff !== 0) return dateDiff;
+    return (b.documentNo || '').localeCompare(a.documentNo || '');
   });
 
   // Calculate live KPI metrics
@@ -313,13 +319,12 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
             <select
               value={datePreset}
               onChange={(e) => handleDatePresetChange(e.target.value)}
-              className="bg-transparent text-slate-700 text-xs font-medium focus:outline-none cursor-pointer"
+              className="bg-transparent text-slate-700 text-xs font-semibold focus:outline-none cursor-pointer"
             >
-              <option value="ALL">📅 ทุกช่วงเวลา</option>
-              <option value="THIS_MONTH">เดือนนี้</option>
-              <option value="LAST_MONTH">เดือนที่แล้ว</option>
-              <option value="THIS_YEAR">ปีนี้ (2569)</option>
-              <option value="CUSTOM">กำหนดวันที่เอง</option>
+              <option value="LATEST_MONTH">📅 เดือนล่าสุด ({activeTabLatest.label})</option>
+              <option value="ALL">🗓️ ทุกช่วงเวลา (ทั้งหมด)</option>
+              <option value="THIS_YEAR">📅 ปีนี้ ({activeTabLatest.thaiYear})</option>
+              <option value="CUSTOM">⚙️ กำหนดวันที่เอง</option>
             </select>
 
             {datePreset === 'CUSTOM' && (

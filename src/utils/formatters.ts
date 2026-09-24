@@ -152,3 +152,43 @@ export const getStatusBadge = (status: string) => {
       };
   }
 };
+
+export interface LatestMonthInfo {
+  ym: string;
+  year: number;
+  month: number;
+  thaiYear: number;
+  thaiMonthName: string;
+  label: string;
+  firstDay: string;
+  lastDay: string;
+}
+
+export const getLatestYearMonthInfo = (docs: { issueDate?: string; date?: string }[] = []): LatestMonthInfo => {
+  let maxDate = '';
+  for (const d of docs) {
+    const dt = d.issueDate || d.date || '';
+    if (dt && dt > maxDate) maxDate = dt;
+  }
+  let y: number;
+  let m: number;
+  if (maxDate && maxDate.length >= 7) {
+    const parts = maxDate.split('-');
+    y = parseInt(parts[0], 10);
+    m = parseInt(parts[1], 10);
+  } else {
+    const now = new Date();
+    y = now.getFullYear();
+    m = now.getMonth() + 1;
+  }
+  const ym = `${y}-${String(m).padStart(2, '0')}`;
+  const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  const thaiYear = y + 543;
+  const thaiMonthName = thaiMonths[m - 1] || '';
+  const label = `${thaiMonthName} ${thaiYear}`;
+  const firstDay = `${ym}-01`;
+  const lastDayDate = new Date(y, m, 0);
+  const lastDay = `${ym}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
+  return { ym, year: y, month: m, thaiYear, thaiMonthName, label, firstDay, lastDay };
+};
+

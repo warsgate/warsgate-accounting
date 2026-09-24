@@ -75,7 +75,9 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
     // PO Detailed breakdown
     const poBreakdowns = custPOs.map(po => {
       const poNo = po.referencePoNo || '';
-      const linkedInvoices = custInvoices.filter(inv => inv.referencePoNo === poNo);
+      const linkedInvoices = custInvoices
+        .filter(inv => inv.referencePoNo === poNo)
+        .sort((a, b) => (b.issueDate || '').localeCompare(a.issueDate || ''));
       
       const totalPoAmount = po.grandTotal || 0;
       const invoicedTotal = linkedInvoices.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
@@ -112,6 +114,9 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
         percentPaid: totalPoAmount > 0 ? (paidTotal / totalPoAmount) * 100 : 0,
       };
     });
+
+    // Sort POs by issueDate descending (newest PO at the top)
+    poBreakdowns.sort((a, b) => (b.issueDate || '').localeCompare(a.issueDate || ''));
 
     const totalCustPoValue = poBreakdowns.reduce((sum, p) => sum + p.totalPoAmount, 0);
     const totalCustInvoiced = poBreakdowns.reduce((sum, p) => sum + p.invoicedTotal, 0);

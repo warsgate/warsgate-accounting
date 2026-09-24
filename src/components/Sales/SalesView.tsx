@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   FileText, Plus, Search, Filter, Eye, Printer, Pencil, Trash2, AlertTriangle, 
   CheckCircle2, RotateCcw, Calendar, Receipt, ShieldCheck, Clock, Download,
@@ -6,7 +6,7 @@ import {
   FileSpreadsheet, ChevronDown
 } from 'lucide-react';
 import { AccountingDocument, DocumentType, DocumentStatus } from '../../types';
-import { formatMoney, getStatusBadge, formatThaiDate } from '../../utils/formatters';
+import { formatMoney, getStatusBadge, formatThaiDate, getLatestYearMonthInfo } from '../../utils/formatters';
 import { exportSalesToExcel } from '../../utils/excelExport';
 
 interface SalesViewProps {
@@ -30,12 +30,26 @@ export const SalesView: React.FC<SalesViewProps> = ({
 }) => {
   const [activeTypeTab, setActiveTypeTab] = useState<string>('QUOTATION');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [datePreset, setDatePreset] = useState<string>('ALL');
+  const [datePreset, setDatePreset] = useState<string>('LATEST_MONTH');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [deleteTarget, setDeleteTarget] = useState<AccountingDocument | null>(null);
   const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
+
+  // Sales-only document categories
+  const salesTypes: DocumentType[] = ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'DELIVERY_ORDER', 'RECEIPT'];
+  const salesDocs = useMemo(() => documents.filter(d => salesTypes.includes(d.type)), [documents]);
+
+  // Documents belonging to active tab
+  const activeTabDocs = useMemo(() => {
+    return salesDocs.filter(d => activeTypeTab === 'INVOICE' ? (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') : d.type === activeTypeTab);
+  }, [salesDocs, activeTypeTab]);
+
+  // Calculate latest year-month for the active tab (fallback to all sales docs)
+  const activeTabLatest = useMemo(() => {
+    return getLatestYearMonthInfo(activeTabDocs.length > 0 ? activeTabDocs : salesDocs);
+  }, [activeTabDocs, salesDocs]);
 
   // ── Excel Export Handlers ──────────────────────────────────────────────────
   const handleExportFiltered = () => {
@@ -47,10 +61,6 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const handleExportAllSales = () => {
     exportSalesToExcel(salesDocs, 'รายงานเอกสารขายและรายได้ทั้งหมด');
   };
-
-  // Sales-only document categories
-  const salesTypes: DocumentType[] = ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'DELIVERY_ORDER', 'RECEIPT'];
-  const salesDocs = documents.filter(d => salesTypes.includes(d.type));
 
   // ── High-Tech KPI Computations ──────────────────────────────────────────────
   const qtDocs = salesDocs.filter(d => d.type === 'QUOTATION');
@@ -104,25 +114,12 @@ export const SalesView: React.FC<SalesViewProps> = ({
   // Quick Date Preset Handler
   const handleDatePresetChange = (preset: string) => {
     setDatePreset(preset);
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-
-    if (preset === 'THIS_MONTH') {
-      const firstDay = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
-      const lastDay = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
-      setStartDate(firstDay);
-      setEndDate(lastDay);
-    } else if (preset === 'LAST_MONTH') {
-      const firstDay = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0];
-      const lastDay = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
-      setStartDate(firstDay);
-      setEndDate(lastDay);
+    if (preset === 'LATEST_MONTH') {
+      setStartDate(activeTabLatest.firstDay);
+      setEndDate(activeTabLatest.lastDay);
     } else if (preset === 'THIS_YEAR') {
-      const firstDay = `${currentYear}-01-01`;
-      const lastDay = `${currentYear}-12-31`;
-      setStartDate(firstDay);
-      setEndDate(lastDay);
+      setStartDate(`${activeTabLatest.year}-01-01`);
+      setEndDate(`${activeTabLatest.year}-12-31`);
     } else if (preset === 'ALL') {
       setStartDate('');
       setEndDate('');
@@ -142,8 +139,12 @@ export const SalesView: React.FC<SalesViewProps> = ({
     if (statusFilter !== 'ALL' && doc.status !== statusFilter) return false;
 
     // 3. Date Range Filter
-    if (startDate && doc.issueDate < startDate) return false;
-    if (endDate && doc.issueDate > endDate) return false;
+    if (datePreset === 'LATEST_MONTH') {
+      if (!(doc.issueDate || '').startsWith(activeTabLatest.ym)) return false;
+    } else {
+      if (startDate && doc.issueDate < startDate) return false;
+      if (endDate && doc.issueDate > endDate) return false;
+    }
 
     // 4. Search Filter
     if (searchTerm.trim() !== '') {
@@ -157,6 +158,11 @@ export const SalesView: React.FC<SalesViewProps> = ({
     }
 
     return true;
+  }).sort((a, b) => {
+    // Always sort descending by date (latest date first)
+    const dateDiff = (b.issueDate || '').localeCompare(a.issueDate || '');
+    if (dateDiff !== 0) return dateDiff;
+    return (b.documentNo || '').localeCompare(a.documentNo || '');
   });
 
   // Calculate Net Total of Currently Filtered Documents
@@ -299,13 +305,12 @@ export const SalesView: React.FC<SalesViewProps> = ({
             <select
               value={datePreset}
               onChange={(e) => handleDatePresetChange(e.target.value)}
-              className="bg-transparent text-slate-700 text-xs font-medium focus:outline-none cursor-pointer"
+              className="bg-transparent text-slate-700 text-xs font-semibold focus:outline-none cursor-pointer"
             >
-              <option value="ALL">📅 ทุกช่วงเวลา</option>
-              <option value="THIS_MONTH">เดือนนี้</option>
-              <option value="LAST_MONTH">เดือนที่แล้ว</option>
-              <option value="THIS_YEAR">ปีนี้ (2569)</option>
-              <option value="CUSTOM">กำหนดวันที่เอง</option>
+              <option value="LATEST_MONTH">📅 เดือนล่าสุด ({activeTabLatest.label})</option>
+              <option value="ALL">🗓️ ทุกช่วงเวลา (ทั้งหมด)</option>
+              <option value="THIS_YEAR">📅 ปีนี้ ({activeTabLatest.thaiYear})</option>
+              <option value="CUSTOM">⚙️ กำหนดวันที่เอง</option>
             </select>
 
             {datePreset === 'CUSTOM' && (

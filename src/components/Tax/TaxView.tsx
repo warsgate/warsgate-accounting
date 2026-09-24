@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Calculator, 
   FileSpreadsheet, 
@@ -33,7 +33,13 @@ interface TaxViewProps {
 
 export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
   const [activeTab, setActiveTab] = useState<'TAX_PLANNING' | 'TAX_ALERTS' | 'PP30' | 'PND53' | 'PND3'>('TAX_PLANNING');
-  const [selectedMonth, setSelectedMonth] = useState<string>('ALL');
+
+  // Extract available months from documents (sorted descending: latest first)
+  const availableMonths = useMemo(() => Array.from(
+    new Set(documents.map(d => (d.issueDate || '').slice(0, 7)).filter(m => m.length === 7))
+  ).sort().reverse(), [documents]);
+
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => availableMonths[0] || 'ALL');
 
   // ─── Tax Planning Interactive Strategy States (อิงจากงบประมาณการ 2569) ──────
   // 1. ลงทุนเครื่องจักร & ฮาร์ดแวร์ Automation (1.5x / Initial Allowance 40%)
@@ -60,10 +66,10 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
   const [enableDirectorSalary, setEnableDirectorSalary] = useState<boolean>(true);
   const [directorSalaryCost, setDirectorSalaryCost] = useState<number>(180000);
 
-  // Filter documents by month if selected
+  // Filter documents by month if selected and sort by date descending
   const filterByMonth = (docs: AccountingDocument[]) => {
-    if (selectedMonth === 'ALL') return docs;
-    return docs.filter(d => (d.issueDate || '').startsWith(selectedMonth));
+    const list = selectedMonth === 'ALL' ? [...docs] : docs.filter(d => (d.issueDate || '').startsWith(selectedMonth));
+    return list.sort((a, b) => (b.issueDate || '').localeCompare(a.issueDate || ''));
   };
 
   // ── 1. ภาษีขาย (Output VAT) ────────────────────────────────────────────────
@@ -153,11 +159,6 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
   const netPayableBaseline = Math.max(0, baselineTaxYear - totalWhtCreditFromCustomers);
   const netPayableOptimized = Math.max(0, optimizedTaxYear - totalWhtCreditFromCustomers);
   const refundClaimable = optimizedTaxYear < totalWhtCreditFromCustomers ? totalWhtCreditFromCustomers - optimizedTaxYear : 0;
-
-  // Extract available months from documents
-  const availableMonths = Array.from(
-    new Set(documents.map(d => (d.issueDate || '').slice(0, 7)).filter(m => m.length === 7))
-  ).sort().reverse();
 
   const handlePrint = () => {
     window.print();
