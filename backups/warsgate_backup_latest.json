@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "backupDate": "2026-09-24T07:48:54+07:00",
+  "backupDate": "2026-09-24T07:51:11+07:00",
   "appName": "WARSGATE Accounting System",
   "metadata": {
     "documentsCount": 26,
@@ -180,8 +180,8 @@
       "category": "AUTOMATION_HARDWARE",
       "type": "PRODUCT",
       "unit": "Set",
-      "unitPrice": 1100,
-      "costPrice": 1100,
+      "unitPrice": 300,
+      "costPrice": 300,
       "stockQty": 15,
       "minStockAlert": 2,
       "description": "แกนหมุนกระดาษเครื่องพิมพ์อัปเกรด (Roller Paper Printer Spindle)"
@@ -2728,9 +2728,9 @@
           "description": "Roller Paper Printer Spindle (แกนหมุนกระดาษเครื่องพิมพ์อัปเกรด)",
           "quantity": 15,
           "unit": "Set",
-          "pricePerUnit": 1100,
+          "pricePerUnit": 300,
           "discount": 0,
-          "amount": 16500,
+          "amount": 4500,
           "vatInclusive": false,
           "withholdingTaxRate": 0
         },
@@ -2748,13 +2748,13 @@
           "withholdingTaxRate": 0
         }
       ],
-      "subtotal": 21000,
+      "subtotal": 9000,
       "discountTotal": 0,
       "vatRate": 7,
-      "vatAmount": 1470,
-      "grandTotal": 22470,
+      "vatAmount": 630,
+      "grandTotal": 9630,
       "withholdingTaxTotal": 0,
-      "netPayment": 22470,
+      "netPayment": 9630,
       "status": "APPROVED",
       "notes": "จัดส่งที่: บริษัท วอร์สเกต จำกัด (สำนักงานใหญ่) หมู่บ้าน พฤกษาวิลล์ 46/1 เลขที่ 50/8 หมู่ 4 ตำบลคลองสาม อำเภอคลองหลวง จังหวัดปทุมธานี 12120 โทร. 083-066-7309",
       "createdByName": "แผนกจัดซื้อ / คุณจีระวัฒน์ (MD)"
