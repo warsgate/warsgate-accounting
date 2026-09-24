@@ -189,76 +189,116 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
             <div id="printable-document-content" className="print-document-container max-w-[210mm] mx-auto bg-white text-slate-900 p-6 sm:p-8 rounded-lg shadow-xl print-shadow-none text-xs leading-normal font-sans border border-slate-200">
               
               {/* Header: Official WARSGATE Logo & Document Title */}
-              <div className={`flex items-start justify-between pb-5 border-b-2 gap-4 ${
-                doc.type === 'DELIVERY_ORDER' ? 'border-indigo-600' : 'border-rose-600'
-              }`}>
-                
-                {/* WARSGATE Logo Component (Light Mode) & Company Details */}
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2.5">
-                    <img src="/warsgate-logo.png" alt="WARSGATE" className="h-10 w-auto object-contain" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
-                    <div>
-                      <h1 className="text-sm font-extrabold text-slate-900">{company.name}</h1>
-                      <span className={`text-[11px] font-bold block ${
-                        doc.type === 'DELIVERY_ORDER' ? 'text-indigo-700' : 'text-rose-700'
-                      }`}>{company.nameEn}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-0.5 pt-0.5">
-                    <p className="text-[10px] text-slate-600 max-w-sm">
-                      {company.address}
-                    </p>
-                    <div className="text-[10px] text-slate-600 flex flex-wrap gap-x-3 pt-0.5 font-mono">
-                      <span>เลขประจำตัวผู้เสียภาษี: <strong>{company.taxId}</strong></span>
-                      <span>({company.branchCode === '00000' ? 'สำนักงานใหญ่' : `สาขา ${company.branchCode}`})</span>
-                      <span>โทร: {company.phone}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Document Title Box */}
-                <div className="text-right shrink-0">
-                  <h2 className={`text-lg font-black tracking-tight ${
-                    doc.type === 'DELIVERY_ORDER' ? 'text-indigo-700' : 'text-rose-600'
-                  }`}>{title.main}</h2>
-                  <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">{title.sub}</span>
+              <div className="pb-4">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
                   
-                  <div className="mt-2.5 p-2 bg-slate-50 rounded-lg border border-slate-200 font-mono text-[11px] space-y-0.5 text-right">
-                    <div>
-                      <span className="text-slate-500">เลขที่ / No: </span>
-                      <strong className="text-slate-900 font-bold">{doc.documentNo}</strong>
-                    </div>
-                    {doc.referencePoNo && (
-                      <div className="pt-0.5">
-                        <span className={`font-bold ${doc.type === 'DELIVERY_ORDER' ? 'text-indigo-700' : 'text-rose-600'}`}>
-                          อ้างอิง PO ลูกค้า: 
-                        </span>
-                        <strong className={`px-1.5 py-0.2 rounded border font-bold ${
-                          doc.type === 'DELIVERY_ORDER' 
-                            ? 'text-indigo-800 bg-indigo-50 border-indigo-200' 
-                            : 'text-rose-700 bg-rose-50 border-rose-200'
+                  {/* WARSGATE Brand & Company Details */}
+                  <div className="flex flex-col gap-2.5 max-w-full md:max-w-[60%]">
+                    <div className="flex items-center gap-3.5">
+                      <div className="shrink-0 p-1 bg-white rounded-xl">
+                        <img 
+                          src="/warsgate-logo.png" 
+                          alt="WARSGATE" 
+                          className="h-12 sm:h-14 w-auto object-contain" 
+                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} 
+                        />
+                      </div>
+                      <div className="space-y-0.5">
+                        <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight">
+                          {company.name}
+                        </h1>
+                        <span className={`text-[11px] sm:text-xs font-bold tracking-wider uppercase font-mono block ${
+                          doc.type === 'DELIVERY_ORDER' ? 'text-indigo-600' : 'text-rose-600'
                         }`}>
-                          {doc.referencePoNo}
+                          {company.nameEn}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 text-slate-600 pl-0.5">
+                      <p className="text-[11px] leading-relaxed text-slate-600">
+                        {company.address}
+                      </p>
+                      <div className="text-[10.5px] flex flex-wrap items-center gap-x-2.5 gap-y-1 pt-1 text-slate-600 font-sans">
+                        <span>
+                          เลขประจำตัวผู้เสียภาษี: <strong className="font-mono text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{company.taxId}</strong>
+                        </span>
+                        <span className="text-slate-500 font-medium">
+                          ({company.branchCode === '00000' ? 'สำนักงานใหญ่' : `สาขา ${company.branchCode}`})
+                        </span>
+                        <span className="text-slate-300 font-bold">•</span>
+                        <span>
+                          โทร: <strong className="font-mono text-slate-800 font-semibold">{company.phone}</strong>
+                        </span>
+                        {company.email && (
+                          <>
+                            <span className="text-slate-300 font-bold">•</span>
+                            <span>อีเมล: <span className="text-slate-700">{company.email}</span></span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Document Title & Meta Box */}
+                  <div className="text-right shrink-0 flex flex-col items-start md:items-end justify-between">
+                    <div>
+                      <h2 className={`text-xl sm:text-2xl font-black tracking-tight ${
+                        doc.type === 'DELIVERY_ORDER' ? 'text-indigo-700' : 'text-rose-600'
+                      }`}>
+                        {title.main}
+                      </h2>
+                      <span className="text-[10.5px] sm:text-[11px] font-bold text-slate-400 tracking-widest uppercase block mt-0.5">
+                        {title.sub}
+                      </span>
+                    </div>
+                    
+                    <div className="mt-2.5 p-3 bg-slate-50/90 rounded-2xl border border-slate-200/80 font-mono text-[11px] space-y-1 text-right shadow-xs w-full md:min-w-[220px]">
+                      <div className="flex justify-between items-center gap-3">
+                        <span className="text-slate-500 font-sans">เลขที่ / No: </span>
+                        <strong className="text-slate-900 font-bold text-xs bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">
+                          {doc.documentNo}
                         </strong>
                       </div>
-                    )}
-                    {doc.referenceDocNo && (
-                      <div>
-                        <span className="text-slate-500">อ้างอิงเอกสาร: </span>
-                        <span className="text-slate-800 font-semibold">{doc.referenceDocNo}</span>
+                      {doc.referencePoNo && (
+                        <div className="flex justify-between items-center gap-3 pt-0.5">
+                          <span className={`font-sans font-bold ${doc.type === 'DELIVERY_ORDER' ? 'text-indigo-700' : 'text-rose-600'}`}>
+                            อ้างอิง PO:
+                          </span>
+                          <strong className={`px-2 py-0.5 rounded border font-bold ${
+                            doc.type === 'DELIVERY_ORDER' 
+                              ? 'text-indigo-800 bg-indigo-50 border-indigo-200' 
+                              : 'text-rose-700 bg-rose-50 border-rose-200'
+                          }`}>
+                            {doc.referencePoNo}
+                          </strong>
+                        </div>
+                      )}
+                      {doc.referenceDocNo && (
+                        <div className="flex justify-between items-center gap-3">
+                          <span className="text-slate-500 font-sans">อ้างอิงเอกสาร: </span>
+                          <span className="text-slate-800 font-semibold">{doc.referenceDocNo}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center gap-3">
+                        <span className="text-slate-500 font-sans">วันที่ / Date: </span>
+                        <span className="text-slate-800 font-medium">{formatThaiDate(doc.issueDate)}</span>
                       </div>
-                    )}
-                    <div>
-                      <span className="text-slate-500">วันที่ / Date: </span>
-                      <span>{formatThaiDate(doc.issueDate)}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">ครบกำหนด / Due: </span>
-                      <span>{formatThaiDate(doc.dueDate)}</span>
+                      <div className="flex justify-between items-center gap-3">
+                        <span className="text-slate-500 font-sans">ครบกำหนด / Due: </span>
+                        <span className="text-slate-800 font-medium">{formatThaiDate(doc.dueDate)}</span>
+                      </div>
                     </div>
                   </div>
+
                 </div>
 
+                {/* Modern Sleek Gradient Accent Line */}
+                <div className={`mt-4 h-1 w-full rounded-full ${
+                  doc.type === 'DELIVERY_ORDER' 
+                    ? 'bg-gradient-to-r from-indigo-600 via-indigo-400 to-indigo-100' 
+                    : 'bg-gradient-to-r from-rose-600 via-rose-400 to-rose-100'
+                }`} />
               </div>
 
               {/* Customer / Supplier Details Box */}
