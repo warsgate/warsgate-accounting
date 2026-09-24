@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "backupDate": "2026-09-24T07:39:04+07:00",
+  "backupDate": "2026-09-24T07:48:54+07:00",
   "appName": "WARSGATE Accounting System",
   "metadata": {
     "documentsCount": 26,
     "contactsCount": 4,
-    "productsCount": 36,
+    "productsCount": 37,
     "chartOfAccountsCount": 15,
     "journalEntriesCount": 1,
     "bankAccountsCount": 2
@@ -185,6 +185,19 @@
       "stockQty": 15,
       "minStockAlert": 2,
       "description": "แกนหมุนกระดาษเครื่องพิมพ์อัปเกรด (Roller Paper Printer Spindle)"
+    },
+    {
+      "id": "prod-box-minijb01",
+      "code": "BOX-MINI-JB01",
+      "name": "mini junction box",
+      "category": "AUTOMATION_HARDWARE",
+      "type": "PRODUCT",
+      "unit": "Set",
+      "unitPrice": 300,
+      "costPrice": 300,
+      "stockQty": 15,
+      "minStockAlert": 2,
+      "description": "mini junction box"
     },
     {
       "id": "prod-1",
@@ -2720,15 +2733,28 @@
           "amount": 16500,
           "vatInclusive": false,
           "withholdingTaxRate": 0
+        },
+        {
+          "id": "item-po-ptech-2",
+          "code": "BOX-MINI-JB01",
+          "name": "mini junction box",
+          "description": "mini junction box",
+          "quantity": 15,
+          "unit": "Set",
+          "pricePerUnit": 300,
+          "discount": 0,
+          "amount": 4500,
+          "vatInclusive": false,
+          "withholdingTaxRate": 0
         }
       ],
-      "subtotal": 16500,
+      "subtotal": 21000,
       "discountTotal": 0,
       "vatRate": 7,
-      "vatAmount": 1155,
-      "grandTotal": 17655,
+      "vatAmount": 1470,
+      "grandTotal": 22470,
       "withholdingTaxTotal": 0,
-      "netPayment": 17655,
+      "netPayment": 22470,
       "status": "APPROVED",
       "notes": "จัดส่งที่: บริษัท วอร์สเกต จำกัด (สำนักงานใหญ่) หมู่บ้าน พฤกษาวิลล์ 46/1 เลขที่ 50/8 หมู่ 4 ตำบลคลองสาม อำเภอคลองหลวง จังหวัดปทุมธานี 12120 โทร. 083-066-7309",
       "createdByName": "แผนกจัดซื้อ / คุณจีระวัฒน์ (MD)"
