@@ -44,13 +44,28 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 
   const title = getDocTitle();
   const thaiBahtText = arabicToThaiBahtText(doc.netPayment || doc.grandTotal);
+  const safeDocNo = doc.documentNo ? doc.documentNo.replace(/[\/\\:*?"<>|]/g, '-') : 'document';
+
+  // Set document.title to documentNo so browser print / Save as PDF defaults to documentNo as filename
+  React.useEffect(() => {
+    if (!doc) return;
+    const prevTitle = document.title;
+    document.title = safeDocNo;
+    return () => {
+      document.title = prevTitle;
+    };
+  }, [doc, safeDocNo]);
 
   const handlePrint = () => {
     const printableElement = document.getElementById('printable-document-content');
     if (!printableElement) {
+      document.title = safeDocNo;
       window.print();
       return;
     }
+
+    // Ensure window document title is safeDocNo so browser PDF save dialog uses document number
+    document.title = safeDocNo;
 
     // Create an invisible iframe to print ONLY the document without modal scroll clipping
     const printFrame = document.createElement('iframe');
@@ -74,7 +89,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
       <html lang="th">
       <head>
         <meta charset="UTF-8">
-        <title>${title.main} - ${doc.documentNo}</title>
+        <title>${safeDocNo}</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

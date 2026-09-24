@@ -7,7 +7,7 @@ export const initialCompanyProfile: CompanyProfile = {
   branchCode: '00000', // สำนักงานใหญ่
   address: 'หมู่บ้าน พฤกษาวิลล์ 46/1 เลขที่ 50/8 หมู่ 4 ตำบลคลองสาม อำเภอคลองหลวง จังหวัดปทุมธานี 12120',
   phone: '083-066-7309',
-  email: 'contact@warsgate.co.th',
+  email: 'warsgate.at@gmail.com',
   website: 'https://warsgate.co.th',
   logoUrl: '/logo.svg',
   authorizedSignatory: 'คุณจีระวัฒน์ ปรีชานุรักษ์',

@@ -29,10 +29,21 @@ import { defaultNumberingConfig } from './utils/numbering';
 export function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   
-  // Persistent State from LocalStorage or Initial Files
   const [company, setCompany] = useState<CompanyProfile>(() => {
     const saved = localStorage.getItem('warsgate_company');
-    return saved ? JSON.parse(saved) : initialCompanyProfile;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.email === 'contact@warsgate.co.th' || !parsed.email) {
+          parsed.email = 'warsgate.at@gmail.com';
+          localStorage.setItem('warsgate_company', JSON.stringify(parsed));
+        }
+        return parsed;
+      } catch {
+        return initialCompanyProfile;
+      }
+    }
+    return initialCompanyProfile;
   });
 
   const [numberingConfig, setNumberingConfig] = useState<DocumentNumberingConfig>(() => {
