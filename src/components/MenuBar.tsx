@@ -301,9 +301,9 @@ export const MenuBar: React.FC<MenuBarProps> = ({
         },
         { type: "divider" },
         {
-          label: "เกี่ยวกับระบบ (WARSGATE FlowControl v2.5)",
+          label: "เกี่ยวกับโปรแกรมบัญชี วอร์สเกต (v2.5)",
           icon: Cpu,
-          action: () => { alert("WARSGATE FLOWCONTROL STUDIO v2.5.0\n(C) 2026 Warsgate Automation Co., Ltd. All rights reserved."); setOpenMenu(null); }
+          action: () => { alert("โปรแกรมบัญชี วอร์สเกต (WARSGATE Accounting v2.5.0)\n(C) 2026 Warsgate Automation Co., Ltd. All rights reserved."); setOpenMenu(null); }
         }
       ]
     }
@@ -317,24 +317,19 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       {/* Left: Studio Branding & Menu Items */}
       <div className="flex items-center gap-1 sm:gap-2">
         
-        {/* Futuristic Icon Logo & Studio Pill */}
-        <div className="flex items-center gap-1.5 mr-2 pl-0.5">
-          <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 p-[1px] shadow-sm shadow-cyan-500/30 flex items-center justify-center">
-            <div className="w-full h-full bg-[#080d19] rounded-[7px] flex items-center justify-center">
-              <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-1.5 bg-cyan-950/40 border border-cyan-500/30 px-1.5 py-0.5 rounded-md">
-            <span className="text-[10px] font-extrabold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">AI</span>
-          </div>
-
-          <span className="font-extrabold tracking-wider text-white text-[11px] sm:text-xs">
-            FLOW<span className="text-cyan-400">CONTROL</span> <span className="text-slate-400 font-mono text-[10px] font-normal">STUDIO</span>
+        {/* WARSGATE Logo & Branding */}
+        <div className="flex items-center gap-2 mr-2 pl-0.5">
+          <img 
+            src="/warsgate-logo.png" 
+            alt="WARSGATE" 
+            className="h-5 w-auto object-contain brightness-110"
+          />
+          <span className="font-extrabold tracking-wide text-white text-[11px] sm:text-xs">
+            โปรแกรมบัญชี <span className="text-rose-400 font-bold">วอร์สเกต</span>
           </span>
 
-          <span className="hidden md:inline-flex items-center text-[9px] font-mono font-bold bg-slate-800/90 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/20">
-            CELL-01
+          <span className="hidden md:inline-flex items-center text-[9px] font-mono font-bold bg-rose-950/60 text-rose-300 px-1.5 py-0.5 rounded border border-rose-500/30">
+            WARSGATE
           </span>
           
           <span className="text-slate-700 ml-1">|</span>

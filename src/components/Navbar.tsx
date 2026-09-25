@@ -46,15 +46,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
           <button 
             onClick={() => setActiveTab('dashboard')}
-            className="flex items-center gap-3 text-left focus:outline-none"
+            className="flex items-center gap-3 text-left focus:outline-none group"
           >
             <img 
               src="/warsgate-logo.png" 
               alt="WARSGATE Logo" 
-              className="h-9 md:h-11 w-auto object-contain"
+              className="h-8 md:h-10 w-auto object-contain transition group-hover:scale-105"
             />
             <div className="hidden sm:block pl-3 border-l border-slate-200">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-sm md:text-base font-bold text-slate-800 tracking-tight leading-tight">
+                  โปรแกรมบัญชี <span className="text-rose-600 font-extrabold">วอร์สเกต</span>
+                </span>
                 <span className="text-[10px] bg-rose-50 text-rose-600 font-bold px-2 py-0.5 rounded-full border border-rose-200">
                   {company.branchCode === '00000' ? 'สำนักงานใหญ่' : `สาขา ${company.branchCode}`}
                 </span>
