@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  Search, 
+  Search, PanelLeft, 
   Bell, 
   PlusCircle, 
   ChevronDown, 
@@ -16,12 +16,16 @@ interface NavbarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   openCreateModal: (type: 'QUOTATION' | 'INVOICE' | 'RECEIPT' | 'PURCHASE_ORDER') => void;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   company,
   setActiveTab,
-  openCreateModal
+  openCreateModal,
+  isSidebarCollapsed = false,
+  onToggleSidebar
 }) => {
   const [showQuickMenu, setShowQuickMenu] = React.useState(false);
 
@@ -29,8 +33,17 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm px-4 lg:px-6 py-3">
       <div className="flex items-center justify-between gap-4">
         
-        {/* Left: Official WARSGATE Logo */}
-        <div className="flex items-center gap-4">
+        {/* Left: Official WARSGATE Logo & Sidebar Toggle */}
+        <div className="flex items-center gap-3">
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 transition active:scale-95"
+              title={isSidebarCollapsed ? "ขยายเมนูด้านซ้าย (Expand Sidebar)" : "ย่อ/ซ่อนเมนูด้านซ้าย (Collapse Sidebar)"}
+            >
+              <PanelLeft className="w-4 h-4" />
+            </button>
+          )}
           <button 
             onClick={() => setActiveTab('dashboard')}
             className="flex items-center gap-3 text-left focus:outline-none"

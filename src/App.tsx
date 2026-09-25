@@ -29,6 +29,17 @@ import { defaultNumberingConfig } from './utils/numbering';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem('warsgate_sidebar_collapsed') === 'true';
+  });
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('warsgate_sidebar_collapsed', String(next));
+      return next;
+    });
+  };
   
   const [company, setCompany] = useState<CompanyProfile>(() => {
     const saved = localStorage.getItem('warsgate_company');
@@ -336,6 +347,8 @@ export function App() {
           setCreateDocType(type);
         }}
         documents={documents}
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleSidebar={toggleSidebar}
       />
 
       {/* Top Navbar Header */}
@@ -348,18 +361,22 @@ export function App() {
           setEditingDoc(null);
           setCreateDocType(type);
         }}
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleSidebar={toggleSidebar}
       />
 
       {/* Main Workspace Layout */}
       <div className="flex flex-1 overflow-hidden">
         
-        {/* Left Sidebar Navigation */}
+        {/* Left Sidebar Navigation (Collapsible) */}
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           documents={documents}
           contacts={contacts}
           products={products}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={toggleSidebar}
         />
 
         {/* Content Area - Full screen flush with edge */}

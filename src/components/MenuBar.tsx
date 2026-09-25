@@ -13,13 +13,17 @@ interface MenuBarProps {
   setActiveTab: (tab: string) => void;
   openCreateModal: (type: "QUOTATION" | "INVOICE" | "RECEIPT" | "PURCHASE_ORDER") => void;
   documents?: AccountingDocument[];
+  isSidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const MenuBar: React.FC<MenuBarProps> = ({
   activeTab,
   setActiveTab,
   openCreateModal,
-  documents = []
+  documents = [],
+  isSidebarCollapsed = false,
+  onToggleSidebar
 }) => {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -144,6 +148,13 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       key: "view",
       label: "View",
       dropdown: [
+        {
+          label: isSidebarCollapsed ? "แสดงแถบเมนูด้านซ้าย (Expand Sidebar)" : "ซ่อนแถบเมนูด้านซ้าย (Collapse Sidebar)",
+          icon: Zap,
+          shortcut: "⌘B",
+          action: () => { if (onToggleSidebar) onToggleSidebar(); setOpenMenu(null); }
+        },
+        { type: "divider" },
         {
           label: "ภาพรวมการเงิน (Dashboard)",
           icon: BarChart3,
