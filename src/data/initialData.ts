@@ -3060,7 +3060,7 @@ export const initialDocuments: AccountingDocument[] = [
         id: 'item-qt2609004-1',
         code: 'COMP-DELL-5090',
         name: 'Computer Set สำหรับงาน Dashboard Data Monitor (Dell OptiPlex 5090 SFF)',
-        description: 'Dell OptiPlex 5090 SFF - CPU Intel Core i7-10700 Max 4.80GHz, RAM 16GB DDR4, SSD M.2 NVMe 256GB + HDD 1TB, Windows 11 Pro License แท้, WiFi + Bluetooth (ต้นทุน ฿20,500 + กำไร 35%)',
+        description: 'Dell OptiPlex 5090 SFF - CPU Intel Core i7-10700 Max 4.80GHz, RAM 16GB DDR4, SSD M.2 NVMe 256GB + HDD 1TB, Windows 11 Pro License แท้, WiFi + Bluetooth',
         quantity: 1,
         unit: 'Set',
         pricePerUnit: 27675.00,
