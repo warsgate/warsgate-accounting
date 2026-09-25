@@ -192,3 +192,57 @@ export const getLatestYearMonthInfo = (docs: { issueDate?: string; date?: string
   return { ym, year: y, month: m, thaiYear, thaiMonthName, label, firstDay, lastDay };
 };
 
+export const getProjectName = (doc: any): string => {
+  if (!doc) return '-';
+  if (doc.projectNote && typeof doc.projectNote === 'string' && doc.projectNote.trim()) {
+    return doc.projectNote.trim();
+  }
+  if (doc.projectName && typeof doc.projectName === 'string' && doc.projectName.trim()) {
+    return doc.projectName.trim();
+  }
+
+  const po = (doc.referencePoNo || '').trim();
+  const notes = (doc.notes || '').trim();
+  const docNo = (doc.documentNo || '').trim();
+  const firstItem = doc.items && doc.items.length > 0 ? (doc.items[0].name || doc.items[0].description || '') : '';
+
+  // Match known POs or Projects
+  if (po === '2505005' || notes.includes('Traceability Solenoid Line') || firstItem.includes('Traceability')) {
+    return 'Traceability Solenoid Line';
+  }
+  if (po === 'PO252155' || notes.includes('Thai Sekisui Foam') || notes.includes('PO252155') || firstItem.includes('Spindle') || notes.includes('Spindle')) {
+    return 'Spindle Roll & Junction Box';
+  }
+  if (po === '2607001' || notes.includes('2607001') || notes.includes('Smart Camera') || notes.includes('Pick & Place') || notes.includes('Wenglor') || notes.includes('MVC')) {
+    return 'Smart Camera Pick & Place';
+  }
+  if (po === '2609002' || notes.includes('2609002') || notes.includes('เครือข่าย') || firstItem.includes('Convert USB')) {
+    return 'จัดซื้ออุปกรณ์และติดตั้งเครือข่าย';
+  }
+  if (docNo === 'QT-2609-004' || (notes.includes('Dashboard Data Monitor') && (firstItem.includes('Dell') || firstItem.includes('Monitor')))) {
+    return 'งาน Dashboard Data Monitor';
+  }
+  if (docNo === 'QT-2609-005' || notes.includes('โปรแกรม ระบบ Dashboard Data Monitor') || firstItem.includes('โปรแกรม ระบบ Dashboard Data Monitor')) {
+    return 'โปรแกรม ระบบ Dashboard Data Monitor';
+  }
+  if (notes.includes('โครงการ:')) {
+    const match = notes.match(/โครงการ:\s*([^|]+)/);
+    if (match && match[1]) return match[1].trim();
+  }
+  if (notes.includes('โครงการ')) {
+    const match = notes.match(/โครงการ\s*([^|]+)/);
+    if (match && match[1]) return match[1].trim();
+  }
+  if (notes.includes('งาน ')) {
+    const match = notes.match(/งาน\s*([^|]+)/);
+    if (match && match[1]) return match[1].trim();
+  }
+
+  // Fallback to first item name if available
+  if (firstItem) {
+    return firstItem.length > 35 ? firstItem.substring(0, 35) + '...' : firstItem;
+  }
+
+  return 'งานระบบทั่วไป';
+};
+

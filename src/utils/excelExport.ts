@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import { AccountingDocument, DocumentType, DocumentStatus } from "../types";
+import { getProjectName } from "./formatters";
 
 // Helper to translate document type
 export const getDocTypeLabel = (type: DocumentType): string => {
@@ -89,6 +90,7 @@ export const exportSalesToExcel = (
       "ลำดับ": index + 1,
       "เลขที่เอกสาร": doc.documentNo || "-",
       "ประเภทเอกสาร": getDocTypeLabel(doc.type),
+      "โครงการ / ชื่องาน": getProjectName(doc),
       "วันที่ออกเอกสาร": doc.issueDate || "-",
       "วันที่ครบกำหนด": doc.dueDate || "-",
       "เลขที่ PO ลูกค้า": doc.referencePoNo || "-",
@@ -123,6 +125,7 @@ export const exportSalesToExcel = (
     { wch: 6 },  // ลำดับ
     { wch: 18 }, // เลขที่เอกสาร
     { wch: 18 }, // ประเภทเอกสาร
+    { wch: 28 }, // โครงการ / ชื่องาน
     { wch: 14 }, // วันที่ออกเอกสาร
     { wch: 14 }, // วันที่ครบกำหนด
     { wch: 18 }, // เลขที่ PO ลูกค้า
@@ -163,6 +166,7 @@ export const exportSalesToExcel = (
           "ลำดับ": itemCounter++,
           "เลขที่เอกสาร": doc.documentNo || "-",
           "ประเภทเอกสาร": getDocTypeLabel(doc.type),
+          "โครงการ / ชื่องาน": getProjectName(doc),
           "วันที่ออกเอกสาร": doc.issueDate || "-",
           "เลขที่ PO ลูกค้า": doc.referencePoNo || "-",
           "ชื่อลูกค้า / นิติบุคคล": doc.contact?.companyName || doc.contact?.name || "-",

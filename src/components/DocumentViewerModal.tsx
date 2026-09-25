@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Printer, Download, CheckCircle, ShieldCheck, FileText, Award } from 'lucide-react';
 import { AccountingDocument, CompanyProfile } from '../types';
-import { formatMoney, formatNumber, formatThaiDate, arabicToThaiBahtText } from '../utils/formatters';
+import { formatMoney, formatNumber, formatThaiDate, arabicToThaiBahtText, getProjectName } from '../utils/formatters';
 import { WhtCertificateView } from './WhtCertificateView';
 
 interface DocumentViewerModalProps {
@@ -337,11 +337,12 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                     <span className="text-slate-500">เงื่อนไข: </span>
                     <span className="font-semibold text-slate-800">{doc.contact?.creditDays ? `เครดิต ${doc.contact.creditDays} วัน` : 'ส่งมอบตรวจรับหน้างาน'}</span>
                   </div>
-                  {doc.projectNote && (
-                    <div className="pt-0.5">
-                      <span className="text-rose-600 font-bold text-[10px]">โครงการ: {doc.projectNote}</span>
-                    </div>
-                  )}
+                  <div className="pt-1 border-t border-slate-200/60 mt-0.5">
+                    <span className="text-slate-500">โครงการ: </span>
+                    <strong className="text-rose-700 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 inline-block">
+                      {getProjectName(doc)}
+                    </strong>
+                  </div>
                 </div>
               </div>
 

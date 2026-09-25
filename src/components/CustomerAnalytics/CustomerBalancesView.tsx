@@ -6,7 +6,7 @@ import {
   Calendar, CheckCircle, ExternalLink, ArrowRight, TrendingUp
 } from 'lucide-react';
 import { AccountingDocument, Contact, CompanyProfile } from '../../types';
-import { formatMoney, formatThaiDate } from '../../utils/formatters';
+import { formatMoney, formatThaiDate, getProjectName } from '../../utils/formatters';
 
 interface CustomerBalancesViewProps {
   documents: AccountingDocument[];
@@ -500,10 +500,11 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                                   </div>
                                 ) : (
                                   <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
-                                    <table className="w-full text-left text-xs min-w-[550px]">
+                                    <table className="w-full text-left text-xs min-w-[650px]">
                                       <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                                         <tr>
                                           <th className="py-2.5 px-3">เลขที่ใบแจ้งหนี้</th>
+                                          <th className="py-2.5 px-3">โครงการ / ชื่องาน</th>
                                           <th className="py-2.5 px-3">งวดงาน / รายการ</th>
                                           <th className="py-2.5 px-3">วันที่ออก</th>
                                           <th className="py-2.5 px-3 text-right">ยอดรวม (บาท)</th>
@@ -515,6 +516,11 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                                         {poItem.invoices.map(inv => (
                                           <tr key={inv.id} className="hover:bg-slate-50 transition">
                                             <td className="py-2.5 px-3 font-mono font-bold text-slate-800">{inv.documentNo}</td>
+                                            <td className="py-2.5 px-3 font-semibold text-slate-800 text-[11px]">
+                                              <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200 truncate block max-w-[150px]" title={getProjectName(inv)}>
+                                                {getProjectName(inv)}
+                                              </span>
+                                            </td>
                                             <td className="py-2.5 px-3 text-slate-700 font-medium">
                                               {inv.items?.[0]?.name || 'ค่างวดงานตามสัญญา'}
                                             </td>

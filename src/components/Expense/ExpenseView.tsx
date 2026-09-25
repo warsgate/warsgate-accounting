@@ -4,7 +4,7 @@ import {
   FileText, CheckCircle2, RotateCcw, Calendar, ShoppingBag, Receipt, DollarSign, ShieldAlert
 } from 'lucide-react';
 import { AccountingDocument, DocumentType, DocumentStatus } from '../../types';
-import { formatMoney, getStatusBadge, formatThaiDate, getLatestYearMonthInfo } from '../../utils/formatters';
+import { formatMoney, getStatusBadge, formatThaiDate, getLatestYearMonthInfo, getProjectName } from '../../utils/formatters';
 
 interface ExpenseViewProps {
   documents: AccountingDocument[];
@@ -423,6 +423,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                 <tr>
                   <th className="py-3 px-4">เลขที่เอกสาร</th>
                   <th className="py-3 px-4">ประเภท</th>
+                  <th className="py-3 px-4">โครงการ / ชื่องาน</th>
                   <th className="py-3 px-4">ซัพพลายเออร์ / ผู้จำหน่าย</th>
                   <th className="py-3 px-4">วันที่สั่ง / กำหนดส่งมอบ</th>
                   <th className="py-3 px-4 text-right">ยอดรวม (VAT 7%)</th>
@@ -433,7 +434,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
               <tbody className="divide-y divide-slate-100 bg-white">
                 {filteredDocs.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                    <td colSpan={8} className="py-12 text-center text-slate-400">
                       <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
                       <p className="font-medium">
                         ไม่พบรายการเอกสารในแท็บ &quot;{tableTabs.find(t => t.id === activeTypeTab)?.label}&quot; ตามเงื่อนไขที่เลือก
@@ -475,6 +476,11 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
                               : doc.type === 'PAYMENT_VOUCHER'
                               ? 'ใบสำคัญจ่าย'
                               : '50 ทวิ'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 max-w-[200px]">
+                          <span className="inline-block font-semibold text-slate-800 text-[11px] bg-slate-100 px-2 py-1 rounded-md border border-slate-200 truncate max-w-full" title={getProjectName(doc)}>
+                            {getProjectName(doc)}
                           </span>
                         </td>
                         <td className="py-3.5 px-4 max-w-xs">

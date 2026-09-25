@@ -9,7 +9,7 @@ import {
   XAxis, YAxis, Tooltip, CartesianGrid, Legend, PieChart, Pie, Cell
 } from 'recharts';
 import { AccountingDocument, BankAccount, Contact } from '../../types';
-import { formatMoney, getStatusBadge, formatThaiDate } from '../../utils/formatters';
+import { formatMoney, getStatusBadge, formatThaiDate, getProjectName } from '../../utils/formatters';
 
 interface DashboardViewProps {
   documents: AccountingDocument[];
@@ -568,6 +568,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <tr>
                 <th className="py-3 px-4">เลขที่เอกสาร</th>
                 <th className="py-3 px-4">ประเภท</th>
+                <th className="py-3 px-4">โครงการ / ชื่องาน</th>
                 <th className="py-3 px-4">ลูกค้า / บริษัทคู่ค้า</th>
                 <th className="py-3 px-4">วันที่ออก</th>
                 <th className="py-3 px-4 text-right">ยอดรวมสุทธิ</th>
@@ -584,6 +585,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <td className="py-3 px-4">
                       <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium border border-slate-200">
                         {doc.type === 'QUOTATION' ? 'ใบเสนอราคา' : doc.type === 'INVOICE' ? 'ใบแจ้งหนี้' : doc.type === 'TAX_INVOICE' ? 'ใบกำกับภาษี' : doc.type === 'RECEIPT' ? 'ใบเสร็จรับเงิน' : 'ใบสั่งซื้อ (PO)'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 max-w-[160px]">
+                      <span className="font-semibold text-slate-800 text-[11px] bg-slate-100 px-2 py-0.5 rounded border border-slate-200 truncate block" title={getProjectName(doc)}>
+                        {getProjectName(doc)}
                       </span>
                     </td>
                     <td className="py-3 px-4 font-semibold text-slate-800">{doc.contact?.companyName}</td>
