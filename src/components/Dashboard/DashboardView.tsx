@@ -174,6 +174,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       invoiceAmount: 0,
       cashIn: 0,
       expense: 0,
+    },
+    {
+      month: 'ก.ย. 69',
+      poInflow: 158841.50,    // PO 2609002 (บจก. พีเอ็นพี เทคโนโลยี เกรท - Network & USB Convert)
+      invoiceAmount: 0,
+      cashIn: 0,
+      expense: 0,
     }
   ];
 
@@ -184,6 +191,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     { name: 'ระบบโครงสร้าง Zone 1-6 (Fujipart - PNP)', value: 2580305.00, color: '#10b981' },
     { name: 'ระบบโครงสร้าง Zone 7 (Fujipart - PNP)', value: 1260246.00, color: '#8b5cf6' },
     { name: 'ระบบซอฟต์แวร์ Solenoid Line (PNP)', value: 2325558.33, color: '#e11d48' },
+    { name: 'อุปกรณ์เน็ตเวิร์ก & ติดตั้ง (PNP)', value: 158841.50, color: '#f59e0b' },
   ];
 
   const expenseCategoryData = [
