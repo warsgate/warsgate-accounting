@@ -3060,7 +3060,7 @@ export const initialDocuments: AccountingDocument[] = [
     withholdingTaxTotal: 4500.00, // 3% WHT on 150,000.00
     netPayment: 156000.00,
     status: 'APPROVED',
-    notes: 'โครงการ: โปรแกรม ระบบ Dashboard Data Monitor | เสนอ คุณนพพล อุ่นม่อน (Senior Specialist) บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) | กำหนดยืนราคา 30 วัน | เงื่อนไขการชำระเงิน: เครดิต 30 วัน | หักภาษี ณ ที่จ่าย 3%',
+    notes: 'โครงการ: โปรแกรม ระบบ Dashboard Data Monitor | เสนอ คุณนพพล อุ่นม่อน (Senior Specialist) บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) | กำหนดยืนราคา 30 วัน | เงื่อนไขการชำระเงิน: รายการนี้มัดจำ 50% ก่อนเริ่มงาน | หักภาษี ณ ที่จ่าย 3%',
     createdByName: 'คุณจีระวัฒน์ (MD)',
   },
 ];
