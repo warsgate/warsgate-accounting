@@ -55,17 +55,17 @@ export const initialContacts: Contact[] = [
   },
   {
     id: 'cont-kuroda-1',
-    name: 'คุณ นพพล อุ่นม่อน',
+    name: 'คุณนพพล อุ่นม่อน (Senior Specialist)',
     companyName: 'บริษัท คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) จํากัด',
     taxId: '0145563001431',
     isBranch: false,
     branchCode: '00000',
-    address: '30 หมู่ ที 9 สวนอุตสาหกรรมโรจนะ ตำบลธนู อำเภออุทัย จังหวัดพระนครศรีอยุธยา 13210',
-    phone: '083-813-0833',
-    email: '',
+    address: '30 หมู่ 9 สวนอุตสาหกรรมโรจนะ ตำบลธนู อำเภออุทัย จังหวัดพระนครศรีอยุธยา 13210',
+    phone: '080-813-0833, 035-230-471',
+    email: 'noppon.a@kuroda-electric.com',
     type: 'CUSTOMER',
     creditDays: 30,
-    totalTransactions: 1,
+    totalTransactions: 2,
     balanceDue: 1074658.78,
   },
   {
@@ -116,6 +116,19 @@ export const initialContacts: Contact[] = [
 ];
 
 export const initialProducts: ProductService[] = [
+  {
+    id: 'prod-dell-optiplex-5090',
+    code: 'COMP-DELL-5090',
+    name: 'ชุดคอมพิวเตอร์ Dell OptiPlex 5090 SFF (Dashboard Data Monitor Set)',
+    category: 'AUTOMATION_HARDWARE',
+    type: 'PRODUCT',
+    unit: 'Set',
+    unitPrice: 27675.00,
+    costPrice: 20500.00,
+    stockQty: 1,
+    minStockAlert: 1,
+    description: 'Dell OptiPlex 5090 SFF - CPU Intel Core i7-10700 Max 4.80GHz, RAM 16GB DDR4, SSD M.2 NVMe 256GB + HDD 1TB, Windows 11 Pro License แท้, WiFi + Bluetooth',
+  },
   {
     id: 'prod-spindle-01',
     code: 'SPINDLE-ROLL-01',
@@ -3031,6 +3044,41 @@ export const initialDocuments: AccountingDocument[] = [
     netPayment: 157491.50,
     status: 'APPROVED',
     notes: 'โครงการจัดซื้ออุปกรณ์และติดตั้งเครือข่าย ตามใบสั่งซื้อลูกค้า PO: 2609002 ลงวันที่ 24 ก.ย. 2569 บจก. พีเอ็นพี เทคโนโลยี เกรท (เงื่อนไขการชำระเงิน: ชำระเมื่อส่งของครบตามใบสั่งซื้อ, วางบิลวันที่ 1-25 ของทุกเดือน, ใบกำกับภาษี + สำเนา 5 ใบ)',
+    createdByName: 'คุณจีระวัฒน์ (MD)',
+  },
+  // ─── ใบเสนอราคา: งาน Dashboard Data Monitor บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) ────
+  {
+    id: 'doc-kuroda-qt-dashboard-01',
+    documentNo: 'QT-2609-004',
+    type: 'QUOTATION',
+    issueDate: '2026-09-25',
+    dueDate: '2026-10-25',
+    referencePoNo: '',
+    contact: initialContacts[1], // บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์)
+    items: [
+      {
+        id: 'item-qt2609004-1',
+        code: 'COMP-DELL-5090',
+        name: 'Computer Set สำหรับงาน Dashboard Data Monitor (Dell OptiPlex 5090 SFF)',
+        description: 'Dell OptiPlex 5090 SFF - CPU Intel Core i7-10700 Max 4.80GHz, RAM 16GB DDR4, SSD M.2 NVMe 256GB + HDD 1TB, Windows 11 Pro License แท้, WiFi + Bluetooth (ต้นทุน ฿20,500 + กำไร 35%)',
+        quantity: 1,
+        unit: 'Set',
+        pricePerUnit: 27675.00,
+        discount: 0,
+        amount: 27675.00,
+        vatInclusive: false,
+        withholdingTaxRate: 0,
+      }
+    ],
+    subtotal: 27675.00,
+    discountTotal: 0.00,
+    vatRate: 7,
+    vatAmount: 1937.25,
+    grandTotal: 29612.25,
+    withholdingTaxTotal: 0.00,
+    netPayment: 29612.25,
+    status: 'APPROVED',
+    notes: 'เสนอราคาโครงการงาน Dashboard Data Monitor | เสนอ คุณนพพล อุ่นม่อน (Senior Specialist) บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) | กำหนดยืนราคา 30 วัน | เงื่อนไขการชำระเงิน: เครดิต 30 วัน',
     createdByName: 'คุณจีระวัฒน์ (MD)',
   },
 ];
