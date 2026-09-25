@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { 
-  CompanyProfile, DocumentNumberingConfig, DocumentType, 
+  CompanyProfile, DocumentNumberingConfig, DocumentNumberSetting, DocumentType, 
   AccountingDocument, Contact, ProductService, BankAccount, 
   ChartOfAccount, JournalEntry 
 } from '../../types';
@@ -93,7 +93,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const handleNumberingFieldChange = (
     type: DocumentType,
-    field: keyof DocumentNumberingConfig[DocumentType],
+    field: keyof DocumentNumberSetting,
     value: any
   ) => {
     setNumbering(prev => ({
@@ -247,16 +247,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         'เลขที่เอกสาร': d.documentNo,
         'วันที่ออกเอกสาร': d.issueDate,
         'วันครบกำหนด': d.dueDate || '',
-        'ชื่อลูกค้า/ซัพพลายเออร์': d.contactName,
-        'เลขประจำตัวผู้เสียภาษี': d.contactTaxId,
-        'ที่อยู่คู่ค้า': d.contactAddress,
+        'ชื่อลูกค้า/ซัพพลายเออร์': d.contact?.companyName || d.contact?.name || '',
+        'เลขประจำตัวผู้เสียภาษี': d.contact?.taxId || '',
+        'ที่อยู่คู่ค้า': d.contact?.address || '',
         'ยอดก่อนภาษี (Subtotal)': d.subtotal,
         'ภาษีมูลค่าเพิ่ม (VAT 7%)': d.vatAmount,
         'ยอดรวมทั้งสิ้น (Grand Total)': d.grandTotal,
-        'หัก ณ ที่จ่าย (WHT)': d.whtAmount || 0,
-        'ยอดชำระสุทธิ (Net Total)': d.netTotal || d.grandTotal,
+        'หัก ณ ที่จ่าย (WHT)': d.withholdingTaxTotal || 0,
+        'ยอดชำระสุทธิ (Net Total)': d.netPayment || d.grandTotal,
         'สถานะ': d.status,
-        'เลขอ้างอิง (Ref No)': d.referenceNo || '',
+        'เลขอ้างอิง (Ref No)': d.referencePoNo || d.referenceDocNo || '',
         'หมายเหตุ': d.notes || '',
       }));
       const wsDocs = XLSX.utils.json_to_sheet(docsData);
@@ -270,15 +270,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             'เลขที่เอกสาร': d.documentNo,
             'ประเภทเอกสาร': d.type,
             'วันที่': d.issueDate,
-            'ลูกค้า/คู่ค้า': d.contactName,
+            'ลูกค้า/คู่ค้า': d.contact?.companyName || d.contact?.name || '',
             'ลำดับที่': idx + 1,
-            'รหัสสินค้า': item.productCode || '',
+            'รหัสสินค้า': item.code || '',
             'ชื่อรายการสินค้า/บริการ': item.description,
             'จำนวน': item.quantity,
             'หน่วย': item.unit || '',
-            'ราคาต่อหน่วย': item.unitPrice,
+            'ราคาต่อหน่วย': item.pricePerUnit || 0,
             'ส่วนลด (บาท)': item.discount || 0,
-            'จำนวนเงิน (บาท)': item.total,
+            'จำนวนเงิน (บาท)': item.amount || 0,
           });
         });
       });
@@ -290,8 +290,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         'รหัสบัญชี': c.code,
         'ชื่อบัญชี': c.name,
         'หมวดบัญชี': c.category,
-        'ประเภทเดบิต/เครดิตปกติ': c.normalBalance,
-        'คำอธิบาย': c.description || '',
+        'ประเภทเดบิต/เครดิตปกติ': c.type || '',
+        'คำอธิบาย': c.name || '',
       }));
       const wsCoa = XLSX.utils.json_to_sheet(coaData);
       XLSX.utils.book_append_sheet(wb, wsCoa, 'ChartOfAccounts');
@@ -301,7 +301,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       initialJournalEntries.forEach(j => {
         (j.entries || []).forEach((entry, idx) => {
           jvData.push({
-            'เลขที่ใบสำคัญ': j.entryNo,
+            'เลขที่ใบสำคัญ': j.jvNo,
             'วันที่': j.date,
             'คำอธิบายรายการ': j.description,
             'เอกสารอ้างอิง': j.referenceNo || '',

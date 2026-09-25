@@ -153,7 +153,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
       const matchPo = (doc.referencePoNo || '').toLowerCase().includes(term);
       const matchCustomer = (doc.contact?.companyName || doc.contact?.name || '').toLowerCase().includes(term);
       const matchTaxId = (doc.contact?.taxId || '').toLowerCase().includes(term);
-      const matchItems = doc.items?.some(i => i.description.toLowerCase().includes(term));
+      const matchItems = doc.items?.some(i => (i.description || i.name || "").toLowerCase().includes(term));
       if (!matchDocNo && !matchPo && !matchCustomer && !matchTaxId && !matchItems) return false;
     }
 

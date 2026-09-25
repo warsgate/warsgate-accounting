@@ -15,7 +15,7 @@ export interface DocumentItem {
   id: string;
   code: string;
   name: string;
-  description: string;
+  description?: string;
   quantity: number;
   unit: string;
   pricePerUnit: number;
@@ -52,7 +52,7 @@ export interface ProductService {
   costPrice: number;
   stockQty: number;
   minStockAlert: number;
-  description: string;
+  description?: string;
 }
 
 export interface AccountingDocument {
@@ -118,7 +118,7 @@ export interface JournalEntry {
   id: string;
   jvNo: string;
   date: string;
-  description: string;
+  description?: string;
   referenceNo: string;
   entries: {
     accountCode: string;
@@ -154,6 +154,7 @@ export interface DocumentNumberingConfig {
   INVOICE: DocumentNumberSetting;
   TAX_INVOICE: DocumentNumberSetting;
   RECEIPT: DocumentNumberSetting;
+  DELIVERY_ORDER: DocumentNumberSetting;
   PURCHASE_ORDER: DocumentNumberSetting;
   PURCHASE_INVOICE: DocumentNumberSetting;
   PAYMENT_VOUCHER: DocumentNumberSetting;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { MenuBar } from './components/MenuBar';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/Dashboard/DashboardView';
@@ -325,6 +326,18 @@ export function App() {
   return (
     <div className="min-h-screen bg-gray-50 text-slate-800 flex flex-col font-sans">
       
+      {/* High-Tech Studio Menu Bar */}
+      <MenuBar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        openCreateModal={(type) => {
+          setFromDoc(null);
+          setEditingDoc(null);
+          setCreateDocType(type);
+        }}
+        documents={documents}
+      />
+
       {/* Top Navbar Header */}
       <Navbar
         company={company}
