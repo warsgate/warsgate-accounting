@@ -2982,7 +2982,7 @@ export const initialDocuments: AccountingDocument[] = [
     withholdingTaxTotal: 0,
     netPayment: 1074658.78,
     status: 'APPROVED',
-    notes: 'เสนอราคาโครงการ Smart Camera Pick & Place / MVC with Camera 12 MP Inspection Parts (Wenglor) | ยืนยันราคาภายใน 30 วัน | เงื่อนไขการชำระเงิน: เครดิต 30 วัน | กำหนดส่งมอบ: DDP โรงงานลูกค้า',
+    notes: 'เสนอราคาโครงการ Smart Camera Pick & Place / MVC with Camera 12 MP Inspection Parts (Wenglor) | ยืนยันราคาภายใน 30 วัน | เงื่อนไขการชำระเงิน: รายการนี้ส่งของครบ จ่าย 100% | กำหนดส่งมอบ: DDP โรงงานลูกค้า',
     createdByName: 'วิศวกรโครงการ / คุณจีระวัฒน์ (MD)',
   },
   // ─── ใบเสนอราคา / รับ PO ลูกค้า: บจก. พีเอ็นพี เทคโนโลยี เกรท (PO: 2609002) ────
@@ -3169,7 +3169,7 @@ export const initialDocuments: AccountingDocument[] = [
     withholdingTaxTotal: 0.00,
     netPayment: 50493.30,
     status: 'APPROVED',
-    notes: 'เสนอราคาโครงการงาน Dashboard Data Monitor | เสนอ คุณนพพล อุ่นม่อน (Senior Specialist) บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) | กำหนดยืนราคา 30 วัน | เงื่อนไขการชำระเงิน: เครดิต 30 วัน',
+    notes: 'เสนอราคาโครงการงาน Dashboard Data Monitor | เสนอ คุณนพพล อุ่นม่อน (Senior Specialist) บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) | กำหนดยืนราคา 30 วัน | เงื่อนไขการชำระเงิน: รายการนี้ส่งของครบ จ่าย 100%',
     createdByName: 'คุณจีระวัฒน์ (MD)',
   },
   // ─── ใบเสนอราคา: โปรแกรม ระบบ Dashboard Data Monitor บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) ────
