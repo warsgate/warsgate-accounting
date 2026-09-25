@@ -117,6 +117,19 @@ export const initialContacts: Contact[] = [
 
 export const initialProducts: ProductService[] = [
   {
+    id: 'prod-srv-dashboard-sw',
+    code: 'SRV-DASHBOARD-SW',
+    name: 'โปรแกรม ระบบ Dashboard Data Monitor',
+    category: 'SOFTWARE_LICENSE',
+    type: 'SERVICE',
+    unit: 'Job',
+    unitPrice: 150000.00,
+    costPrice: 60000.00,
+    stockQty: 99,
+    minStockAlert: 0,
+    description: 'ติดตั้งโปรแกรม Dashboard Data Monitor, Config Database และระบบเครือข่าย LAN, ปรับแต่งหน้าจอแสดงผล Real-time และระบบบันทึกข้อมูล Data Logger, ทดสอบระบบ ส่งมอบงาน และอบรมการใช้งานหน้างาน',
+  },
+  {
     id: 'prod-dell-optiplex-5090',
     code: 'COMP-DELL-5090',
     name: 'ชุดคอมพิวเตอร์ Dell OptiPlex 5090 SFF (Dashboard Data Monitor Set)',
@@ -3157,6 +3170,41 @@ export const initialDocuments: AccountingDocument[] = [
     netPayment: 50493.30,
     status: 'APPROVED',
     notes: 'เสนอราคาโครงการงาน Dashboard Data Monitor | เสนอ คุณนพพล อุ่นม่อน (Senior Specialist) บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) | กำหนดยืนราคา 30 วัน | เงื่อนไขการชำระเงิน: เครดิต 30 วัน',
+    createdByName: 'คุณจีระวัฒน์ (MD)',
+  },
+  // ─── ใบเสนอราคา: โปรแกรม ระบบ Dashboard Data Monitor บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) ────
+  {
+    id: 'doc-kuroda-qt-dashboard-02',
+    documentNo: 'QT-2609-005',
+    type: 'QUOTATION',
+    issueDate: '2026-09-25',
+    dueDate: '2026-10-25',
+    referencePoNo: '',
+    contact: initialContacts[1], // บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์)
+    items: [
+      {
+        id: 'item-qt2609005-1',
+        code: 'SRV-DASHBOARD-SW',
+        name: 'โปรแกรม ระบบ Dashboard Data Monitor',
+        description: '• ติดตั้งโปรแกรม Dashboard Data Monitor, Config Database และระบบเครือข่าย LAN\n• ปรับแต่งหน้าจอแสดงผล Real-time และระบบบันทึกข้อมูล Data Logger\n• ทดสอบระบบ ส่งมอบงาน และอบรมการใช้งานหน้างาน',
+        quantity: 1,
+        unit: 'Job',
+        pricePerUnit: 150000.00,
+        discount: 0,
+        amount: 150000.00,
+        vatInclusive: false,
+        withholdingTaxRate: 3,
+      }
+    ],
+    subtotal: 150000.00,
+    discountTotal: 0.00,
+    vatRate: 7,
+    vatAmount: 10500.00,
+    grandTotal: 160500.00,
+    withholdingTaxTotal: 4500.00, // 3% WHT on 150,000.00
+    netPayment: 156000.00,
+    status: 'APPROVED',
+    notes: 'โครงการ: โปรแกรม ระบบ Dashboard Data Monitor | เสนอ คุณนพพล อุ่นม่อน (Senior Specialist) บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) | กำหนดยืนราคา 30 วัน | เงื่อนไขการชำระเงิน: เครดิต 30 วัน | หักภาษี ณ ที่จ่าย 3%',
     createdByName: 'คุณจีระวัฒน์ (MD)',
   },
 ];
