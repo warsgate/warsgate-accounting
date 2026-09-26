@@ -1,29 +1,36 @@
 import React, { useState, useMemo } from 'react';
 import { 
   TrendingDown, Plus, Search, Filter, Printer, Pencil, Trash2, AlertTriangle, 
-  FileText, CheckCircle2, RotateCcw, Calendar, ShoppingBag, Receipt, DollarSign, ShieldAlert
+  FileText, CheckCircle2, RotateCcw, Calendar, ShoppingBag, Receipt, DollarSign, ShieldAlert, Cpu, Sparkles
 } from 'lucide-react';
-import { AccountingDocument, DocumentType, DocumentStatus } from '../../types';
+import { AccountingDocument, DocumentType, DocumentStatus, Contact, DocumentNumberingConfig } from '../../types';
 import { formatMoney, getStatusBadge, formatThaiDate, getLatestYearMonthInfo, getProjectName } from '../../utils/formatters';
+import { BomPoGeneratorModal } from './BomPoGeneratorModal';
 
 interface ExpenseViewProps {
   documents: AccountingDocument[];
+  contacts?: Contact[];
+  numberingConfig?: DocumentNumberingConfig;
   openCreateModal: (type: DocumentType) => void;
   openEditDocument: (doc: AccountingDocument) => void;
   openViewDocument: (doc: AccountingDocument) => void;
   onUpdateStatus: (docId: string, status: DocumentStatus) => void;
   onDeleteDocument: (docId: string) => void;
+  onBatchCreateDocuments?: (newDocs: AccountingDocument[]) => void;
 }
 
 const EXPENSE_DOC_TYPES = ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER', 'WHT_CERTIFICATE'];
 
 export const ExpenseView: React.FC<ExpenseViewProps> = ({
   documents,
+  contacts = [],
+  numberingConfig,
   openCreateModal,
   openEditDocument,
   openViewDocument,
   onUpdateStatus,
-  onDeleteDocument
+  onDeleteDocument,
+  onBatchCreateDocuments
 }) => {
   const [activeTypeTab, setActiveTypeTab] = useState<string>('PURCHASE_ORDER');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -32,6 +39,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   const [endDate, setEndDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [deleteTarget, setDeleteTarget] = useState<AccountingDocument | null>(null);
+  const [showBomPoModal, setShowBomPoModal] = useState<boolean>(false);
 
   const expenseDocs = useMemo(() => documents.filter(d => EXPENSE_DOC_TYPES.includes(d.type)), [documents]);
 
@@ -185,6 +193,14 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setShowBomPoModal(true)}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-indigo-200/80 flex items-center gap-1.5 transition-all hover:scale-[1.02] active:scale-95"
+            title="สร้างใบสั่งซื้อ (PO) จากรายการ Mechanical BOM แยกตาม Supplier แต่ละเจ้าอัตโนมัติ"
+          >
+            <Cpu className="w-3.5 h-3.5 text-indigo-200 animate-pulse" />
+            <span>🛒 สร้าง PO จาก BOM</span>
+          </button>
           <button
             onClick={() => openCreateModal('PURCHASE_ORDER')}
             className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-rose-200/80 transition-all hover:scale-[1.02] active:scale-95"
@@ -649,6 +665,20 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {showBomPoModal && (
+        <BomPoGeneratorModal
+          contacts={contacts}
+          numberingConfig={numberingConfig}
+          onClose={() => setShowBomPoModal(false)}
+          onBatchCreate={(newDocs) => {
+            if (onBatchCreateDocuments) {
+              onBatchCreateDocuments(newDocs);
+            }
+          }}
+          openViewDocument={openViewDocument}
+        />
       )}
 
     </div>

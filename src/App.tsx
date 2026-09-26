@@ -13,6 +13,7 @@ import { SettingsView } from './components/Settings/SettingsView';
 import { DocumentViewerModal } from './components/DocumentViewerModal';
 import { CreateDocumentModal } from './components/CreateDocumentModal';
 import { CustomerBalancesView } from './components/CustomerAnalytics/CustomerBalancesView';
+import { BomPoGeneratorModal } from './components/Expense/BomPoGeneratorModal';
 
 import { 
   initialCompanyProfile, 
@@ -189,6 +190,7 @@ export function App() {
   const [createDocType, setCreateDocType] = useState<DocumentType | null>(null);
   const [editingDoc, setEditingDoc] = useState<AccountingDocument | null>(null);
   const [fromDoc, setFromDoc] = useState<AccountingDocument | null>(null);
+  const [bomPoQuotationTarget, setBomPoQuotationTarget] = useState<AccountingDocument | null>(null);
 
   const handleIssueReceiptFromInvoice = (invoiceDoc: AccountingDocument) => {
     setFromDoc(invoiceDoc);
@@ -213,6 +215,14 @@ export function App() {
     setDocuments(prev => {
       const exists = prev.some(d => d.id === doc.id);
       const updated = exists ? prev.map(d => d.id === doc.id ? doc : d) : [doc, ...prev];
+      localStorage.setItem('warsgate_documents', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleBatchSaveDocuments = (newDocs: AccountingDocument[]) => {
+    setDocuments(prev => {
+      const updated = [...newDocs, ...prev];
       localStorage.setItem('warsgate_documents', JSON.stringify(updated));
       return updated;
     });
@@ -419,6 +429,8 @@ export function App() {
             {activeTab === 'expenses' && (
               <ExpenseView
                 documents={documents}
+                contacts={contacts}
+                numberingConfig={numberingConfig}
                 openCreateModal={(type) => {
                   setFromDoc(null);
                   setEditingDoc(null);
@@ -431,6 +443,7 @@ export function App() {
                 openViewDocument={(doc) => setViewDoc(doc)}
                 onUpdateStatus={handleUpdateDocumentStatus}
                 onDeleteDocument={handleDeleteDocument}
+                onBatchCreateDocuments={handleBatchSaveDocuments}
               />
             )}
 
@@ -504,6 +517,22 @@ export function App() {
           company={company}
           onClose={() => setViewDoc(null)}
           onIssueReceipt={handleIssueReceiptFromInvoice}
+          onGeneratePoFromQuotation={(doc) => {
+            setViewDoc(null);
+            setBomPoQuotationTarget(doc);
+          }}
+        />
+      )}
+
+      {/* BOM Multi-Supplier PO Generator Modal */}
+      {bomPoQuotationTarget && (
+        <BomPoGeneratorModal
+          contacts={contacts}
+          numberingConfig={numberingConfig}
+          initialQuotationDoc={bomPoQuotationTarget}
+          onClose={() => setBomPoQuotationTarget(null)}
+          onBatchCreate={handleBatchSaveDocuments}
+          openViewDocument={(doc) => setViewDoc(doc)}
         />
       )}
 

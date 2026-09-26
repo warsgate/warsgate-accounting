@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Printer, Download, CheckCircle, ShieldCheck, FileText, Award } from 'lucide-react';
+import { X, Printer, Download, CheckCircle, ShieldCheck, FileText, Award, Cpu, ShoppingBag } from 'lucide-react';
 import { AccountingDocument, CompanyProfile } from '../types';
 import { formatMoney, formatNumber, formatThaiDate, arabicToThaiBahtText, getProjectName } from '../utils/formatters';
 import { WhtCertificateView } from './WhtCertificateView';
@@ -9,13 +9,15 @@ interface DocumentViewerModalProps {
   company: CompanyProfile;
   onClose: () => void;
   onIssueReceipt?: (doc: AccountingDocument) => void;
+  onGeneratePoFromQuotation?: (doc: AccountingDocument) => void;
 }
 
 export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
   document: doc,
   company,
   onClose,
-  onIssueReceipt
+  onIssueReceipt,
+  onGeneratePoFromQuotation
 }) => {
   if (!doc) return null;
 
@@ -170,6 +172,16 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onGeneratePoFromQuotation && doc.type === 'QUOTATION' && (
+              <button
+                onClick={() => onGeneratePoFromQuotation(doc)}
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 text-indigo-800 font-bold text-xs border border-indigo-300 flex items-center gap-1.5 transition shadow-sm"
+                title="สร้างใบสั่งซื้อ (PO) พาร์ทจาก BOM สำหรับโครงการตามใบเสนอราคานี้"
+              >
+                <Cpu className="w-3.5 h-3.5 text-indigo-600" />
+                <span>🛒 สร้าง PO จาก BOM</span>
+              </button>
+            )}
             {onIssueReceipt && (doc.type === 'INVOICE' || doc.type === 'TAX_INVOICE') && (
               <button
                 onClick={() => onIssueReceipt(doc)}
