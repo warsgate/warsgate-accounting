@@ -161,3 +161,46 @@ export interface DocumentNumberingConfig {
   WHT_CERTIFICATE: DocumentNumberSetting;
 }
 
+export interface BomPart {
+  id: string;
+  projectId: string;
+  moduleId?: string;
+  itemNo: number;
+  dwgNo?: string;
+  partName: string;
+  typeSpec?: string;
+  category?: string;
+  partType?: string;
+  qty: number;
+  unit: string;
+  maker?: string;
+  supplier?: string;
+  targetUnitPrice: number;
+  unitPrice: number;
+  totalAmount: number;
+  poNumber?: string;
+  storeLocation?: string;
+  orderDate?: string;
+  receiveDate?: string;
+  status: string;
+  remarks?: string;
+}
+
+export interface BomProject {
+  id: string;
+  code: string;
+  name: string;
+  customer?: string;
+  customerId?: string;
+  dwgNo?: string;
+  targetBudget?: number;
+  status?: string;
+  totalPartsCount?: number;
+  totalEstimatedCost?: number;
+  suppliers?: string[];
+  parts?: BomPart[];
+  modules?: Array<{ id: string; code: string; name: string }>;
+  updatedAt?: string;
+}
+
+

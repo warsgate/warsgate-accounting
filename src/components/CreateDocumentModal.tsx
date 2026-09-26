@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, CheckCircle2, Pencil, Link2, FileText, ArrowRight } from 'lucide-react';
+import { X, Plus, Trash2, CheckCircle2, Pencil, Link2, FileText, ArrowRight, Cpu, Layers } from 'lucide-react';
 import { AccountingDocument, Contact, ProductService, DocumentType, DocumentItem, DocumentStatus, DocumentNumberingConfig } from '../types';
 import { formatMoney } from '../utils/formatters';
 import { defaultNumberingConfig, previewDocumentNo } from '../utils/numbering';
+import { BomImportModal } from './BomImportModal';
 
 interface CreateDocumentModalProps {
   type: DocumentType;
@@ -164,6 +165,35 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       setNotes(`อ้างอิงใบเสนอราคาเลขที่ ${src.documentNo}`);
       setCustomDocNo(src.documentNo.replace(/^QT-/, 'INV-'));
     }
+  };
+
+  // ── BOM Bridge Integration ───────────────────────────────────────────────────
+  const [showBomModal, setShowBomModal] = useState<boolean>(false);
+
+  const handleBomImport = (
+    importedItems: DocumentItem[],
+    meta: { projectCode: string; projectName: string; customerName?: string; bomProjectId?: string }
+  ) => {
+    setItems(importedItems);
+    if (meta.projectName) {
+      if (!referencePoNo && meta.projectCode) {
+        setReferencePoNo(meta.projectCode);
+      }
+      const prefix = `โครงการ: ${meta.projectName} (${meta.projectCode})`;
+      if (!notes.includes(meta.projectName)) {
+        setNotes(notes ? `${prefix} | ${notes}` : prefix);
+      }
+    }
+    if (meta.customerName) {
+      const matched = contacts.find(c => 
+        c.companyName.toLowerCase().includes(meta.customerName!.toLowerCase()) || 
+        meta.customerName!.toLowerCase().includes(c.companyName.toLowerCase())
+      );
+      if (matched) {
+        setSelectedContactId(matched.id);
+      }
+    }
+    setShowBomModal(false);
   };
 
   // ── Item Actions ───────────────────────────────────────────────────────────
@@ -521,19 +551,35 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 
           {/* Line Items Table */}
           <div className="glass-panel p-4 rounded-2xl space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
-                <h3 className="text-sm font-bold text-slate-800">รายการสินค้า / ค่าบริการ</h3>
-                <p className="text-[11px] text-slate-400">เลือกสินค้าสำเร็จรูปหรือพิมพ์กำหนดเองได้</p>
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                  <span>รายการสินค้า / ค่าบริการ</span>
+                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                    {items.length} รายการ
+                  </span>
+                </h3>
+                <p className="text-[11px] text-slate-400">เลือกสินค้าสำเร็จรูป, พิมพ์กำหนดเอง หรือดึงตรงจาก Mechanical BOM</p>
               </div>
-              <button
-                type="button"
-                onClick={handleAddItem}
-                className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 shadow-sm"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ เพิ่มรายการ</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBomModal(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 text-indigo-700 border border-indigo-200 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 shadow-2xs"
+                  title="ดึงพาร์ท สเปก และต้นทุนจาก Mechanical BOM"
+                >
+                  <Cpu className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                  <span>🛠️ ดึงรายการจาก BOM</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddItem}
+                  className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 shadow-2xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ เพิ่มรายการ</span>
+                </button>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -770,6 +816,14 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 
         </form>
       </div>
+
+      {showBomModal && (
+        <BomImportModal
+          docType={docType}
+          onClose={() => setShowBomModal(false)}
+          onImport={handleBomImport}
+        />
+      )}
     </div>
   );
 };
