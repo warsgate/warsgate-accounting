@@ -468,6 +468,71 @@ class BomBridgeService {
     }
     return { success: true, mocked: true, count: partIds.length };
   }
+
+  // Sync Goods Receipt back to BOM parts (mark as received)
+  public async syncGoodsReceiptToBom(partIds: string[], payload: { receiveDate?: string; storeLocation?: string; deliveryNoteNo?: string }) {
+    if (this.isOnline && this.activeUrl) {
+      try {
+        const res = await fetch(`${this.activeUrl}/integration/sync-goods-receipt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ partIds, ...payload })
+        });
+        return await res.json();
+      } catch (err) {
+        console.warn('Error syncing goods receipt to BOM:', err);
+      }
+    }
+    return { success: true, mocked: true, count: partIds.length };
+  }
+
+  // Fetch Project Cost & Procurement Analysis
+  public async fetchProjectCostAnalysis(projectId: string) {
+    if (this.isOnline && this.activeUrl) {
+      try {
+        const res = await fetch(`${this.activeUrl}/integration/cost-analysis/${projectId}`);
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        console.warn('Error fetching cost analysis:', err);
+      }
+    }
+
+    // Fallback calculation for offline mode
+    const proj = FALLBACK_BOM_PROJECTS.find(p => p.id === projectId || p.code === projectId) || FALLBACK_BOM_PROJECTS[0];
+    const totalParts = proj.parts?.length || proj.totalPartsCount || 0;
+    const partsList = proj.parts || [];
+    const ordered = partsList.filter(p => p.status === 'Ordered' || p.poNumber);
+    const received = partsList.filter(p => p.status === 'Received');
+    const estimatedCost = proj.totalEstimatedCost || proj.targetBudget || 0;
+    const actualPurchasedCost = partsList.reduce((sum, p) => sum + ((p.unitPrice || p.targetUnitPrice) * p.qty), 0);
+
+    return {
+      project: {
+        id: proj.id,
+        code: proj.code,
+        name: proj.name,
+        customer: proj.customer,
+        targetBudget: proj.targetBudget,
+        status: proj.status
+      },
+      metrics: {
+        totalParts,
+        plannedCount: totalParts - ordered.length - received.length,
+        orderedCount: ordered.length,
+        receivedCount: received.length,
+        orderedPercentage: totalParts > 0 ? Math.round(((ordered.length + received.length) / totalParts) * 100) : 0,
+        receivedPercentage: totalParts > 0 ? Math.round((received.length / totalParts) * 100) : 0,
+        estimatedCost,
+        actualPurchasedCost,
+        costVariance: actualPurchasedCost - estimatedCost,
+        variancePercentage: 0
+      },
+      parts: partsList,
+      modules: []
+    };
+  }
 }
 
 export const bomBridge = new BomBridgeService();

@@ -14,6 +14,7 @@ import { DocumentViewerModal } from './components/DocumentViewerModal';
 import { CreateDocumentModal } from './components/CreateDocumentModal';
 import { CustomerBalancesView } from './components/CustomerAnalytics/CustomerBalancesView';
 import { BomPoGeneratorModal } from './components/Expense/BomPoGeneratorModal';
+import { ProjectCostMatrixModal } from './components/ProjectCostMatrixModal';
 
 import { 
   initialCompanyProfile, 
@@ -191,6 +192,8 @@ export function App() {
   const [editingDoc, setEditingDoc] = useState<AccountingDocument | null>(null);
   const [fromDoc, setFromDoc] = useState<AccountingDocument | null>(null);
   const [bomPoQuotationTarget, setBomPoQuotationTarget] = useState<AccountingDocument | null>(null);
+  const [showGlobalCostMatrix, setShowGlobalCostMatrix] = useState<boolean>(false);
+  const [showGlobalBomPoGenerator, setShowGlobalBomPoGenerator] = useState<boolean>(false);
 
   const handleIssueReceiptFromInvoice = (invoiceDoc: AccountingDocument) => {
     setFromDoc(invoiceDoc);
@@ -359,6 +362,8 @@ export function App() {
         documents={documents}
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={toggleSidebar}
+        onOpenCostMatrix={() => setShowGlobalCostMatrix(true)}
+        onOpenBomPoGenerator={() => setShowGlobalBomPoGenerator(true)}
       />
 
       {/* Top Navbar Header */}
@@ -525,14 +530,29 @@ export function App() {
       )}
 
       {/* BOM Multi-Supplier PO Generator Modal */}
-      {bomPoQuotationTarget && (
+      {(bomPoQuotationTarget || showGlobalBomPoGenerator) && (
         <BomPoGeneratorModal
           contacts={contacts}
           numberingConfig={numberingConfig}
           initialQuotationDoc={bomPoQuotationTarget}
-          onClose={() => setBomPoQuotationTarget(null)}
+          onClose={() => {
+            setBomPoQuotationTarget(null);
+            setShowGlobalBomPoGenerator(false);
+          }}
           onBatchCreate={handleBatchSaveDocuments}
           openViewDocument={(doc) => setViewDoc(doc)}
+        />
+      )}
+
+      {/* Global Project Cost Matrix Modal */}
+      {showGlobalCostMatrix && (
+        <ProjectCostMatrixModal
+          documents={documents}
+          onClose={() => setShowGlobalCostMatrix(false)}
+          onOpenPoGenerator={(projCode) => {
+            setShowGlobalCostMatrix(false);
+            setShowGlobalBomPoGenerator(true);
+          }}
         />
       )}
 

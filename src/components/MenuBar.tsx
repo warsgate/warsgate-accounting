@@ -15,6 +15,8 @@ interface MenuBarProps {
   documents?: AccountingDocument[];
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
+  onOpenCostMatrix?: () => void;
+  onOpenBomPoGenerator?: () => void;
 }
 
 export const MenuBar: React.FC<MenuBarProps> = ({
@@ -23,7 +25,9 @@ export const MenuBar: React.FC<MenuBarProps> = ({
   openCreateModal,
   documents = [],
   isSidebarCollapsed = false,
-  onToggleSidebar
+  onToggleSidebar,
+  onOpenCostMatrix,
+  onOpenBomPoGenerator
 }) => {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -250,6 +254,28 @@ export const MenuBar: React.FC<MenuBarProps> = ({
           label: "จัดซื้อฮาร์ดแวร์ PLC & Sensor",
           icon: Cpu,
           action: () => { setActiveTab("expense"); setOpenMenu(null); }
+        }
+      ]
+    },
+    {
+      key: "bom-bridge",
+      label: "BOM Bridge",
+      dropdown: [
+        {
+          label: "📊 วิเคราะห์ต้นทุนโครงการ BOM vs บัญชีจริง (Cost Matrix)",
+          icon: BarChart3,
+          action: () => { if (onOpenCostMatrix) onOpenCostMatrix(); setOpenMenu(null); }
+        },
+        {
+          label: "🛒 สร้างใบสั่งซื้อ (PO) จาก BOM แยกตาม Supplier",
+          icon: ShoppingCart,
+          action: () => { if (onOpenBomPoGenerator) onOpenBomPoGenerator(); setOpenMenu(null); }
+        },
+        { type: "divider" },
+        {
+          label: "เปิดระบบ Mechanical BOM Part List WebApp",
+          icon: ExternalLink,
+          action: () => { window.open("https://warsgate-bom.onrender.com", "_blank"); setOpenMenu(null); }
         }
       ]
     },

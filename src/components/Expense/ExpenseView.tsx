@@ -6,6 +6,7 @@ import {
 import { AccountingDocument, DocumentType, DocumentStatus, Contact, DocumentNumberingConfig } from '../../types';
 import { formatMoney, getStatusBadge, formatThaiDate, getLatestYearMonthInfo, getProjectName } from '../../utils/formatters';
 import { BomPoGeneratorModal } from './BomPoGeneratorModal';
+import { ProjectCostMatrixModal } from '../ProjectCostMatrixModal';
 
 interface ExpenseViewProps {
   documents: AccountingDocument[];
@@ -40,6 +41,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [deleteTarget, setDeleteTarget] = useState<AccountingDocument | null>(null);
   const [showBomPoModal, setShowBomPoModal] = useState<boolean>(false);
+  const [showCostMatrixModal, setShowCostMatrixModal] = useState<boolean>(false);
 
   const expenseDocs = useMemo(() => documents.filter(d => EXPENSE_DOC_TYPES.includes(d.type)), [documents]);
 
@@ -193,6 +195,14 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setShowCostMatrixModal(true)}
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all hover:scale-[1.02] active:scale-95"
+            title="วิเคราะห์เปรียบเทียบต้นทุนประเมินใน BOM vs ต้นทุนสั่งซื้อจริงตาม PO"
+          >
+            <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+            <span>📊 วิเคราะห์ต้นทุน BOM</span>
+          </button>
           <button
             onClick={() => setShowBomPoModal(true)}
             className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-indigo-200/80 flex items-center gap-1.5 transition-all hover:scale-[1.02] active:scale-95"
@@ -678,6 +688,17 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
             }
           }}
           openViewDocument={openViewDocument}
+        />
+      )}
+
+      {showCostMatrixModal && (
+        <ProjectCostMatrixModal
+          documents={documents}
+          onClose={() => setShowCostMatrixModal(false)}
+          onOpenPoGenerator={(projCode) => {
+            setShowCostMatrixModal(false);
+            setShowBomPoModal(true);
+          }}
         />
       )}
 
