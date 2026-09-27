@@ -417,13 +417,25 @@ export const MenuBar: React.FC<MenuBarProps> = ({
 
       </div>
 
-      {/* Right: Real-Time Engine Indicators */}
-      <div className="hidden lg:flex items-center gap-3 text-[11px] font-mono text-slate-400">
-        <div className="flex items-center gap-1.5">
+      {/* Right: Quick Launch & Real-Time Engine Indicators */}
+      <div className="flex items-center gap-2.5 text-[11px] font-mono text-slate-400">
+        <a
+          href="https://warsgate-bom.onrender.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-400/40 text-indigo-200 hover:text-white transition font-sans text-xs font-semibold shadow-xs"
+          title="เปิดโปรแกรม Mechanical BOM Part List (เปิดแท็บใหม่)"
+        >
+          <Cpu className="w-3.5 h-3.5 text-indigo-300 animate-pulse" />
+          <span className="hidden sm:inline">Mechanical BOM</span>
+          <ExternalLink className="w-3 h-3 text-indigo-300" />
+        </a>
+        <span className="hidden lg:inline text-slate-700">|</span>
+        <div className="hidden lg:flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" />
           <span className="text-slate-300 font-medium">PLC & ENGINE LIVE</span>
         </div>
-        <span className="text-slate-700">|</span>
+        <span className="hidden lg:inline text-slate-700">|</span>
         <span className="text-cyan-400/90 font-semibold">v2.5.0</span>
       </div>
 

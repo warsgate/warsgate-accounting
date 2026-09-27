@@ -2,7 +2,7 @@ import React from "react";
 import { 
   LayoutDashboard, TrendingUp, TrendingDown, Users, Package,
   BookOpen, Calculator, Settings, ChevronRight, ChevronLeft, Zap, BarChart3,
-  PanelLeftClose, PanelLeftOpen
+  PanelLeftClose, PanelLeftOpen, Cpu, ExternalLink
 } from "lucide-react";
 import { AccountingDocument, Contact, ProductService } from "../types";
 
@@ -200,6 +200,55 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
       </div>
+
+      {/* Mechanical BOM WebApp Quick Link */}
+      {!isCollapsed ? (
+        <div className="px-3 pt-2">
+          <a
+            href="https://warsgate-bom.onrender.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-indigo-50 via-blue-50 to-sky-50 hover:from-indigo-100 hover:to-blue-100 border border-indigo-200 text-indigo-900 group transition shadow-xs"
+            title="เปิดโปรแกรม Mechanical BOM Part List ในแท็บใหม่"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="p-2 rounded-lg bg-indigo-600 text-white shadow-xs group-hover:scale-105 transition shrink-0">
+                <Cpu className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className="block text-xs font-bold text-indigo-950 truncate">
+                    Mechanical BOM
+                  </span>
+                  <span className="text-[9px] bg-indigo-100 text-indigo-700 font-bold px-1.5 py-0.2 rounded border border-indigo-200 font-mono">
+                    WEB
+                  </span>
+                </div>
+                <span className="text-[10px] block text-indigo-600 font-medium truncate">
+                  ถอดแบบพาร์ท & PO ↗
+                </span>
+              </div>
+            </div>
+            <ExternalLink className="w-3.5 h-3.5 text-indigo-400 group-hover:text-indigo-700 group-hover:translate-x-0.5 transition shrink-0" />
+          </a>
+        </div>
+      ) : (
+        <div className="p-2 flex justify-center">
+          <a
+            href="https://warsgate-bom.onrender.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 transition relative group flex justify-center"
+            title="เปิดโปรแกรม Mechanical BOM Part List (เปิดแท็บใหม่)"
+          >
+            <Cpu className="w-5 h-5 text-indigo-600" />
+            <div className="absolute left-full ml-2.5 top-1/2 -translate-y-1/2 bg-slate-900 text-white px-2.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-xl border border-slate-700">
+              <div>Mechanical BOM WebApp</div>
+              <div className="text-[10px] text-indigo-300 font-normal">เปิดระบบถอดแบบพาร์ท ↗</div>
+            </div>
+          </a>
+        </div>
+      )}
 
       {/* Bottom Info Box */}
       {!isCollapsed ? (

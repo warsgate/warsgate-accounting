@@ -7,7 +7,9 @@ import {
   ShieldCheck, 
   FileText, 
   CreditCard, 
-  Box 
+  Box,
+  Cpu,
+  ExternalLink 
 } from 'lucide-react';
 import { CompanyProfile } from '../types';
 
@@ -83,7 +85,20 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Right: Actions & User Profile */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+
+          {/* Direct Link to Mechanical BOM WebApp */}
+          <a
+            href="https://warsgate-bom.onrender.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-blue-500 text-white font-semibold text-xs shadow-md shadow-indigo-200 transition active:scale-95 group"
+            title="เปิดโปรแกรม Mechanical BOM Part List (เปิดแท็บใหม่)"
+          >
+            <Cpu className="w-4 h-4 text-indigo-200 group-hover:rotate-12 transition-transform" />
+            <span className="font-bold tracking-tight">Mechanical BOM</span>
+            <ExternalLink className="w-3.5 h-3.5 text-indigo-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </a>
 
           {/* Quick Add Button */}
           <div className="relative">
