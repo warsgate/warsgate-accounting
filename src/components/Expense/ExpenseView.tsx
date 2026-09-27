@@ -43,11 +43,11 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   const [showBomPoModal, setShowBomPoModal] = useState<boolean>(false);
   const [showCostMatrixModal, setShowCostMatrixModal] = useState<boolean>(false);
 
-  const expenseDocs = useMemo(() => documents.filter(d => EXPENSE_DOC_TYPES.includes(d.type)), [documents]);
+  const expenseDocs = useMemo(() => (documents || []).filter(d => d && EXPENSE_DOC_TYPES.includes(d.type)), [documents]);
 
   // Documents belonging to active tab
   const activeTabDocs = useMemo(() => {
-    return expenseDocs.filter(d => d.type === activeTypeTab);
+    return expenseDocs.filter(d => d && d.type === activeTypeTab);
   }, [expenseDocs, activeTypeTab]);
 
   // Calculate latest year-month for the active tab (fallback to all expense docs)
@@ -70,6 +70,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   };
 
   const filteredDocs = expenseDocs.filter(doc => {
+    if (!doc) return false;
     if (activeTypeTab === 'PURCHASE_ORDER' && doc.type !== 'PURCHASE_ORDER') return false;
     if (activeTypeTab === 'PURCHASE_INVOICE' && doc.type !== 'PURCHASE_INVOICE') return false;
     if (activeTypeTab === 'PAYMENT_VOUCHER' && doc.type !== 'PAYMENT_VOUCHER') return false;
@@ -78,13 +79,13 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
     if (datePreset === 'LATEST_MONTH') {
       if (!(doc.issueDate || '').startsWith(activeTabLatest.ym)) return false;
     } else {
-      if (startDate && doc.issueDate < startDate) return false;
-      if (endDate && doc.issueDate > endDate) return false;
+      if (startDate && (doc.issueDate || '') < startDate) return false;
+      if (endDate && (doc.issueDate || '') > endDate) return false;
     }
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       return (
-        doc.documentNo.toLowerCase().includes(q) ||
+        (doc.documentNo || '').toLowerCase().includes(q) ||
         (doc.contact?.companyName || '').toLowerCase().includes(q) ||
         (doc.contact?.taxId || '').includes(q) ||
         (doc.contact?.name || '').toLowerCase().includes(q) ||
@@ -100,10 +101,10 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   });
 
   // Calculate live KPI metrics
-  const totalExpenseAmount = filteredDocs.reduce((sum, d) => sum + d.grandTotal, 0);
-  const totalInputVat = filteredDocs.reduce((sum, d) => sum + d.vatAmount, 0);
+  const totalExpenseAmount = filteredDocs.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
+  const totalInputVat = filteredDocs.reduce((sum, d) => sum + (d.vatAmount || 0), 0);
   const totalWht = filteredDocs.reduce((sum, d) => sum + (d.withholdingTaxTotal || 0), 0);
-  const totalFilteredNet = filteredDocs.reduce((sum, d) => sum + (d.netPayment || d.grandTotal - (d.withholdingTaxTotal || 0)), 0);
+  const totalFilteredNet = filteredDocs.reduce((sum, d) => sum + (d.netPayment || ((d.grandTotal || 0) - (d.withholdingTaxTotal || 0))), 0);
 
   // Table Tabs Definition for Expense (เฉพาะ 4 ประเภทเอกสารชัดเจน ไม่มีแท็บ "ทั้งหมด")
   const tableTabs = [

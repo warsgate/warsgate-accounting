@@ -174,8 +174,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({
         {
           label: "ศูนย์รายจ่าย & สั่งซื้อ (Expenses)",
           icon: ShoppingCart,
-          active: activeTab === "expense",
-          action: () => { setActiveTab("expense"); setOpenMenu(null); }
+          active: activeTab === "expenses" || activeTab === "expense",
+          action: () => { setActiveTab("expenses"); setOpenMenu(null); }
         },
         {
           label: "รายชื่อลูกค้า & คู่ค้า (Contacts CRM)",
@@ -241,19 +241,19 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       dropdown: [
         {
           label: "ใบสั่งซื้อสินค้า / อุปกรณ์ (PO)",
-          icon: ShoppingCart,
-          action: () => { setActiveTab("expense"); setOpenMenu(null); }
+          icon: ShoppingBag,
+          action: () => { setActiveTab("expenses"); setOpenMenu(null); }
         },
         {
           label: "ใบสำคัญจ่าย (Payment Voucher)",
           icon: DollarSign,
-          action: () => { setActiveTab("expense"); setOpenMenu(null); }
+          action: () => { setActiveTab("expenses"); setOpenMenu(null); }
         },
         { type: "divider" },
         {
           label: "จัดซื้อฮาร์ดแวร์ PLC & Sensor",
           icon: Cpu,
-          action: () => { setActiveTab("expense"); setOpenMenu(null); }
+          action: () => { setActiveTab("expenses"); setOpenMenu(null); }
         }
       ]
     },

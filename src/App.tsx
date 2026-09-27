@@ -431,7 +431,7 @@ export function App() {
               />
             )}
 
-            {activeTab === 'expenses' && (
+            {(activeTab === 'expenses' || activeTab === 'expense') && (
               <ExpenseView
                 documents={documents}
                 contacts={contacts}
