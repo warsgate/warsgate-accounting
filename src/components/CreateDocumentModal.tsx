@@ -51,13 +51,30 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     return saved ? JSON.parse(saved) : defaultNumberingConfig;
   })();
 
-  const filteredContacts = contacts.filter(c => isPurchase ? c.type === 'SUPPLIER' : c.type === 'CUSTOMER');
-  const defaultContactId =
-    initialDocument?.contact?.id ||
-    fromDocument?.contact?.id ||
-    filteredContacts[0]?.id ||
-    contacts[0]?.id ||
-    '';
+  const filteredContacts = contacts.filter(c => isPurchase ? (c.type === 'SUPPLIER' || c.type === 'BOTH') : (c.type === 'CUSTOMER' || c.type === 'BOTH'));
+  
+  const findDefaultContactId = () => {
+    if (initialDocument?.contact?.id) {
+      const found = contacts.find(c => c.id === initialDocument.contact.id);
+      if (found) return found.id;
+    }
+    if (initialDocument?.contact?.taxId) {
+      const cleanTax = initialDocument.contact.taxId.replace(/[-\s]/g, '');
+      const found = contacts.find(c => c.taxId && c.taxId.replace(/[-\s]/g, '') === cleanTax);
+      if (found) return found.id;
+    }
+    if (initialDocument?.contact?.companyName) {
+      const found = contacts.find(c => c.companyName.trim().toLowerCase() === initialDocument.contact.companyName.trim().toLowerCase());
+      if (found) return found.id;
+    }
+    if (fromDocument?.contact?.id) {
+      const found = contacts.find(c => c.id === fromDocument.contact.id);
+      if (found) return found.id;
+    }
+    return filteredContacts[0]?.id || contacts[0]?.id || '';
+  };
+
+  const defaultContactId = findDefaultContactId();
 
   const todayStr = new Date().toISOString().split('T')[0];
   const nextMonthStr = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -270,21 +287,27 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const contact = contacts.find(c => c.id === selectedContactId) || contacts[0] || {
-      id: 'unknown',
-      name: 'ลูกค้าทั่วไป',
-      companyName: 'ลูกค้าทั่วไป',
-      taxId: '0000000000000',
-      isBranch: false,
-      branchCode: '00000',
-      address: '-',
-      phone: '-',
-      email: '-',
-      type: isPurchase ? 'SUPPLIER' : 'CUSTOMER',
-      creditDays: 30,
-      totalTransactions: 0,
-      balanceDue: 0,
-    };
+    let contact = contacts.find(c => c.id === selectedContactId);
+    if (!contact && isEdit && initialDocument?.contact) {
+      contact = initialDocument.contact;
+    }
+    if (!contact) {
+      contact = contacts[0] || {
+        id: 'unknown',
+        name: 'ลูกค้าทั่วไป',
+        companyName: 'ลูกค้าทั่วไป',
+        taxId: '0000000000000',
+        isBranch: false,
+        branchCode: '00000',
+        address: '-',
+        phone: '-',
+        email: '-',
+        type: isPurchase ? 'SUPPLIER' : 'CUSTOMER',
+        creditDays: 30,
+        totalTransactions: 0,
+        balanceDue: 0,
+      };
+    }
 
     if (isEdit && initialDocument) {
       const updatedDoc: AccountingDocument = {
@@ -533,19 +556,32 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 
           {/* Contact Box */}
           <div className="glass-panel p-4 rounded-2xl">
-            <label className="block text-slate-500 font-semibold mb-1.5">
-              เลือก{isPurchase ? 'ซัพพลายเออร์ / ผู้จำหน่าย' : 'ลูกค้า / คู่ค้า'} *
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-slate-700 font-bold">
+                {isPurchase ? 'ซัพพลายเออร์ / ผู้จำหน่าย (Supplier)' : 'ลูกค้า / ผู้ว่าจ้าง (Customer)'} *
+              </label>
+              <span className="text-[10px] text-slate-400">
+                {contacts.length} รายชื่อในระบบ
+              </span>
+            </div>
             <select
               value={selectedContactId}
               onChange={e => setSelectedContactId(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-medium focus:outline-none focus:border-rose-400"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-semibold focus:outline-none focus:border-rose-400 focus:bg-white transition shadow-2xs"
             >
-              {contacts.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.companyName} — {c.name} {c.taxId ? `(Tax ID: ${c.taxId})` : ''}
-                </option>
-              ))}
+              {contacts
+                .slice()
+                .sort((a, b) => {
+                  const aMatch = isPurchase ? (a.type === 'SUPPLIER' || a.type === 'BOTH' ? 0 : 1) : (a.type === 'CUSTOMER' || a.type === 'BOTH' ? 0 : 1);
+                  const bMatch = isPurchase ? (b.type === 'SUPPLIER' || b.type === 'BOTH' ? 0 : 1) : (b.type === 'CUSTOMER' || b.type === 'BOTH' ? 0 : 1);
+                  if (aMatch !== bMatch) return aMatch - bMatch;
+                  return (a.companyName || '').localeCompare(b.companyName || '');
+                })
+                .map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.companyName} — {c.name} {c.taxId ? `(Tax ID: ${c.taxId})` : ''} [{c.type === 'SUPPLIER' ? 'ผู้จำหน่าย' : c.type === 'CUSTOMER' ? 'ลูกค้า' : 'ทั้งสอง'}]
+                  </option>
+                ))}
             </select>
           </div>
 
