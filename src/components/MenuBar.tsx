@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   FileText, Plus, Search, RefreshCw, Printer, Settings,
-  BarChart3, DollarSign, ShoppingCart, Users, Package,
+  BarChart3, DollarSign, ShoppingCart, ShoppingBag, Users, Package,
   BookOpen, ShieldCheck, HelpCircle, Cpu, Download,
   ExternalLink, ChevronRight, Check, Zap, Sparkles, Command
 } from "lucide-react";
