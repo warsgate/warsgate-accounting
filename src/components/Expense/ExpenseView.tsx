@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  TrendingDown, Plus, Search, Filter, Printer, Pencil, Trash2, AlertTriangle, 
+  TrendingDown, TrendingUp, Plus, Search, Filter, Printer, Pencil, Trash2, AlertTriangle, 
   FileText, CheckCircle2, RotateCcw, Calendar, ShoppingBag, Receipt, DollarSign, ShieldAlert, Cpu, Sparkles
 } from 'lucide-react';
 import { AccountingDocument, DocumentType, DocumentStatus, Contact, DocumentNumberingConfig } from '../../types';

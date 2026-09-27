@@ -120,7 +120,7 @@ export const initialProducts: ProductService[] = [
     id: 'prod-srv-dashboard-sw',
     code: 'SRV-DASHBOARD-SW',
     name: 'โปรแกรม ระบบ Dashboard Data Monitor',
-    category: 'SOFTWARE_LICENSE',
+    category: 'SOFTWARE',
     type: 'SERVICE',
     unit: 'Job',
     unitPrice: 150000.00,
