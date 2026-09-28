@@ -606,8 +606,9 @@ export function App() {
                 documents={documents}
                 contacts={contacts}
                 company={company}
+                milestonePlans={milestonePlans}
                 setActiveTab={setActiveTab}
-                openCreateModal={(type) => {
+                openCreateModal={(type, defaultPoNo, defaultContact) => {
                   setFromDoc(null);
                   setEditingDoc(null);
                   setCreateDocType(type);

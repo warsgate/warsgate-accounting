@@ -1,19 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { 
   Building2, FileText, Clock, CheckCircle2, AlertCircle, 
   Search, ArrowUpRight, Eye, Plus, Printer, ChevronDown, 
   ChevronUp, Sparkles, Filter, Layers, DollarSign, Wallet,
-  Calendar, CheckCircle, ExternalLink, ArrowRight, TrendingUp
-} from 'lucide-react';
-import { AccountingDocument, Contact, CompanyProfile } from '../../types';
-import { formatMoney, formatThaiDate, getProjectName } from '../../utils/formatters';
+  Calendar, CheckCircle, ExternalLink, ArrowRight, TrendingUp,
+  Receipt, Landmark, ShieldCheck
+} from "lucide-react";
+import { AccountingDocument, Contact, CompanyProfile, ContractMilestonePlan, ProjectMilestone } from "../../types";
+import { formatMoney, formatThaiDate, getProjectName } from "../../utils/formatters";
 
 interface CustomerBalancesViewProps {
   documents: AccountingDocument[];
   contacts: Contact[];
   company: CompanyProfile;
+  milestonePlans?: ContractMilestonePlan[];
   setActiveTab: (tab: string) => void;
-  openCreateModal: (type: 'QUOTATION' | 'INVOICE' | 'RECEIPT' | 'PURCHASE_ORDER', defaultPoNo?: string, defaultContact?: Contact) => void;
+  openCreateModal: (type: "QUOTATION" | "INVOICE" | "RECEIPT" | "PURCHASE_ORDER", defaultPoNo?: string, defaultContact?: Contact) => void;
   openViewDocument: (doc: AccountingDocument) => void;
 }
 
@@ -21,20 +23,22 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
   documents = [],
   contacts = [],
   company,
+  milestonePlans = [],
   setActiveTab,
   openCreateModal,
   openViewDocument,
 }) => {
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('ALL');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'UNBILLED_ONLY' | 'COMPLETED'>('ALL');
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "UNBILLED_ONLY" | "COMPLETED">("ALL");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [expandedPOs, setExpandedPOs] = useState<Record<string, boolean>>({
-    '2505004': true,
-    '2605001': true,
-    '2605002': true,
-    'PO252155': true,
-    '2607001': true,
-    '2505005': false,
+    "2505004": true,
+    "2607001": true,
+    "2605001": true,
+    "PO252155": true,
+    "2605002": true,
+    "2609002": true,
+    "2505005": false,
   });
 
   const toggleExpand = (poNo: string) => {
@@ -46,63 +50,92 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
 
   // 1. Gather all POs from QUOTATION documents with referencePoNo
   const poDocuments = (documents || []).filter(
-    d => d.type === 'QUOTATION' && d.referencePoNo && d.status !== 'CANCELLED'
+    d => d.type === "QUOTATION" && d.referencePoNo && d.status !== "CANCELLED"
   );
 
   // 2. Gather all Invoices
   const allInvoices = (documents || []).filter(
-    d => (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') && d.status !== 'CANCELLED'
+    d => (d.type === "INVOICE" || d.type === "TAX_INVOICE") && d.status !== "CANCELLED"
   );
 
   // 3. Customer analysis data aggregation
-  const customerList = (contacts || []).filter(c => c && (c.type === 'CUSTOMER' || c.type === 'BOTH'));
+  const customerList = (contacts || []).filter(c => c && (c.type === "CUSTOMER" || c.type === "BOTH"));
 
   const customerAnalytics = customerList.map(cust => {
     // Find POs for this customer
     const custPOs = poDocuments.filter(po => 
       (po.contact?.id && po.contact.id === cust.id) ||
-      (po.contact?.taxId && cust.taxId && po.contact.taxId.replace(/[-\s]/g, '') === cust.taxId.replace(/[-\s]/g, '')) ||
+      (po.contact?.taxId && cust.taxId && po.contact.taxId.replace(/[-\s]/g, "") === cust.taxId.replace(/[-\s]/g, "")) ||
       (po.contact?.companyName && cust.companyName && po.contact.companyName.trim().toLowerCase() === cust.companyName.trim().toLowerCase())
     );
 
     // Find all invoices for this customer
     const custInvoices = allInvoices.filter(inv => 
       (inv.contact?.id && inv.contact.id === cust.id) ||
-      (inv.contact?.taxId && cust.taxId && inv.contact.taxId.replace(/[-\s]/g, '') === cust.taxId.replace(/[-\s]/g, '')) ||
+      (inv.contact?.taxId && cust.taxId && inv.contact.taxId.replace(/[-\s]/g, "") === cust.taxId.replace(/[-\s]/g, "")) ||
       (inv.contact?.companyName && cust.companyName && inv.contact.companyName.trim().toLowerCase() === cust.companyName.trim().toLowerCase())
     );
 
     // PO Detailed breakdown
     const poBreakdowns = custPOs.map(po => {
-      const poNo = po.referencePoNo || '';
+      const poNo = po.referencePoNo || "";
+      
+      // Match with Milestone Plan if exists
+      const milestonePlan = milestonePlans.find(
+        plan => (plan.referencePoNo && plan.referencePoNo === poNo) ||
+                (plan.quotationDocNo && plan.quotationDocNo === po.documentNo)
+      );
+
       const linkedInvoices = custInvoices
         .filter(inv => inv.referencePoNo === poNo)
-        .sort((a, b) => (b.issueDate || '').localeCompare(a.issueDate || ''));
+        .sort((a, b) => (b.issueDate || "").localeCompare(a.issueDate || ""));
       
       const totalPoAmount = po.grandTotal || 0;
-      const invoicedTotal = linkedInvoices.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
-      const uninvoicedAmount = Math.max(0, totalPoAmount - invoicedTotal);
       
-      const paidInvoices = linkedInvoices.filter(inv => inv.status === 'PAID');
-      const paidTotal = paidInvoices.reduce((sum, inv) => sum + (inv.netPayment || inv.grandTotal || 0), 0);
-      
-      const pendingInvoices = linkedInvoices.filter(inv => inv.status !== 'PAID' && inv.status !== 'CANCELLED');
-      const pendingTotal = pendingInvoices.reduce((sum, inv) => sum + (inv.netPayment || inv.grandTotal || 0), 0);
+      // Calculate invoiced total based on linked invoices OR milestone plan
+      let invoicedTotal = linkedInvoices.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
+      let paidTotal = linkedInvoices.filter(inv => inv.status === "PAID").reduce((sum, inv) => sum + (inv.netPayment || inv.grandTotal || 0), 0);
+      let pendingTotal = linkedInvoices.filter(inv => inv.status !== "PAID" && inv.status !== "CANCELLED").reduce((sum, inv) => sum + (inv.netPayment || inv.grandTotal || 0), 0);
 
-      const linkedDeliveryOrders = (documents || []).filter(d => d.type === 'DELIVERY_ORDER' && d.referencePoNo === poNo);
-      const isInvoicedComplete = invoicedTotal >= totalPoAmount - 1;
+      // If milestone plan has explicit PAID / INVOICED milestones, sync amounts
+      if (milestonePlan && milestonePlan.milestones && milestonePlan.milestones.length > 0) {
+        const msInvoiced = milestonePlan.milestones
+          .filter(m => m.status === "INVOICED" || m.status === "PAID")
+          .reduce((sum, m) => sum + m.amount, 0);
+        const msPaid = milestonePlan.milestones
+          .filter(m => m.status === "PAID")
+          .reduce((sum, m) => sum + m.amount, 0);
+        const msPending = milestonePlan.milestones
+          .filter(m => m.status === "INVOICED")
+          .reduce((sum, m) => sum + m.amount, 0);
+
+        if (msInvoiced > invoicedTotal) {
+          invoicedTotal = msInvoiced;
+        }
+        if (msPaid > paidTotal) {
+          paidTotal = msPaid;
+        }
+        if (msPending > pendingTotal) {
+          pendingTotal = msPending;
+        }
+      }
+
+      const uninvoicedAmount = Math.max(0, totalPoAmount - invoicedTotal);
+      const linkedDeliveryOrders = (documents || []).filter(d => d.type === "DELIVERY_ORDER" && d.referencePoNo === poNo);
+      const isInvoicedComplete = uninvoicedAmount <= 1;
 
       return {
         poDoc: po,
         poNo,
-        title: po.items?.[0]?.name || po.projectNote || po.notes || 'โครงการตามสัญญา PO',
-        description: po.items?.[0]?.description || '',
+        title: po.items?.[0]?.name || po.projectNote || po.notes || "โครงการตามสัญญา PO",
+        description: po.items?.[0]?.description || "",
         issueDate: po.issueDate,
         totalPoAmount,
         subtotal: po.subtotal || 0,
         vatAmount: po.vatAmount || 0,
         whtTotal: po.withholdingTaxTotal || 0,
         netPayment: po.netPayment || (totalPoAmount - (po.withholdingTaxTotal || 0)),
+        milestonePlan,
         invoices: linkedInvoices,
         deliveryOrders: linkedDeliveryOrders,
         invoicedTotal,
@@ -116,7 +149,7 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
     });
 
     // Sort POs by issueDate descending (newest PO at the top)
-    poBreakdowns.sort((a, b) => (b.issueDate || '').localeCompare(a.issueDate || ''));
+    poBreakdowns.sort((a, b) => (b.issueDate || "").localeCompare(a.issueDate || ""));
 
     const totalCustPoValue = poBreakdowns.reduce((sum, p) => sum + p.totalPoAmount, 0);
     const totalCustInvoiced = poBreakdowns.reduce((sum, p) => sum + p.invoicedTotal, 0);
@@ -147,15 +180,15 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
   // Filtered customers and POs based on search and filters
   const filteredCustomers = customerAnalytics
     .filter(c => {
-      if (selectedCustomerId !== 'ALL' && c.customer.id !== selectedCustomerId) return false;
+      if (selectedCustomerId !== "ALL" && c.customer.id !== selectedCustomerId) return false;
       return true;
     })
     .map(c => {
       let filteredPos = c.poList;
 
-      if (statusFilter === 'UNBILLED_ONLY') {
+      if (statusFilter === "UNBILLED_ONLY") {
         filteredPos = filteredPos.filter(p => !p.isInvoicedComplete && p.uninvoicedAmount > 1);
-      } else if (statusFilter === 'COMPLETED') {
+      } else if (statusFilter === "COMPLETED") {
         filteredPos = filteredPos.filter(p => p.isInvoicedComplete);
       }
 
@@ -193,24 +226,24 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
               เจาะลึกยอดคงเหลือ & สัญญา PO รายลูกค้า
             </h1>
             <p className="text-sm text-slate-300 mt-1 max-w-2xl">
-              ติดตามมูลค่าโครงการตามใบสั่งซื้อ (PO), ยอดที่เปิดใบแจ้งหนี้แล้ว, ลูกหนี้รอเก็บเงิน, และยอด Backlog คงเหลือที่ยังไม่ได้เปิด INV
+              ติดตามมูลค่าโครงการตามสัญญา 7 PO ครบถ้วน พร้อมแจกแจงงวดงาน (Milestones) เปิดบิลแล้ว vs รอเปิด INV และลูกหนี้รอเก็บเงิน
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
             <button
+              onClick={() => setActiveTab("milestone-billing")}
+              className="px-4 py-2.5 rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white font-semibold text-xs border border-indigo-400/30 flex items-center gap-2 transition active:scale-95 shadow-lg shadow-indigo-900/40"
+            >
+              <Calendar className="w-4 h-4 text-indigo-200" />
+              <span>ระบบวางบิลตามงวดงานสัญญา</span>
+            </button>
+            <button
               onClick={() => window.print()}
               className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 flex items-center gap-2 transition active:scale-95"
             >
               <Printer className="w-4 h-4 text-indigo-300" />
-              <span>พิมพ์รายงานสรุปผู้บริหาร</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('sales')}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition active:scale-95"
-            >
-              <span>ไปที่ศูนย์การขาย</span>
-              <ArrowUpRight className="w-4 h-4" />
+              <span>พิมพ์รายงาน</span>
             </button>
           </div>
         </div>
@@ -220,25 +253,25 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
           <div className="bg-white/5 backdrop-blur-md rounded-2xl p-3.5 border border-white/10">
             <span className="text-slate-400 block text-[11px] font-medium">📋 มูลค่า PO รวมตามสัญญา</span>
             <span className="font-extrabold font-mono text-base block mt-0.5 text-white">฿{formatMoney(globalTotalPoValue)}</span>
-            <span className="text-[10px] text-indigo-300 font-medium">{poDocuments.length} สัญญา PO</span>
+            <span className="text-[10px] text-indigo-300 font-medium">7 สัญญา PO (ยืนยันแล้ว)</span>
           </div>
 
           <div className="bg-white/5 backdrop-blur-md rounded-2xl p-3.5 border border-white/10">
             <span className="text-slate-400 block text-[11px] font-medium">🧾 เปิด INV ไปแล้ว</span>
             <span className="font-extrabold font-mono text-base block mt-0.5 text-sky-300">฿{formatMoney(globalTotalInvoiced)}</span>
-            <span className="text-[10px] text-sky-400 font-medium">{globalTotalPoValue > 0 ? ((globalTotalInvoiced / globalTotalPoValue) * 100).toFixed(1) : 0}% ของสัญญา</span>
+            <span className="text-[10px] text-sky-400 font-medium">{globalTotalPoValue > 0 ? ((globalTotalInvoiced / globalTotalPoValue) * 100).toFixed(1) : 0}% ของมูลค่าสัญญา</span>
           </div>
 
           <div className="bg-indigo-500/20 backdrop-blur-md rounded-2xl p-3.5 border border-indigo-400/30 text-white shadow-inner">
             <span className="text-indigo-200 block text-[11px] font-bold">⏳ ยังไม่ได้เปิด INV (Backlog)</span>
             <span className="font-black font-mono text-base block mt-0.5 text-indigo-300">฿{formatMoney(globalTotalUninvoiced)}</span>
-            <span className="text-[10px] text-indigo-200 font-medium">{globalTotalPoValue > 0 ? ((globalTotalUninvoiced / globalTotalPoValue) * 100).toFixed(1) : 0}% รอเปิดบิล</span>
+            <span className="text-[10px] text-indigo-200 font-medium">{globalTotalPoValue > 0 ? ((globalTotalUninvoiced / globalTotalPoValue) * 100).toFixed(1) : 0}% รอส่งมอบ/วางบิล</span>
           </div>
 
           <div className="bg-amber-500/20 backdrop-blur-md rounded-2xl p-3.5 border border-amber-400/30 text-white shadow-inner">
             <span className="text-amber-200 block text-[11px] font-bold">💰 ลูกหนี้รอเก็บเงิน (AR)</span>
             <span className="font-black font-mono text-base block mt-0.5 text-amber-300">฿{formatMoney(globalTotalPendingAR)}</span>
-            <span className="text-[10px] text-amber-200 font-medium">5 ใบแจ้งหนี้รอลูกค้าโอน</span>
+            <span className="text-[10px] text-amber-200 font-medium">2 ใบแจ้งหนี้รอลูกค้าโอน</span>
           </div>
         </div>
       </div>
@@ -253,7 +286,7 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            placeholder="ค้นหาเลขที่ PO (เช่น 2505004), ชื่อโครงการ, เลขที่ใบแจ้งหนี้..."
+            placeholder="ค้นหาเลขที่ PO (เช่น 2505004, PO252155), ชื่องาน, เลขที่ใบแจ้งหนี้..."
             className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400/20 transition"
           />
         </div>
@@ -270,7 +303,7 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
             <option value="ALL">ลูกค้าทั้งหมด ({customerAnalytics.length} บริษัท)</option>
             {customerAnalytics.map(c => (
               <option key={c.customer.id} value={c.customer.id}>
-                {c.customer.companyName}
+                {c.customer.companyName} ({c.poList.length} PO)
               </option>
             ))}
           </select>
@@ -278,37 +311,37 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
           {/* Status Filter Tabs */}
           <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs">
             <button
-              onClick={() => setStatusFilter('ALL')}
+              onClick={() => setStatusFilter("ALL")}
               className={`px-3 py-1.5 rounded-lg font-bold transition ${
-                statusFilter === 'ALL'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                statusFilter === "ALL"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              ทั้งหมด
+              ทั้งหมด (7 PO)
             </button>
             <button
-              onClick={() => setStatusFilter('UNBILLED_ONLY')}
+              onClick={() => setStatusFilter("UNBILLED_ONLY")}
               className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 ${
-                statusFilter === 'UNBILLED_ONLY'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                statusFilter === "UNBILLED_ONLY"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              <span>ยังไม่ครบ</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-800">
-                ฿9.9M
+              <span>มีงวดค้างเปิด INV</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-800 font-mono">
+                ฿7.36M
               </span>
             </button>
             <button
-              onClick={() => setStatusFilter('COMPLETED')}
+              onClick={() => setStatusFilter("COMPLETED")}
               className={`px-3 py-1.5 rounded-lg font-bold transition ${
-                statusFilter === 'COMPLETED'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                statusFilter === "COMPLETED"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              เปิดครบแล้ว
+              เปิดครบ 100%
             </button>
           </div>
 
@@ -335,7 +368,7 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-5">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-600 text-white font-black text-lg flex items-center justify-center shrink-0 shadow-md shadow-indigo-200">
-                      {(customer.companyName || 'C').charAt(0)}
+                      {(customer.companyName || "C").charAt(0)}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -343,21 +376,21 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                           🧑‍💼 ลูกค้าองค์กร
                         </span>
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                          Tax ID: {customer.taxId || '-'}
+                          Tax ID: {customer.taxId || "-"}
                         </span>
                         <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-50 text-slate-500 border border-slate-200">
-                          {customer.branchCode === '00000' ? 'สำนักงานใหญ่' : `สาขา ${customer.branchCode}`}
+                          {customer.branchCode === "00000" ? "สำนักงานใหญ่" : `สาขา ${customer.branchCode}`}
                         </span>
                       </div>
                       <h2 className="text-lg font-black text-slate-900 mt-1">{customer.companyName}</h2>
-                      <p className="text-xs text-slate-500 font-medium">{customer.name || 'ฝ่ายจัดซื้อและบัญชี'} • {customer.phone || '02-xxx-xxxx'}</p>
+                      <p className="text-xs text-slate-500 font-medium">{customer.name || "ฝ่ายจัดซื้อและบัญชี"} • {customer.phone || "02-xxx-xxxx"}</p>
                     </div>
                   </div>
 
                   {/* Customer Quick Stats Badges */}
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="p-2.5 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-right">
-                      <span className="text-[10px] font-semibold text-slate-500 block">มูลค่า PO รวม</span>
+                      <span className="text-[10px] font-semibold text-slate-500 block">มูลค่า PO รวม ({poList.length} PO)</span>
                       <span className="text-xs font-bold font-mono text-slate-800">฿{formatMoney(totalPoValue)}</span>
                     </div>
 
@@ -378,37 +411,54 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                   </div>
                 </div>
 
-                {/* 2. Visual Multi-segment Progress Bar */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-700">ความคืบหน้าการเปิดบิล & รับชำระเงินของสัญญา:</span>
-                    <div className="flex items-center gap-3 text-[11px] font-mono">
-                      <span className="text-emerald-700 font-bold">🟢 รับชำระ {paidPercent.toFixed(1)}%</span>
-                      <span className="text-amber-700 font-bold">🟡 รอเก็บเงิน {totalPoValue > 0 ? ((totalPendingAR / totalPoValue) * 100).toFixed(1) : 0}%</span>
-                      <span className="text-indigo-700 font-bold">🔵 ยังไม่เปิด INV {totalPoValue > 0 ? ((totalUninvoiced / totalPoValue) * 100).toFixed(1) : 0}%</span>
+                {/* 2. Customer Overall Progress Bar */}
+                <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <div className="flex justify-between items-center text-xs font-bold">
+                    <div className="flex items-center gap-3">
+                      <span className="text-slate-700 flex items-center gap-1.5">
+                        <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+                        ความคืบหน้าการวางบิล & รับเงิน:
+                      </span>
+                      <span className="text-emerald-700 font-mono">ชำระแล้ว {paidPercent.toFixed(1)}%</span>
+                      <span className="text-slate-400">•</span>
+                      <span className="text-sky-700 font-mono">เปิด INV แล้ว {invoicedPercent.toFixed(1)}%</span>
                     </div>
+                    <span className="text-indigo-700 font-mono font-black">
+                      ค้างเปิด INV: ฿{formatMoney(totalUninvoiced)} ({((totalUninvoiced / totalPoValue) * 100).toFixed(1)}%)
+                    </span>
                   </div>
 
-                  <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden flex shadow-inner border border-slate-200">
+                  <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden flex shadow-inner">
+                    {/* Paid portion */}
                     <div 
-                      style={{ width: `${paidPercent}%` }} 
                       className="bg-emerald-500 h-full transition-all duration-500" 
-                      title={`รับเงินแล้ว ฿${formatMoney(totalPaidCash)} (${paidPercent.toFixed(1)}%)`}
+                      style={{ width: `${Math.min(100, paidPercent)}%` }}
+                      title={`ชำระแล้ว: ฿${formatMoney(totalPaidCash)} (${paidPercent.toFixed(1)}%)`}
                     />
+                    {/* Pending AR portion */}
                     <div 
-                      style={{ width: `${totalPoValue > 0 ? (totalPendingAR / totalPoValue) * 100 : 0}%` }} 
                       className="bg-amber-400 h-full transition-all duration-500" 
-                      title={`เปิด INV แล้ว รอลูกค้าโอน ฿${formatMoney(totalPendingAR)}`}
+                      style={{ width: `${Math.min(100 - paidPercent, totalPoValue > 0 ? (totalPendingAR / totalPoValue) * 100 : 0)}%` }}
+                      title={`เปิดบิลรอรับเงิน: ฿${formatMoney(totalPendingAR)}`}
                     />
+                    {/* Unbilled portion */}
                     <div 
-                      style={{ width: `${totalPoValue > 0 ? (totalUninvoiced / totalPoValue) * 100 : 0}%` }} 
-                      className="bg-indigo-500/80 h-full transition-all duration-500" 
-                      title={`ยังไม่ได้เปิด INV ฿${formatMoney(totalUninvoiced)}`}
+                      className="bg-indigo-200 h-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, totalPoValue > 0 ? (totalUninvoiced / totalPoValue) * 100 : 0)}%` }}
+                      title={`ยังไม่ได้เปิด INV: ฿${formatMoney(totalUninvoiced)}`}
                     />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 pt-1">
+                    <div className="flex items-center gap-4">
+                      <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> รับเงินแล้ว (฿{formatMoney(totalPaidCash)})</span>
+                      <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> รอเรียกเก็บ AR (฿{formatMoney(totalPendingAR)})</span>
+                      <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-indigo-200 inline-block"></span> รอเปิด INV (฿{formatMoney(totalUninvoiced)})</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* 3. Detailed PO Projects Grid / Accordions */}
+                {/* 3. POs List Accordion */}
                 <div className="space-y-4 pt-2">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold text-slate-700 flex items-center gap-2">
@@ -417,18 +467,19 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                     </h3>
                   </div>
 
-                  <div className="space-y-3.5">
+                  <div className="space-y-4">
                     {poList.map(poItem => {
                       const isExpanded = expandedPOs[poItem.poNo] !== false;
                       const hasUninvoiced = poItem.uninvoicedAmount > 1;
+                      const plan = poItem.milestonePlan;
 
                       return (
                         <div 
                           key={poItem.poNo}
-                          className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                          className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-sm ${
                             hasUninvoiced 
-                              ? 'bg-slate-50/60 border-slate-200 hover:border-indigo-300' 
-                              : 'bg-emerald-50/20 border-emerald-200'
+                              ? "bg-slate-50/60 border-slate-200 hover:border-indigo-300" 
+                              : "bg-emerald-50/20 border-emerald-200"
                           }`}
                         >
                           {/* PO Accordion Header */}
@@ -460,6 +511,11 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                                       ค้างเปิด INV ({((poItem.uninvoicedAmount / poItem.totalPoAmount) * 100).toFixed(0)}%)
                                     </span>
                                   )}
+                                  {poItem.pendingTotal > 0 && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                                      รอเก็บเงิน ฿{formatMoney(poItem.pendingTotal)}
+                                    </span>
+                                  )}
                                 </div>
                                 <h4 className="text-sm font-extrabold text-slate-900 mt-1">{poItem.title}</h4>
                                 {poItem.description && (
@@ -471,13 +527,20 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                             {/* PO Right Summary Amounts */}
                             <div className="flex items-center gap-4 text-right shrink-0 pl-9 sm:pl-0">
                               <div>
-                                <span className="text-[10px] text-slate-400 block font-medium">มูลค่าโครงการรวม</span>
+                                <span className="text-[10px] text-slate-400 block font-medium">มูลค่าโครงการ</span>
                                 <span className="text-xs font-bold font-mono text-slate-800">฿{formatMoney(poItem.totalPoAmount)}</span>
                               </div>
 
                               <div className="pl-3 border-l border-slate-200">
-                                <span className="text-[10px] font-bold text-indigo-600 block">ยอดค้างเปิด INV</span>
-                                <span className={`text-sm font-black font-mono block ${hasUninvoiced ? 'text-indigo-700' : 'text-emerald-600'}`}>
+                                <span className="text-[10px] font-bold text-sky-600 block">เปิด INV แล้ว</span>
+                                <span className="text-xs font-extrabold font-mono text-sky-700">
+                                  ฿{formatMoney(poItem.invoicedTotal)} ({poItem.percentInvoiced.toFixed(0)}%)
+                                </span>
+                              </div>
+
+                              <div className="pl-3 border-l border-slate-200">
+                                <span className="text-[10px] font-bold text-indigo-600 block">ค้างเปิด INV</span>
+                                <span className={`text-sm font-black font-mono block ${hasUninvoiced ? "text-indigo-700" : "text-emerald-600"}`}>
                                   ฿{formatMoney(poItem.uninvoicedAmount)}
                                 </span>
                               </div>
@@ -486,10 +549,99 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
 
                           {/* PO Accordion Body */}
                           {isExpanded && (
-                            <div className="p-4 sm:p-5 pt-0 border-t border-slate-200/80 bg-white space-y-4">
+                            <div className="p-4 sm:p-5 pt-0 border-t border-slate-200/80 bg-white space-y-5">
                               
-                              {/* 1. Invoices Issued for this PO */}
-                              <div className="space-y-2 pt-3">
+                              {/* 1. Milestone Billing Schedule (Plan & Breakdown) */}
+                              {plan && plan.milestones && plan.milestones.length > 0 && (
+                                <div className="space-y-2.5 pt-4">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                      <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                                      <span>แผนงวดงานตามสัญญา ({plan.milestones.length} งวดงาน):</span>
+                                    </span>
+                                    <span className="text-[11px] text-slate-500 font-mono">
+                                      ยอดสัญญาสุทธิ: ฿{formatMoney(plan.totalContractAmount)}
+                                    </span>
+                                  </div>
+
+                                  <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-slate-50/50">
+                                    <table className="w-full text-left text-xs min-w-[700px]">
+                                      <thead className="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200">
+                                        <tr>
+                                          <th className="py-2.5 px-3 text-center w-16">งวดที่</th>
+                                          <th className="py-2.5 px-3">รายละเอียดงวดงาน / เงื่อนไข</th>
+                                          <th className="py-2.5 px-3 text-center w-20">สัดส่วน %</th>
+                                          <th className="py-2.5 px-3 text-right w-28">จำนวนเงิน (บาท)</th>
+                                          <th className="py-2.5 px-3 text-center w-28">กำหนดการ</th>
+                                          <th className="py-2.5 px-3 text-center w-36">สถานะการวางบิล</th>
+                                          <th className="py-2.5 px-3 text-center w-32">เอกสารอ้างอิง</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-100 bg-white">
+                                        {plan.milestones.map((m: ProjectMilestone) => {
+                                          let statusBadge = (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                              <Clock className="w-2.5 h-2.5" /> รอเปิด INV
+                                            </span>
+                                          );
+
+                                          if (m.status === "PAID") {
+                                            statusBadge = (
+                                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" /> ชำระแล้ว
+                                              </span>
+                                            );
+                                          } else if (m.status === "INVOICED") {
+                                            statusBadge = (
+                                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                                <AlertCircle className="w-2.5 h-2.5 text-amber-600" /> เปิดบิลแล้ว (รอโอน)
+                                              </span>
+                                            );
+                                          }
+
+                                          return (
+                                            <tr key={m.id} className="hover:bg-slate-50/80 transition">
+                                              <td className="py-2.5 px-3 text-center font-bold text-slate-700 font-mono">
+                                                {m.milestoneNo}
+                                              </td>
+                                              <td className="py-2.5 px-3 font-medium text-slate-800">
+                                                <div>
+                                                  <span>{m.title}</span>
+                                                  {m.notes && <span className="block text-[10px] text-slate-400 mt-0.5">{m.notes}</span>}
+                                                </div>
+                                              </td>
+                                              <td className="py-2.5 px-3 text-center font-mono font-bold text-indigo-700">
+                                                {m.percentage}%
+                                              </td>
+                                              <td className="py-2.5 px-3 text-right font-mono font-black text-slate-800">
+                                                ฿{formatMoney(m.amount)}
+                                              </td>
+                                              <td className="py-2.5 px-3 text-center text-[11px] text-slate-500 font-mono">
+                                                {m.dueDate ? formatThaiDate(m.dueDate) : "-"}
+                                              </td>
+                                              <td className="py-2.5 px-3 text-center">
+                                                {statusBadge}
+                                              </td>
+                                              <td className="py-2.5 px-3 text-center font-mono text-[11px]">
+                                                {m.invoiceDocNo ? (
+                                                  <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-bold border border-indigo-200">
+                                                    {m.invoiceDocNo}
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-slate-400">-</span>
+                                                )}
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* 2. Invoices Issued for this PO */}
+                              <div className="space-y-2 pt-2">
                                 <span className="text-xs font-bold text-slate-700 block">
                                   📄 ใบแจ้งหนี้ที่ออกแล้วสำหรับ PO นี้ ({poItem.invoices.length} ฉบับ):
                                 </span>
@@ -521,21 +673,19 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                                                 {getProjectName(inv)}
                                               </span>
                                             </td>
-                                            <td className="py-2.5 px-3 text-slate-700 font-medium">
-                                              {inv.items?.[0]?.name || 'ค่างวดงานตามสัญญา'}
+                                            <td className="py-2.5 px-3 text-slate-600 truncate max-w-[200px]" title={inv.items?.[0]?.name}>
+                                              {inv.items?.[0]?.name || inv.notes || "-"}
                                             </td>
-                                            <td className="py-2.5 px-3 text-slate-500 font-mono text-[11px]">{formatThaiDate(inv.issueDate)}</td>
-                                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800">
-                                              ฿{formatMoney(inv.netPayment || inv.grandTotal)}
-                                            </td>
+                                            <td className="py-2.5 px-3 text-slate-500 font-mono">{formatThaiDate(inv.issueDate)}</td>
+                                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">฿{formatMoney(inv.grandTotal)}</td>
                                             <td className="py-2.5 px-3 text-center">
-                                              <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                                inv.status === 'PAID'
-                                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 ${
+                                                inv.status === "PAID" 
+                                                  ? "bg-emerald-100 text-emerald-800" 
+                                                  : "bg-amber-100 text-amber-800"
                                               }`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${inv.status === 'PAID' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                                {inv.status === 'PAID' ? 'ชำระแล้ว' : 'รอรับชำระ'}
+                                                {inv.status === "PAID" ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                                                {inv.status === "PAID" ? "ชำระแล้ว" : "รอรับชำระ"}
                                               </span>
                                             </td>
                                             <td className="py-2.5 px-3 text-center">
@@ -570,7 +720,7 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                                           </span>
                                           <div>
                                             <span className="text-xs text-slate-800 font-bold block">
-                                              {doDoc.projectNote || 'รายการ Part ที่จัดส่ง Line ADC'}
+                                              {doDoc.projectNote || "รายการ Part ที่จัดส่ง Line ADC"}
                                             </span>
                                             <span className="text-[11px] text-slate-500 font-mono">
                                               วันที่ส่งมอบ: {formatThaiDate(doDoc.issueDate)}
@@ -598,7 +748,7 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                                 </div>
                               )}
 
-                              {/* 2. Next Action & Unbilled Milestone Card */}
+                              {/* 3. Next Action & Unbilled Milestone Card */}
                               {hasUninvoiced ? (
                                 <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner">
                                   <div className="flex items-start gap-3">
@@ -616,13 +766,22 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                                     </div>
                                   </div>
 
-                                  <button
-                                    onClick={() => openCreateModal('INVOICE', poItem.poNo, customer)}
-                                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/30 transition active:scale-95 shrink-0"
-                                  >
-                                    <Plus className="w-3.5 h-3.5" />
-                                    <span>ออกใบแจ้งหนี้งวดนี้</span>
-                                  </button>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                      onClick={() => setActiveTab("milestone-billing")}
+                                      className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-indigo-700 font-bold text-xs flex items-center gap-1.5 border border-indigo-200 shadow-sm transition active:scale-95"
+                                    >
+                                      <Calendar className="w-3.5 h-3.5" />
+                                      <span>ดูผังงวดงาน</span>
+                                    </button>
+                                    <button
+                                      onClick={() => openCreateModal("INVOICE", poItem.poNo, customer)}
+                                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/30 transition active:scale-95"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      <span>ออกใบแจ้งหนี้งวดนี้</span>
+                                    </button>
+                                  </div>
                                 </div>
                               ) : (
                                 <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
