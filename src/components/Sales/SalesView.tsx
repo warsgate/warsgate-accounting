@@ -42,6 +42,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const [deleteTarget, setDeleteTarget] = useState<AccountingDocument | null>(null);
   const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
   const [showCostEstimatorModal, setShowCostEstimatorModal] = useState<boolean>(false);
+  const [poFilter, setPoFilter] = useState<'ALL' | 'WITH_PO_ONLY' | 'NO_PO'>('ALL');
 
   // Sales-only document categories
   const salesTypes: DocumentType[] = ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'DELIVERY_ORDER', 'RECEIPT'];
@@ -144,6 +145,10 @@ export const SalesView: React.FC<SalesViewProps> = ({
     // 2. Status Filter
     if (statusFilter !== 'ALL' && doc.status !== statusFilter) return false;
 
+    // 2.1 Customer PO Filter
+    if (poFilter === 'WITH_PO_ONLY' && (!doc.referencePoNo || doc.referencePoNo.trim() === '')) return false;
+    if (poFilter === 'NO_PO' && (doc.referencePoNo && doc.referencePoNo.trim() !== '')) return false;
+
     // 3. Date Range Filter
     if (datePreset === 'LATEST_MONTH') {
       if (!(doc.issueDate || '').startsWith(activeTabLatest.ym)) return false;
@@ -177,10 +182,11 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const totalFilteredNet = filteredDocs.reduce((acc, doc) => acc + (doc.netPayment || doc.grandTotal || 0), 0);
 
   // Check if any filter is actively applied
-  const hasActiveFilters = statusFilter !== 'ALL' || datePreset !== 'ALL' || startDate !== '' || endDate !== '' || searchTerm !== '';
+  const hasActiveFilters = statusFilter !== 'ALL' || poFilter !== 'ALL' || datePreset !== 'ALL' || startDate !== '' || endDate !== '' || searchTerm !== '';
 
   const handleResetFilters = () => {
     setStatusFilter('ALL');
+    setPoFilter('ALL');
     setDatePreset('ALL');
     setStartDate('');
     setEndDate('');
@@ -360,6 +366,21 @@ export const SalesView: React.FC<SalesViewProps> = ({
             <option value="CANCELLED">✕ ยกเลิก</option>
           </select>
 
+          {/* Customer PO Filter Dropdown (Specialized for Quotation & Sales) */}
+          <select
+            value={poFilter}
+            onChange={(e) => setPoFilter(e.target.value as any)}
+            className={`text-xs rounded-xl px-2.5 py-1.5 font-bold focus:outline-none cursor-pointer border transition shadow-2xs ${
+              poFilter === 'WITH_PO_ONLY'
+                ? 'bg-rose-600 text-white border-rose-600 shadow-rose-200'
+                : 'bg-slate-50/80 hover:bg-slate-50 border-slate-200/90 text-slate-700 focus:border-rose-400'
+            }`}
+          >
+            <option value="ALL">📑 PO ลูกค้า: ทั้งหมด</option>
+            <option value="WITH_PO_ONLY">🎯 เฉพาะที่มี PO ลูกค้าแล้ว ({salesDocs.filter(d => activeTypeTab === 'INVOICE' ? (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') : d.type === activeTypeTab).filter(d => d.referencePoNo && d.referencePoNo.trim() !== '').length})</option>
+            <option value="NO_PO">⚪ ยังไม่มี PO ลูกค้า</option>
+          </select>
+
           {/* Reset Filters */}
           {hasActiveFilters && (
             <button
@@ -394,8 +415,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
       {/* ── DOCUMENTS TABLE WITH INTEGRATED TYPE TABS (NO 'ALL' TAB) ────────── */}
       <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-200">
         
-        {/* Table Type Tabs Header */}
-        <div className="bg-slate-50/80 border-b border-slate-200 p-2 sm:p-3">
+        {/* Table Type Tabs Header & Quick PO Toggle */}
+        <div className="bg-slate-50/80 border-b border-slate-200 p-2 sm:p-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
             {tableTabs.map((tab) => {
               const Icon = tab.icon;
@@ -422,6 +443,48 @@ export const SalesView: React.FC<SalesViewProps> = ({
                 </button>
               );
             })}
+          </div>
+
+          {/* Quick Sub-Filter: PO Status Filter Pills */}
+          <div className="flex items-center gap-1.5 shrink-0 bg-white p-1 rounded-2xl border border-slate-200 shadow-2xs self-start md:self-auto">
+            <span className="text-[10.5px] font-bold text-slate-500 px-2 flex items-center gap-1">
+              <span>PO ลูกค้า:</span>
+            </span>
+            <button
+              onClick={() => setPoFilter('ALL')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition ${
+                poFilter === 'ALL'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              ทั้งหมด
+            </button>
+            <button
+              onClick={() => setPoFilter('WITH_PO_ONLY')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
+                poFilter === 'WITH_PO_ONLY'
+                  ? 'bg-rose-600 text-white shadow-xs shadow-rose-200'
+                  : 'text-rose-700 bg-rose-50/70 hover:bg-rose-100 border border-rose-200'
+              }`}
+            >
+              <span>🎯 มี PO แล้ว</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                poFilter === 'WITH_PO_ONLY' ? 'bg-white/20 text-white' : 'bg-rose-200 text-rose-800'
+              }`}>
+                {activeTabDocs.filter(d => d.referencePoNo && d.referencePoNo.trim() !== '').length}
+              </span>
+            </button>
+            <button
+              onClick={() => setPoFilter('NO_PO')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition ${
+                poFilter === 'NO_PO'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              รอ PO
+            </button>
           </div>
         </div>
 
