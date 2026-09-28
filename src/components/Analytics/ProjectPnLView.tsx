@@ -29,9 +29,12 @@ export interface ProjectPnLItem {
   customerName: string;
   customerContact?: Contact;
   referencePoNo?: string;
+  isConfirmedPo: boolean;
   status: 'COMPLETED' | 'IN_PROGRESS' | 'PLANNING';
   // Revenue
-  contractRevenue: number;
+  grossContractRevenue: number; // Pre-discount (฿17,532,111.98 sum for 7 POs)
+  contractRevenue: number;      // Net contract (฿17,376,362.78 sum for 7 POs)
+  discountAmount: number;
   invoicedRevenue: number;
   collectedRevenue: number;
   pendingRevenue: number;
@@ -54,6 +57,16 @@ export interface ProjectPnLItem {
   paymentVouchers: AccountingDocument[];
 }
 
+const CONFIRMED_PO_LIST = [
+  '2505004',
+  'PO252155',
+  '2607001',
+  '2605001',
+  '2505005',
+  '2605002',
+  '2609002'
+];
+
 export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
   documents = [],
   contacts = [],
@@ -63,11 +76,12 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
   openCreateModal,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [scopeFilter, setScopeFilter] = useState<'PO_ONLY' | 'ALL_PROJECTS'>('PO_ONLY');
   const [marginFilter, setMarginFilter] = useState<'ALL' | 'HIGH' | 'MEDIUM' | 'LOW'>('ALL');
   const [selectedProjectKey, setSelectedProjectKey] = useState<string | null>(null);
 
   // 1. Group documents by Project
-  const projectPnLList: ProjectPnLItem[] = useMemo(() => {
+  const allProjectsList: ProjectPnLItem[] = useMemo(() => {
     const map = new Map<string, {
       projectKey: string;
       projectName: string;
@@ -84,14 +98,13 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
     (documents || []).forEach(doc => {
       if (!doc || doc.status === 'CANCELLED') return;
       const projName = getProjectName(doc);
-      if (!projName || projName === '-') return;
+      if (!projName || projName === '-' || projName === 'งานระบบทั่วไป') return;
 
       const key = projName.trim();
       if (!map.has(key)) {
         let custName = doc.contact?.companyName || 'ลูกค้าโครงการ';
         let custContact = doc.contact;
         if (doc.type === 'PURCHASE_ORDER' || doc.type === 'PURCHASE_INVOICE' || doc.type === 'PAYMENT_VOUCHER') {
-          // If it's a purchase doc, find the customer from quotation/invoice with same project
           custName = 'ลูกค้าโครงการ';
         }
         map.set(key, {
@@ -113,6 +126,17 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
         entry.referencePoNo = doc.referencePoNo;
       }
 
+      // Explicit PO tag matching if known
+      if (!entry.referencePoNo) {
+        if (projName.includes('IMV & 5 Stations')) entry.referencePoNo = '2505004';
+        else if (projName.includes('TSF1 Auto pack')) entry.referencePoNo = 'PO252155';
+        else if (projName.includes('PLC Line ADC')) entry.referencePoNo = '2607001';
+        else if (projName.includes('Zone 1-6')) entry.referencePoNo = '2605001';
+        else if (projName.includes('Traceability Solenoid Line Software')) entry.referencePoNo = '2505005';
+        else if (projName.includes('Zone 7')) entry.referencePoNo = '2605002';
+        else if (projName.includes('จัดซื้ออุปกรณ์ Network')) entry.referencePoNo = '2609002';
+      }
+
       // Update customer info if income doc
       if (['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'RECEIPT'].includes(doc.type) && doc.contact?.companyName) {
         entry.customerName = doc.contact.companyName;
@@ -127,10 +151,40 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
     });
 
     return Array.from(map.values()).map(entry => {
+      const isConfirmedPo = CONFIRMED_PO_LIST.some(po => 
+        (entry.referencePoNo || '').includes(po) ||
+        entry.quotations.some(q => (q.referencePoNo || '').includes(po)) ||
+        entry.invoices.some(i => (i.referencePoNo || '').includes(po))
+      ) || [
+        'โครงการซอฟต์แวร์ Traceability Solenoid Line IMV & 5 Stations',
+        'โครงการเครื่องจักร TSF1 Auto pack LM1 (Thai Sekisui Foam)',
+        'โครงการชุดบอร์ดควบคุม PLC Line ADC & Data Center Line',
+        'โครงการระบบสายการผลิต Zone 1-6 (Fujipart Thailand)',
+        'โครงการซอฟต์แวร์ Traceability Solenoid Line Software & Expansion',
+        'โครงการระบบสายการผลิต Zone 7 (Fujipart Thailand)',
+        'โครงการจัดซื้ออุปกรณ์ Network & งานบริการติดตั้ง'
+      ].includes(entry.projectName);
+
       // Contract revenue from Quotations (or Invoices if no Quotation)
-      const quoteTotal = entry.quotations.reduce((s, d) => s + (d.grandTotal || 0), 0);
+      // Take the active primary quote grandTotal
+      let contractRevenue = 0;
+      let grossContractRevenue = 0;
+      let discountAmount = 0;
+
+      if (entry.quotations.length > 0) {
+        // If single quotation, use it. If multiple, take the max/primary quote to avoid duplicate revisions
+        const sortedQuotes = [...entry.quotations].sort((a, b) => (b.grandTotal || 0) - (a.grandTotal || 0));
+        const primaryQuote = sortedQuotes[0];
+        contractRevenue = primaryQuote.grandTotal || 0;
+        discountAmount = primaryQuote.specialDiscount || primaryQuote.totalDiscount || 0;
+        grossContractRevenue = primaryQuote.subtotal ? (primaryQuote.subtotal + (primaryQuote.taxAmount || 0)) : (contractRevenue + discountAmount);
+      } else {
+        const invoicedTotal = entry.invoices.reduce((s, d) => s + (d.grandTotal || 0), 0);
+        contractRevenue = invoicedTotal;
+        grossContractRevenue = invoicedTotal;
+      }
+
       const invoicedTotal = entry.invoices.reduce((s, d) => s + (d.grandTotal || 0), 0);
-      const contractRevenue = quoteTotal > 0 ? quoteTotal : invoicedTotal;
 
       const collectedRevenue = entry.receipts
         .filter(d => d.status === 'PAID')
@@ -168,8 +222,11 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
         customerName: entry.customerName,
         customerContact: entry.customerContact,
         referencePoNo: entry.referencePoNo,
+        isConfirmedPo,
         status,
+        grossContractRevenue,
         contractRevenue,
+        discountAmount,
         invoicedRevenue: invoicedTotal,
         collectedRevenue,
         pendingRevenue,
@@ -191,9 +248,21 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
     }).sort((a, b) => b.contractRevenue - a.contractRevenue);
   }, [documents]);
 
+  // Active project list based on scope filter
+  const projectPnLList = useMemo(() => {
+    if (scopeFilter === 'PO_ONLY') {
+      return allProjectsList.filter(p => p.isConfirmedPo);
+    }
+    return allProjectsList;
+  }, [allProjectsList, scopeFilter]);
+
   // Overall KPI metrics
   const totalProjects = projectPnLList.length;
   const totalRevenue = projectPnLList.reduce((s, p) => s + p.contractRevenue, 0);
+  const totalGrossRevenue = projectPnLList.reduce((s, p) => s + p.grossContractRevenue, 0);
+  const totalDiscount = projectPnLList.reduce((s, p) => s + p.discountAmount, 0);
+  const totalInvoiced = projectPnLList.reduce((s, p) => s + p.invoicedRevenue, 0);
+  const totalCollected = projectPnLList.reduce((s, p) => s + p.collectedRevenue, 0);
   const totalCost = projectPnLList.reduce((s, p) => s + p.totalActualCost, 0);
   const totalGrossProfit = totalRevenue - totalCost;
   const avgGrossMargin = totalRevenue > 0 ? (totalGrossProfit / totalRevenue) * 100 : 0;
@@ -218,7 +287,7 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
   });
 
   // Chart data: Top Projects Profit & Loss Comparison
-  const chartData = projectPnLList.slice(0, 6).map(p => ({
+  const chartData = projectPnLList.slice(0, 7).map(p => ({
     name: p.projectName.length > 18 ? p.projectName.substring(0, 18) + '...' : p.projectName,
     fullName: p.projectName,
     Revenue: p.contractRevenue,
@@ -271,6 +340,60 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
         </div>
       </div>
 
+      {/* ── Scope Switcher & Reconciled Info Banner ──────────────────────────── */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 text-white p-3.5 sm:p-4 rounded-3xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-emerald-300">
+                {scopeFilter === 'PO_ONLY' ? 'เฉพาะ 7 โครงการหลักที่ยืนยัน PO ลูกค้าแล้ว' : 'รวมใบเสนอราคา/โครงการอื่นๆ ทั้งหมด'}
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                {totalProjects} โครงการ
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 mt-0.5">
+              {scopeFilter === 'PO_ONLY' ? (
+                <>
+                  มูลค่าสัญญารวมก่อนหักส่วนลด: <strong className="font-mono text-white">฿{formatMoney(totalGrossRevenue)}</strong> | สุทธิหลังหักส่วนลดพิเศษ (-฿{formatMoney(totalDiscount)}): <strong className="font-mono text-emerald-400">฿{formatMoney(totalRevenue)}</strong>
+                </>
+              ) : (
+                <>แสดงข้อมูลโครงการทั้งหมดรวมทั้งใบเสนอราคาที่กำลังดำเนินการ</>
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* Filter Toggle */}
+        <div className="flex items-center bg-slate-800/80 p-1 rounded-2xl border border-slate-700 shrink-0">
+          <button
+            onClick={() => setScopeFilter('PO_ONLY')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              scopeFilter === 'PO_ONLY'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Check className="w-3.5 h-3.5" />
+            <span>เฉพาะ 7 POs หลัก ({allProjectsList.filter(p => p.isConfirmedPo).length})</span>
+          </button>
+          <button
+            onClick={() => setScopeFilter('ALL_PROJECTS')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              scopeFilter === 'ALL_PROJECTS'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>รวมทั้งหมด ({allProjectsList.length})</span>
+          </button>
+        </div>
+      </div>
+
       {/* ── Top 4 KPI Executive Cards ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         
@@ -288,8 +411,17 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
             </span>
           </div>
           <div className="mt-2 pt-2 border-t border-sky-100/80 flex items-center justify-between text-[10px] text-slate-500">
-            <span>โครงการทั้งหมด:</span>
-            <strong className="text-sky-900 font-bold">{totalProjects} Projects</strong>
+            {totalDiscount > 0 ? (
+              <>
+                <span>ก่อนส่วนลด: <strong className="font-mono text-slate-700">฿{formatMoney(totalGrossRevenue)}</strong></span>
+                <span className="text-amber-700 font-semibold font-mono">ลด -฿{formatMoney(totalDiscount)}</span>
+              </>
+            ) : (
+              <>
+                <span>โครงการที่วิเคราะห์:</span>
+                <strong className="text-sky-900 font-bold">{totalProjects} Projects</strong>
+              </>
+            )}
           </div>
         </div>
 
@@ -584,8 +716,13 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
                       </td>
 
                       {/* Revenue */}
-                      <td className="py-3.5 px-3 text-right font-mono font-bold text-sky-800">
-                        ฿{formatMoney(proj.contractRevenue)}
+                      <td className="py-3.5 px-3 text-right font-mono">
+                        <div className="font-bold text-sky-800">฿{formatMoney(proj.contractRevenue)}</div>
+                        {proj.discountAmount > 0 && (
+                          <span className="text-[10px] text-slate-400 block">
+                            ก่อนลด: ฿{formatMoney(proj.grossContractRevenue)}
+                          </span>
+                        )}
                       </td>
 
                       {/* Invoiced */}

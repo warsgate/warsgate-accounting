@@ -206,25 +206,60 @@ export const getProjectName = (doc: any): string => {
   const docNo = (doc.documentNo || '').trim();
   const firstItem = doc.items && doc.items.length > 0 ? (doc.items[0].name || doc.items[0].description || '') : '';
 
-  // Match known POs or Projects
-  if (po === '2505005' || notes.includes('Traceability Solenoid Line') || firstItem.includes('Traceability')) {
-    return 'Traceability Solenoid Line';
+  // 1. PO: 2607001 (Line ADC PLC Board & Data Center Line)
+  if (po === '2607001' || docNo === 'QT-2607-001' || docNo === 'INV-2608-001' || docNo === 'TAX-2608-001' || docNo === 'DO-2608-001' || notes.includes('2607001') || notes.includes('Line ADC') || firstItem.includes('Line ADC') || firstItem.includes('CJ1W-EIP21')) {
+    return 'โครงการชุดบอร์ดควบคุม PLC Line ADC & Data Center Line';
   }
-  if (po === 'PO252155' || notes.includes('Thai Sekisui Foam') || notes.includes('PO252155') || firstItem.includes('Spindle') || notes.includes('Spindle')) {
-    return 'Spindle Roll & Junction Box';
+
+  // 2. PO: 2605001 (Zone 1-6 Fujipart Thailand)
+  if (po === '2605001' || po === '2506001' || docNo === 'QT-2605-001' || docNo === 'INV-690600002' || docNo === 'INV-690600003' || notes.includes('2605001') || notes.includes('2506001') || notes.includes('Zone 1-6') || (firstItem.includes('Standard and Feb Part') && doc.subtotal > 200000 && !notes.includes('2605002'))) {
+    return 'โครงการระบบสายการผลิต Zone 1-6 (Fujipart Thailand)';
   }
-  if (po === '2607001' || notes.includes('2607001') || notes.includes('Smart Camera') || notes.includes('Pick & Place') || notes.includes('Wenglor') || notes.includes('MVC')) {
-    return 'Smart Camera Pick & Place';
+
+  // 3. PO: 2605002 (Zone 7 Fujipart Thailand)
+  if (po === '2605002' || docNo === 'QT-2605-002' || docNo === 'INV-690600001' || docNo === 'INV-690600004' || docNo === 'REC-2605-002/1' || notes.includes('2605002') || notes.includes('Zone 7')) {
+    return 'โครงการระบบสายการผลิต Zone 7 (Fujipart Thailand)';
   }
-  if (po === '2609002' || notes.includes('2609002') || notes.includes('เครือข่าย') || firstItem.includes('Convert USB')) {
-    return 'จัดซื้ออุปกรณ์และติดตั้งเครือข่าย';
+
+  // 4. PO: 2505004 (Traceability Solenoid Line IMV 5 Stations)
+  if (po === '2505004' || docNo === 'QT-2505-004' || docNo === 'INV-690800001' || notes.includes('2505004') || notes.includes('IMV') || firstItem.includes('Corrugating Line') || firstItem.includes('Winding Line') || firstItem.includes('Adhesive & Spin') || firstItem.includes('DF4 Line') || firstItem.includes('Treceability Corrugating')) {
+    return 'โครงการซอฟต์แวร์ Traceability Solenoid Line IMV & 5 Stations';
   }
-  if (docNo === 'QT-2609-004' || (notes.includes('Dashboard Data Monitor') && (firstItem.includes('Dell') || firstItem.includes('Monitor')))) {
-    return 'งาน Dashboard Data Monitor';
+
+  // 5. PO: 2505005 (Traceability Solenoid Line Software & Expansion)
+  if (po === '2505005' || docNo === 'QT-2505-005' || docNo === 'INV-690600005' || docNo === 'INV-690400001' || docNo.startsWith('REC-2505-005') || notes.includes('2505005') || firstItem.includes('SOLINOID LINE1') || firstItem.includes('SW-TRACE-001') || firstItem.includes('SW-TRACE-002')) {
+    return 'โครงการซอฟต์แวร์ Traceability Solenoid Line Software & Expansion';
   }
-  if (docNo === 'QT-2609-005' || notes.includes('โปรแกรม ระบบ Dashboard Data Monitor') || firstItem.includes('โปรแกรม ระบบ Dashboard Data Monitor')) {
-    return 'โปรแกรม ระบบ Dashboard Data Monitor';
+
+  // 6. PO: PO252155 (TSF1 Auto pack LM1 - Thai Sekisui Foam)
+  if (po === 'PO252155' || docNo === 'QT-2512-2155' || docNo === 'IV-690100001' || notes.includes('PO252155') || notes.includes('TSF1') || notes.includes('Thai Sekisui Foam') || firstItem.includes('Station Stacker Foam') || firstItem.includes('TSF-ST-001')) {
+    return 'โครงการเครื่องจักร TSF1 Auto pack LM1 (Thai Sekisui Foam)';
   }
+
+  // 7. PO: 2609002 (Network Infrastructure & Hardware Installation)
+  if (po === '2609002' || docNo === 'QT-2609-003' || docNo === 'INV-2609-002' || notes.includes('2609002') || notes.includes('Convert USB to Lan') || firstItem.includes('Convert USB')) {
+    return 'โครงการจัดซื้ออุปกรณ์ Network & งานบริการติดตั้ง';
+  }
+
+  // Other Quotations (Pending PO)
+  if (docNo === 'QT-2609-001' || notes.includes('New Box OR') || firstItem.includes('OR-PCB-01')) {
+    return 'โครงการ Service Repair & Maintenance OR Board';
+  }
+  if (docNo === 'QT-2609-002' || notes.includes('Smart Camera') || firstItem.includes('SYS-SMARTCAM-AI')) {
+    return 'โครงการ Smart Camera Pick & Place (Kuroda)';
+  }
+  if (docNo === 'QT-2609-004' || (notes.includes('Dashboard Data Monitor') && (firstItem.includes('Dell') || firstItem.includes('COMP-DELL')))) {
+    return 'งาน Dashboard Data Monitor - Hardware (Kuroda)';
+  }
+  if (docNo === 'QT-2609-005' || notes.includes('โปรแกรม ระบบ Dashboard Data Monitor') || firstItem.includes('SRV-DASHBOARD-SW')) {
+    return 'งาน Dashboard Data Monitor - Software (Kuroda)';
+  }
+
+  // PO-PTECH
+  if (docNo === 'PO-2609-001' || firstItem.includes('Roller Paper Printer Spindle') || firstItem.includes('mini junction box')) {
+    return 'จัดซื้ออะไหล่ Spindle & Junction Box (P-Tech)';
+  }
+
   if (notes.includes('โครงการ:')) {
     const match = notes.match(/โครงการ:\s*([^|]+)/);
     if (match && match[1]) return match[1].trim();
