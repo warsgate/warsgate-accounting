@@ -1,15 +1,15 @@
 {
   "version": "2.0.0",
-  "backupDate": "2026-09-28T12:09:25+07:00",
+  "backupDate": "2026-09-28T23:57:23+07:00",
   "appName": "WARSGATE Accounting & ERP System",
   "metadata": {
-    "documentsCount": 31,
+    "documentsCount": 27,
     "contactsCount": 5,
     "productsCount": 62,
     "chartOfAccountsCount": 15,
     "journalEntriesCount": 1,
     "bankAccountsCount": 2,
-    "milestonePlansCount": 3,
+    "milestonePlansCount": 7,
     "stockMovementsCount": 5,
     "auditLogsCount": 5,
     "userRolesCount": 5
@@ -1092,7 +1092,7 @@
       "withholdingTaxTotal": 0,
       "netPayment": 2323499.85,
       "status": "PENDING",
-      "notes": "อ้างอิงใบสั่งซื้อ PO:2505004 บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด",
+      "notes": "อ้างอิงใบสั่งซื้อ PO:2505004 บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด [วางบิลงวดที่ 2 เรียบร้อยแล้ว 50% รอชำระเงิน]",
       "createdByName": "Admin by warsgate"
     },
     {
@@ -1233,7 +1233,7 @@
       "grandTotal": 252049.2,
       "withholdingTaxTotal": 0,
       "netPayment": 252049.2,
-      "status": "PENDING",
+      "status": "PAID",
       "notes": "อ้างอิงใบสั่งซื้อ PO:2605002 บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด",
       "createdByName": "Admin by warsgate"
     },
@@ -1316,7 +1316,7 @@
       "grandTotal": 516061,
       "withholdingTaxTotal": 0,
       "netPayment": 516061,
-      "status": "PENDING",
+      "status": "PAID",
       "notes": "อ้างอิงใบสั่งซื้อ PO: 2506001 บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด",
       "createdByName": "Admin by warsgate"
     },
@@ -1399,7 +1399,7 @@
       "grandTotal": 258030.5,
       "withholdingTaxTotal": 0,
       "netPayment": 258030.5,
-      "status": "PENDING",
+      "status": "PAID",
       "notes": "อ้างอิงใบสั่งซื้อ PO: 2605001 บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด",
       "createdByName": "Admin by warsgate"
     },
@@ -1482,7 +1482,7 @@
       "grandTotal": 126024.6,
       "withholdingTaxTotal": 0,
       "netPayment": 126024.6,
-      "status": "PENDING",
+      "status": "PAID",
       "notes": "อ้างอิงใบสั่งซื้อ PO:2605002 บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด",
       "createdByName": "Admin by warsgate"
     },
@@ -1553,19 +1553,19 @@
       "dueDate": "2026-01-14",
       "referencePoNo": "PO252155",
       "contact": {
-        "id": "cont-kuroda-1",
-        "name": "คุณนพพล อุ่นม่อน (Senior Specialist)",
-        "companyName": "บริษัท คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) จํากัด",
-        "taxId": "0145563001431",
+        "id": "cont-tsf-1",
+        "name": "nongnuch wongwai (135) / K.Alongkorn",
+        "companyName": "บริษัท ไทย เซกิซุย โฟม จำกัด",
+        "taxId": "0105539045865",
         "isBranch": false,
         "branchCode": "00000",
-        "address": "30 หมู่ 9 สวนอุตสาหกรรมโรจนะ ตำบลธนู อำเภออุทัย จังหวัดพระนครศรีอยุธยา 13210",
-        "phone": "080-813-0833, 035-230-471",
-        "email": "noppon.a@kuroda-electric.com",
+        "address": "700/379 หมู่ 6 ตำบลดอนหัวฬ่อ อำเภอเมืองชลบุรี จังหวัดชลบุรี 20000",
+        "phone": "038-213-219-26",
+        "email": "nongnuch@sekisuifoam.co.th",
         "type": "CUSTOMER",
         "creditDays": 30,
-        "totalTransactions": 2,
-        "balanceDue": 1074658.78
+        "totalTransactions": 4,
+        "balanceDue": 3793792
       },
       "items": [
         {
@@ -1928,173 +1928,6 @@
       "createdByName": "คุณจีระวัฒน์ (MD)"
     },
     {
-      "id": "doc-inv-001",
-      "documentNo": "INV-202607-001",
-      "type": "INVOICE",
-      "issueDate": "2026-07-15",
-      "dueDate": "2026-08-14",
-      "contact": {
-        "id": "cont-tsf-1",
-        "name": "nongnuch wongwai (135) / K.Alongkorn",
-        "companyName": "บริษัท ไทย เซกิซุย โฟม จำกัด",
-        "taxId": "0105539045865",
-        "isBranch": false,
-        "branchCode": "00000",
-        "address": "700/379 หมู่ 6 ตำบลดอนหัวฬ่อ อำเภอเมืองชลบุรี จังหวัดชลบุรี 20000",
-        "phone": "038-213-219-26",
-        "email": "nongnuch@sekisuifoam.co.th",
-        "type": "CUSTOMER",
-        "creditDays": 30,
-        "totalTransactions": 4,
-        "balanceDue": 3793792
-      },
-      "items": [
-        {
-          "id": "item-1",
-          "code": "PLC-S7-1200",
-          "name": "Siemens PLC SIMATIC S7-1200 CPU 1214C DC/DC/DC",
-          "description": "โปรแกรมเมเบิลคอนโทรลเลอร์ 14 DI / 10 DO",
-          "quantity": 5,
-          "unit": "เครื่อง",
-          "pricePerUnit": 18500,
-          "discount": 0,
-          "amount": 92500,
-          "vatInclusive": false,
-          "withholdingTaxRate": 0
-        },
-        {
-          "id": "item-2",
-          "code": "ENG-PROGRAMMING",
-          "name": "ค่าบริการเขียนโปรแกรม PLC / SCADA & HMI Design",
-          "description": "พัฒนาซอฟต์แวร์ควบคุมไลน์ประกอบชิ้นส่วนยานยนต์",
-          "quantity": 10,
-          "unit": "Man-Day",
-          "pricePerUnit": 15000,
-          "discount": 5000,
-          "amount": 145000,
-          "vatInclusive": false,
-          "withholdingTaxRate": 3
-        }
-      ],
-      "subtotal": 237500,
-      "discountTotal": 5000,
-      "vatRate": 7,
-      "vatAmount": 16625,
-      "grandTotal": 254125,
-      "withholdingTaxTotal": 4350,
-      "netPayment": 249775,
-      "status": "PENDING",
-      "notes": "กำหนดยอดชำระภายใน 30 วัน โอนเข้าบัญชี KBANK บจก. วอร์สเกต ออโตเมชั่น",
-      "createdByName": "คุณจีระวัฒน์ (MD)"
-    },
-    {
-      "id": "doc-qt-001",
-      "documentNo": "QT-202607-002",
-      "type": "QUOTATION",
-      "issueDate": "2026-07-28",
-      "dueDate": "2026-08-27",
-      "contact": {
-        "id": "cont-kuroda-1",
-        "name": "คุณนพพล อุ่นม่อน (Senior Specialist)",
-        "companyName": "บริษัท คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) จํากัด",
-        "taxId": "0145563001431",
-        "isBranch": false,
-        "branchCode": "00000",
-        "address": "30 หมู่ 9 สวนอุตสาหกรรมโรจนะ ตำบลธนู อำเภออุทัย จังหวัดพระนครศรีอยุธยา 13210",
-        "phone": "080-813-0833, 035-230-471",
-        "email": "noppon.a@kuroda-electric.com",
-        "type": "CUSTOMER",
-        "creditDays": 30,
-        "totalTransactions": 2,
-        "balanceDue": 1074658.78
-      },
-      "items": [
-        {
-          "id": "item-3",
-          "code": "SERVO-750W",
-          "name": "Omron Servo Motor & Driver Set 750W 3000RPM",
-          "description": "ชุดควบคุมแขนกลลำเลียงสินค้า",
-          "quantity": 4,
-          "unit": "ชุด",
-          "pricePerUnit": 24500,
-          "discount": 2000,
-          "amount": 96000,
-          "vatInclusive": false,
-          "withholdingTaxRate": 0
-        },
-        {
-          "id": "item-4",
-          "code": "ENG-COMMISSION",
-          "name": "ค่าบริการทดสอบและติดตั้งระบบหน้างาน (On-site Commissioning)",
-          "description": "ติดตั้งที่โรงงานนครราชสีมา",
-          "quantity": 5,
-          "unit": "Man-Day",
-          "pricePerUnit": 12000,
-          "discount": 0,
-          "amount": 60000,
-          "vatInclusive": false,
-          "withholdingTaxRate": 3
-        }
-      ],
-      "subtotal": 156000,
-      "discountTotal": 2000,
-      "vatRate": 7,
-      "vatAmount": 10920,
-      "grandTotal": 166920,
-      "withholdingTaxTotal": 1800,
-      "netPayment": 165120,
-      "status": "APPROVED",
-      "notes": "เสนอราคา ยืนยันราคาภายใน 30 วัน",
-      "createdByName": "วิศวกรโครงการ"
-    },
-    {
-      "id": "doc-po-001",
-      "documentNo": "PO-202607-001",
-      "type": "PURCHASE_ORDER",
-      "issueDate": "2026-07-20",
-      "dueDate": "2026-08-05",
-      "contact": {
-        "id": "cont-tsf-1",
-        "name": "nongnuch wongwai (135) / K.Alongkorn",
-        "companyName": "บริษัท ไทย เซกิซุย โฟม จำกัด",
-        "taxId": "0105539045865",
-        "isBranch": false,
-        "branchCode": "00000",
-        "address": "700/379 หมู่ 6 ตำบลดอนหัวฬ่อ อำเภอเมืองชลบุรี จังหวัดชลบุรี 20000",
-        "phone": "038-213-219-26",
-        "email": "nongnuch@sekisuifoam.co.th",
-        "type": "CUSTOMER",
-        "creditDays": 30,
-        "totalTransactions": 4,
-        "balanceDue": 3793792
-      },
-      "items": [
-        {
-          "id": "item-6",
-          "code": "PLC-S7-1200",
-          "name": "Siemens PLC SIMATIC S7-1200 CPU 1214C",
-          "description": "สั่งซื้อเพื่อสต็อกโครงการใหม่",
-          "quantity": 10,
-          "unit": "เครื่อง",
-          "pricePerUnit": 13200,
-          "discount": 0,
-          "amount": 132000,
-          "vatInclusive": false,
-          "withholdingTaxRate": 0
-        }
-      ],
-      "subtotal": 132000,
-      "discountTotal": 0,
-      "vatRate": 7,
-      "vatAmount": 9240,
-      "grandTotal": 141240,
-      "withholdingTaxTotal": 0,
-      "netPayment": 141240,
-      "status": "APPROVED",
-      "notes": "จัดส่งที่คลังสินค้า สมุทรปราการ",
-      "createdByName": "แผนกจัดซื้อ"
-    },
-    {
       "id": "doc-tsf-qt-252155",
       "documentNo": "QT-2512-2155",
       "type": "QUOTATION",
@@ -2103,19 +1936,19 @@
       "referencePoNo": "PO252155",
       "referenceDocNo": "CAP250095/",
       "contact": {
-        "id": "cont-kuroda-1",
-        "name": "คุณนพพล อุ่นม่อน (Senior Specialist)",
-        "companyName": "บริษัท คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) จํากัด",
-        "taxId": "0145563001431",
+        "id": "cont-tsf-1",
+        "name": "nongnuch wongwai (135) / K.Alongkorn",
+        "companyName": "บริษัท ไทย เซกิซุย โฟม จำกัด",
+        "taxId": "0105539045865",
         "isBranch": false,
         "branchCode": "00000",
-        "address": "30 หมู่ 9 สวนอุตสาหกรรมโรจนะ ตำบลธนู อำเภออุทัย จังหวัดพระนครศรีอยุธยา 13210",
-        "phone": "080-813-0833, 035-230-471",
-        "email": "noppon.a@kuroda-electric.com",
+        "address": "700/379 หมู่ 6 ตำบลดอนหัวฬ่อ อำเภอเมืองชลบุรี จังหวัดชลบุรี 20000",
+        "phone": "038-213-219-26",
+        "email": "nongnuch@sekisuifoam.co.th",
         "type": "CUSTOMER",
         "creditDays": 30,
-        "totalTransactions": 2,
-        "balanceDue": 1074658.78
+        "totalTransactions": 4,
+        "balanceDue": 3793792
       },
       "items": [
         {
@@ -2917,15 +2750,15 @@
           "withholdingTaxRate": 0
         }
       ],
-      "subtotal": 1196840,
+      "subtotal": 1219916,
       "discountTotal": 0,
       "vatRate": 7,
-      "vatAmount": 83778.8,
-      "grandTotal": 1280618.8,
+      "vatAmount": 85394.12,
+      "grandTotal": 1305310.12,
       "withholdingTaxTotal": 0,
-      "netPayment": 1280618.8,
+      "netPayment": 1305310.12,
       "status": "PENDING",
-      "notes": "ใบแจ้งหนี้ / ใบวางบิล ตามใบสั่งซื้อ PO: 2607001 และใบส่งของชั่วคราว DO-2608-001 (เงื่อนไขการชำระเงิน: เครดิต 30 วัน ครบกำหนด 19 ก.ย. 2569 โอนเข้าบัญชี KBANK บจก. วอร์สเกต)",
+      "notes": "ใบแจ้งหนี้ / ใบวางบิลงวดที่ 1 (50%) ตามใบสั่งซื้อ PO: 2607001 โครงการ Line ADC & Data Center (เงื่อนไขการชำระเงิน: เครดิต 30 วัน ครบกำหนด 19 ก.ย. 2569 โอนเข้าบัญชี KBANK บจก. วอร์สเกต)",
       "createdByName": "คุณจีระวัฒน์ (MD)"
     },
     {
@@ -3201,54 +3034,6 @@
       "netPayment": 608830,
       "status": "APPROVED",
       "notes": "เสนอราคาโครงการ Service Repair & Maintenance OR Board (New Box OR) | ยืนยันราคาภายใน 30 วัน | เงื่อนไขการชำระเงิน: เครดิต 30 วัน",
-      "createdByName": "วิศวกรโครงการ / คุณจีระวัฒน์ (MD)"
-    },
-    {
-      "id": "doc-kuroda-qt-2609002",
-      "documentNo": "QT-2609-002",
-      "type": "QUOTATION",
-      "issueDate": "2026-09-24",
-      "dueDate": "2026-10-24",
-      "projectNote": "โครงการ Smart Camera Pick & Place / MVC with Camera 12 MP Inspection Parts",
-      "contact": {
-        "id": "cont-kuroda-1",
-        "name": "คุณนพพล อุ่นม่อน (Senior Specialist)",
-        "companyName": "บริษัท คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) จํากัด",
-        "taxId": "0145563001431",
-        "isBranch": false,
-        "branchCode": "00000",
-        "address": "30 หมู่ 9 สวนอุตสาหกรรมโรจนะ ตำบลธนู อำเภออุทัย จังหวัดพระนครศรีอยุธยา 13210",
-        "phone": "080-813-0833, 035-230-471",
-        "email": "noppon.a@kuroda-electric.com",
-        "type": "CUSTOMER",
-        "creditDays": 30,
-        "totalTransactions": 2,
-        "balanceDue": 1074658.78
-      },
-      "items": [
-        {
-          "id": "item-qtkr-sys-01",
-          "code": "SYS-SMARTCAM-AI",
-          "name": "ชุดระบบ Smart Camera Pick & Place / MVC with Camera 12 MP Inspection Parts (Wenglor)",
-          "description": "• Machine Vision Controller uniVision AI (MVCA101) - 1 pcs\n• Machine Vision Camera (12.3 MP Inspection with AI) (BBVK005) - 1 pcs\n• Dome Light white-infrared light, 130 mm (LMDX202) - 1 pcs\n• High-Resolution Lens for Smart Camera and Mac. (ZVZG303) - 1 pcs\n• Connection Line M8 x 1, 8-Pin (ZDKL001) - 1 pcs\n• Connection Cable M12 × 1, 8-Pin, X-coding - R. (ZC1V020) - 1 pcs\n• Wall Mounting for MVCxxxx, BB1C5xx (ZVCE001) - 1 pcs\n• Mounting for BBVK, BBZK (ZBZZ001) - 1 pcs\n• Smart Camera uniVision Extended (B60E101) - 1 pcs\n• White Illumination Module for B60 auto-focus (Z60F001) - 1 pcs\n• Connection Line M12 × 1, 12-pin (ZDCL008) - 1 pcs\n• Connection Cable M12 × 1, 8-Pin, X-coding - R. (ZC1V020) - 1 pcs\n• Mounting for Smart Camera (Z60Z001) - 1 pcs",
-          "quantity": 1,
-          "unit": "ชุด",
-          "pricePerUnit": 1004354,
-          "discount": 0,
-          "amount": 1004354,
-          "vatInclusive": false,
-          "withholdingTaxRate": 0
-        }
-      ],
-      "subtotal": 1004354,
-      "discountTotal": 0,
-      "vatRate": 7,
-      "vatAmount": 70304.78,
-      "grandTotal": 1074658.78,
-      "withholdingTaxTotal": 0,
-      "netPayment": 1074658.78,
-      "status": "APPROVED",
-      "notes": "เสนอราคาโครงการ Smart Camera Pick & Place / MVC with Camera 12 MP Inspection Parts (Wenglor) | ยืนยันราคาภายใน 30 วัน | เงื่อนไขการชำระเงิน: รายการนี้ส่งของครบ จ่าย 100% | กำหนดส่งมอบ: DDP โรงงานลูกค้า | Remark : ไม่มี Computer",
       "createdByName": "วิศวกรโครงการ / คุณจีระวัฒน์ (MD)"
     },
     {
@@ -3679,12 +3464,12 @@
   ],
   "milestonePlans": [
     {
-      "id": "plan-pnp-solenoid",
-      "contractTitle": "โครงการระบบตรวจสอบย้อนกลับ Solenoid Line (5 สถานี)",
-      "quotationDocNo": "QT-2505-004",
-      "referencePoNo": "2505004",
-      "projectCode": "PRJ-PNP-SOL",
-      "projectName": "Traceability Solenoid Line Complete System",
+      "id": "plan-pnp-po2607001",
+      "contractTitle": "โครงการชุดบอร์ดควบคุม PLC Line ADC & Data Center Line",
+      "quotationDocNo": "QT-2607-001",
+      "referencePoNo": "2607001",
+      "projectCode": "PRJ-527",
+      "projectName": "Tracking ability Line ADC (PLC Control Board & Data Center)",
       "customerContact": {
         "id": "cont-pnp-1",
         "name": "Mr. Patama (คุณปัทมะ จินดาพงษ์)",
@@ -3700,52 +3485,331 @@
         "totalTransactions": 7,
         "balanceDue": 1154530
       },
-      "totalContractAmount": 2323499.85,
-      "createdAt": "2026-05-10",
+      "totalContractAmount": 2610620.24,
+      "createdAt": "2026-07-17",
       "updatedAt": "2026-09-28",
-      "notes": "เงื่อนไขการชำระเงินตามสัญญา 50% - 40% - 10%",
+      "notes": "ตามใบสั่งซื้อ PO: 2607001 (รวมส่วนลดพิเศษ ฿45,560.00, เงื่อนไขการชำระเงินตามงวดส่งมอบ)",
+      "milestones": [
+        {
+          "id": "ms-2607-1",
+          "milestoneNo": 1,
+          "title": "งวดที่ 1: มัดจำลงนามสัญญาและสั่งซื้ออุปกรณ์ PLC Control Board (50%)",
+          "percentage": 50,
+          "amount": 1305310.12,
+          "dueDate": "2026-07-30",
+          "status": "INVOICED",
+          "invoiceDocNo": "INV-2608-001",
+          "notes": "ออกใบแจ้งหนี้ INV-2608-001 วางบิลงวดที่ 1 เรียบร้อย รอการชำระเงิน"
+        },
+        {
+          "id": "ms-2607-2",
+          "milestoneNo": 2,
+          "title": "งวดที่ 2: วายริ่งตู้ ติดตั้งระบบหน้างาน และทดสอบระบบ FAT (40%)",
+          "percentage": 40,
+          "amount": 1044248.1,
+          "dueDate": "2026-09-15",
+          "status": "WAITING",
+          "notes": "อยู่ระหว่างดำเนินการทดสอบ FAT รอวางบิลงวดที่ 2"
+        },
+        {
+          "id": "ms-2607-3",
+          "milestoneNo": 3,
+          "title": "งวดที่ 3: ส่งมอบงานขั้นสุดท้าย SAT & ตรวจรับระบบสมบูรณ์ (10%)",
+          "percentage": 10,
+          "amount": 261062.02,
+          "dueDate": "2026-10-31",
+          "status": "WAITING",
+          "notes": "รอส่งมอบ Final SAT"
+        }
+      ]
+    },
+    {
+      "id": "plan-pnp-po2605001",
+      "contractTitle": "โครงการระบบสายการผลิต Zone 1-6 (Fujipart Thailand)",
+      "quotationDocNo": "QT-2605-001",
+      "referencePoNo": "2605001",
+      "projectCode": "PRJ-PNP-Z1-6",
+      "projectName": "Zone 1-6 Automation & Structure Parts",
+      "customerContact": {
+        "id": "cont-pnp-1",
+        "name": "Mr. Patama (คุณปัทมะ จินดาพงษ์)",
+        "companyName": "บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด",
+        "taxId": "0205555029622",
+        "isBranch": false,
+        "branchCode": "00000",
+        "address": "91/10 หมู่ที่ 12 ถนนศุขประยูร ตำบลนาป่า อำเภอเมืองชลบุรี จ.ชลบุรี 20000",
+        "phone": "038-441299, 085-811-6949",
+        "email": "numpj@hotmail.com",
+        "type": "CUSTOMER",
+        "creditDays": 30,
+        "totalTransactions": 7,
+        "balanceDue": 1154530
+      },
+      "totalContractAmount": 2580305,
+      "createdAt": "2026-05-02",
+      "updatedAt": "2026-09-28",
+      "notes": "ตามใบสั่งซื้อ PO: 2605001 (เงื่อนไข: ชำระค่าสินค้าเมื่อส่งของครบตามใบสั่งซื้อ, วางบิลวันที่ 1-25)",
+      "milestones": [
+        {
+          "id": "ms-26051-1",
+          "milestoneNo": 1,
+          "title": "งวดที่ 1: เงินมัดจำเริ่มต้นโครงการและจัดซื้อชิ้นส่วนมาตรฐาน (30%)",
+          "percentage": 30,
+          "amount": 774091.5,
+          "dueDate": "2026-05-20",
+          "status": "PAID",
+          "notes": "รับชำระมัดจำงวดที่ 1 แล้ว"
+        },
+        {
+          "id": "ms-26051-2",
+          "milestoneNo": 2,
+          "title": "งวดที่ 2: ประกอบชิ้นงานและติดตั้งระบบหน้างาน Zone 1-6 (50%)",
+          "percentage": 50,
+          "amount": 1290152.5,
+          "dueDate": "2026-08-30",
+          "status": "WAITING",
+          "notes": "อยู่ระหว่างประกอบชิ้นงาน Zone 1-6 รอวางบิลงวดที่ 2"
+        },
+        {
+          "id": "ms-26051-3",
+          "milestoneNo": 3,
+          "title": "งวดที่ 3: ส่งมอบงานและตรวจรับ SAT สมบูรณ์ (20%)",
+          "percentage": 20,
+          "amount": 516061,
+          "dueDate": "2026-10-31",
+          "status": "WAITING",
+          "notes": "รอกำหนดตรวจรับ SAT"
+        }
+      ]
+    },
+    {
+      "id": "plan-pnp-po2605002",
+      "contractTitle": "โครงการระบบสายการผลิต Zone 7 (Fujipart Thailand)",
+      "quotationDocNo": "QT-2605-002",
+      "referencePoNo": "2605002",
+      "projectCode": "PRJ-PNP-Z7",
+      "projectName": "Zone 7 Automation & Structure Parts",
+      "customerContact": {
+        "id": "cont-pnp-1",
+        "name": "Mr. Patama (คุณปัทมะ จินดาพงษ์)",
+        "companyName": "บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด",
+        "taxId": "0205555029622",
+        "isBranch": false,
+        "branchCode": "00000",
+        "address": "91/10 หมู่ที่ 12 ถนนศุขประยูร ตำบลนาป่า อำเภอเมืองชลบุรี จ.ชลบุรี 20000",
+        "phone": "038-441299, 085-811-6949",
+        "email": "numpj@hotmail.com",
+        "type": "CUSTOMER",
+        "creditDays": 30,
+        "totalTransactions": 7,
+        "balanceDue": 1154530
+      },
+      "totalContractAmount": 1260246,
+      "createdAt": "2026-05-02",
+      "updatedAt": "2026-09-28",
+      "notes": "ตามใบสั่งซื้อ PO: 2605002 (รับเงินมัดจำงวดที่ 1 แล้ว ใบเสร็จ REC-2605-002/1)",
+      "milestones": [
+        {
+          "id": "ms-26052-1",
+          "milestoneNo": 1,
+          "title": "งวดที่ 1: เงินมัดจำเริ่มต้นโครงการ 30% (Downpayment 30%)",
+          "percentage": 30,
+          "amount": 378073.8,
+          "dueDate": "2026-05-25",
+          "status": "PAID",
+          "invoiceDocNo": "REC-2605-002/1",
+          "notes": "รับชำระเงินมัดจำแล้วเมื่อ 25 พ.ค. 2569 (ใบเสร็จ REC-2605-002/1)"
+        },
+        {
+          "id": "ms-26052-2",
+          "milestoneNo": 2,
+          "title": "งวดที่ 2: ประกอบชิ้นงานและติดตั้งระบบหน้างาน Zone 7 (50%)",
+          "percentage": 50,
+          "amount": 630123,
+          "dueDate": "2026-08-30",
+          "status": "WAITING",
+          "notes": "อยู่ระหว่างประกอบชิ้นงาน Zone 7 รอวางบิลงวดที่ 2"
+        },
+        {
+          "id": "ms-26052-3",
+          "milestoneNo": 3,
+          "title": "งวดที่ 3: ส่งมอบงานและตรวจรับ SAT สมบูรณ์ (20%)",
+          "percentage": 20,
+          "amount": 252049.2,
+          "dueDate": "2026-10-31",
+          "status": "WAITING",
+          "notes": "รอกำหนดตรวจรับ SAT"
+        }
+      ]
+    },
+    {
+      "id": "plan-pnp-po2505005",
+      "contractTitle": "โครงการซอฟต์แวร์ Traceability Solenoid Line Software & Expansion",
+      "quotationDocNo": "QT-2505-005",
+      "referencePoNo": "2505005",
+      "projectCode": "PRJ-2505-005",
+      "projectName": "Traceability Solenoid Line Software & Expansion",
+      "customerContact": {
+        "id": "cont-pnp-1",
+        "name": "Mr. Patama (คุณปัทมะ จินดาพงษ์)",
+        "companyName": "บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด",
+        "taxId": "0205555029622",
+        "isBranch": false,
+        "branchCode": "00000",
+        "address": "91/10 หมู่ที่ 12 ถนนศุขประยูร ตำบลนาป่า อำเภอเมืองชลบุรี จ.ชลบุรี 20000",
+        "phone": "038-441299, 085-811-6949",
+        "email": "numpj@hotmail.com",
+        "type": "CUSTOMER",
+        "creditDays": 30,
+        "totalTransactions": 7,
+        "balanceDue": 1154530
+      },
+      "totalContractAmount": 2325558.33,
+      "createdAt": "2025-05-26",
+      "updatedAt": "2026-09-28",
+      "notes": "ตามใบสั่งซื้อ PO: 2505005 (เงื่อนไขการชำระเงิน: 30% Downpayment, 60% Test run & BuyOff, 10% Manual - ออก INV และเก็บเงินครบถ้วน 100%)",
+      "milestones": [
+        {
+          "id": "ms-25055-1",
+          "milestoneNo": 1,
+          "title": "งวดที่ 1: เงินมัดจำลงนามและเริ่มพัฒนาซอฟต์แวร์ 30% (Downpayment 30%)",
+          "percentage": 30,
+          "amount": 697667.5,
+          "dueDate": "2025-06-10",
+          "status": "PAID",
+          "invoiceDocNo": "REC-2505-005/1",
+          "notes": "รับชำระมัดจำงวดที่ 1 เรียบร้อย (ใบเสร็จ REC-2505-005/1)"
+        },
+        {
+          "id": "ms-25055-2",
+          "milestoneNo": 2,
+          "title": "งวดที่ 2: ติดตั้งซอฟต์แวร์และทดสอบ Test Run & BuyOff (60%)",
+          "percentage": 60,
+          "amount": 1395335,
+          "dueDate": "2025-09-30",
+          "status": "PAID",
+          "invoiceDocNo": "REC-2505-005/2",
+          "notes": "ทดสอบระบบผ่านและรับชำระเงินงวดที่ 2 เรียบร้อย (ใบเสร็จ REC-2505-005/2)"
+        },
+        {
+          "id": "ms-25055-3",
+          "milestoneNo": 3,
+          "title": "งวดที่ 3: ส่งมอบคู่มือการใช้งานและฝึกอบรม Manual & Training (10%)",
+          "percentage": 10,
+          "amount": 232555.83,
+          "dueDate": "2025-11-30",
+          "status": "PAID",
+          "invoiceDocNo": "INV-690600005",
+          "notes": "ออกใบแจ้งหนี้ INV-690600005 และรับชำระเงินงวดสุดท้าย 10% ครบถ้วน (ใบเสร็จ REC-2505-005/3) ปิดโครงการ 100%"
+        }
+      ]
+    },
+    {
+      "id": "plan-pnp-po2609002",
+      "contractTitle": "โครงการจัดซื้ออุปกรณ์ Network & งานบริการติดตั้ง",
+      "quotationDocNo": "QT-2609-003",
+      "referencePoNo": "2609002",
+      "projectCode": "PRJ-PNP-NET26",
+      "projectName": "Network Infrastructure & Hardware Installation",
+      "customerContact": {
+        "id": "cont-pnp-1",
+        "name": "Mr. Patama (คุณปัทมะ จินดาพงษ์)",
+        "companyName": "บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด",
+        "taxId": "0205555029622",
+        "isBranch": false,
+        "branchCode": "00000",
+        "address": "91/10 หมู่ที่ 12 ถนนศุขประยูร ตำบลนาป่า อำเภอเมืองชลบุรี จ.ชลบุรี 20000",
+        "phone": "038-441299, 085-811-6949",
+        "email": "numpj@hotmail.com",
+        "type": "CUSTOMER",
+        "creditDays": 30,
+        "totalTransactions": 7,
+        "balanceDue": 1154530
+      },
+      "totalContractAmount": 158841.5,
+      "createdAt": "2026-09-24",
+      "updatedAt": "2026-09-28",
+      "notes": "ตามใบสั่งซื้อ PO: 2609002 (ชำระเมื่อส่งมอบและติดตั้งครบตามใบสั่งซื้อ 100% รอวางบิล)",
+      "milestones": [
+        {
+          "id": "ms-26092-1",
+          "milestoneNo": 1,
+          "title": "งวดที่ 1: ส่งมอบอุปกรณ์ Network และบริการติดตั้งครบ 100%",
+          "percentage": 100,
+          "amount": 158841.5,
+          "dueDate": "2026-10-24",
+          "status": "WAITING",
+          "notes": "รอส่งมอบงานติดตั้งและรอวางบิล 100%"
+        }
+      ]
+    },
+    {
+      "id": "plan-pnp-solenoid",
+      "contractTitle": "โครงการซอฟต์แวร์ Traceability Solenoid Line IMV & 5 Stations",
+      "quotationDocNo": "QT-2505-004",
+      "referencePoNo": "2505004",
+      "projectCode": "PRJ-PNP-SOL",
+      "projectName": "Traceability Solenoid Line IMV Complete System",
+      "customerContact": {
+        "id": "cont-pnp-1",
+        "name": "Mr. Patama (คุณปัทมะ จินดาพงษ์)",
+        "companyName": "บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด",
+        "taxId": "0205555029622",
+        "isBranch": false,
+        "branchCode": "00000",
+        "address": "91/10 หมู่ที่ 12 ถนนศุขประยูร ตำบลนาป่า อำเภอเมืองชลบุรี จ.ชลบุรี 20000",
+        "phone": "038-441299, 085-811-6949",
+        "email": "numpj@hotmail.com",
+        "type": "CUSTOMER",
+        "creditDays": 30,
+        "totalTransactions": 7,
+        "balanceDue": 1154530
+      },
+      "totalContractAmount": 4646999.71,
+      "createdAt": "2025-05-07",
+      "updatedAt": "2026-09-28",
+      "notes": "เงื่อนไขการชำระเงินตามสัญญา 30% - 50% - 20% (วางบิลงวดที่ 2 แล้ว 50%)",
       "milestones": [
         {
           "id": "ms-pnp-1",
           "milestoneNo": 1,
-          "title": "งวดที่ 1: เงินมัดจำลงนามสัญญาและสั่งซื้ออุปกรณ์หลัก (50%)",
-          "percentage": 50,
-          "amount": 1161749.93,
-          "dueDate": "2026-05-20",
+          "title": "งวดที่ 1: เงินมัดจำลงนามสัญญาและเริ่มดำเนินงาน (30%)",
+          "percentage": 30,
+          "amount": 1394099.91,
+          "dueDate": "2025-05-20",
           "status": "PAID",
-          "invoiceDocNo": "INV-690800001",
-          "notes": "ชำระเรียบร้อยแล้วเมื่อ 2026-05-25"
+          "notes": "รับชำระเงินมัดจำงวดที่ 1 (30%) เรียบร้อย"
         },
         {
           "id": "ms-pnp-2",
           "milestoneNo": 2,
-          "title": "งวดที่ 2: ติดตั้งซอฟต์แวร์และทดสอบระบบ Factory Acceptance Test (40%)",
-          "percentage": 40,
-          "amount": 929399.94,
-          "dueDate": "2026-08-30",
+          "title": "งวดที่ 2: ติดตั้งซอฟต์แวร์และทดสอบระบบ Factory Acceptance Test (50%)",
+          "percentage": 50,
+          "amount": 2323499.86,
+          "dueDate": "2026-08-22",
           "status": "INVOICED",
-          "invoiceDocNo": "INV-690600005",
-          "notes": "ออกใบแจ้งหนี้แล้ว รอการชำระเงินตามรอบเครดิต 30 วัน"
+          "invoiceDocNo": "INV-690800001",
+          "notes": "ออกใบแจ้งหนี้ INV-690800001 วางบิลงวดที่ 2 (50%) เรียบร้อย รอการชำระเงิน"
         },
         {
           "id": "ms-pnp-3",
           "milestoneNo": 3,
-          "title": "งวดที่ 3: ส่งมอบงานขั้นสุดท้าย Site Acceptance Test & Training (10%)",
-          "percentage": 10,
-          "amount": 232349.98,
+          "title": "งวดที่ 3: ส่งมอบงานขั้นสุดท้าย Site Acceptance Test & Training (20%)",
+          "percentage": 20,
+          "amount": 929399.94,
           "dueDate": "2026-10-31",
           "status": "WAITING",
-          "notes": "รอส่งมอบงาน Final Site Acceptance"
+          "notes": "รอส่งมอบงาน Final Site Acceptance (20%)"
         }
       ]
     },
     {
       "id": "plan-tsf-autopack",
-      "contractTitle": "เครื่องจักร TSF1 Auto pack LM1 (Stacker & Bag Insert)",
-      "quotationDocNo": "QT-2601-TSF",
-      "referencePoNo": "TSF-PO-2601",
-      "projectCode": "PRJ-TSF-LM1",
-      "projectName": "Auto Pack LM1 Foam Packaging Machine",
+      "contractTitle": "โครงการเครื่องจักร TSF1 Auto pack LM1 (Thai Sekisui Foam)",
+      "quotationDocNo": "QT-2512-2155",
+      "referencePoNo": "PO252155",
+      "projectCode": "PRJ-107",
+      "projectName": "TSF1 Auto pack LM1 (Stacker, Open Bag & Insert Foam)",
       "customerContact": {
         "id": "cont-tsf-1",
         "name": "nongnuch wongwai (135) / K.Alongkorn",
@@ -3761,92 +3825,41 @@
         "totalTransactions": 4,
         "balanceDue": 3793792
       },
-      "totalContractAmount": 2442800,
-      "createdAt": "2026-01-15",
+      "totalContractAmount": 3793792,
+      "createdAt": "2025-12-24",
       "updatedAt": "2026-09-28",
-      "notes": "สัญญาว่าจ้างผลิตเครื่องจักรอัตโนมัติ แบ่งจ่าย 30% - 50% - 20%",
+      "notes": "ตามใบสั่งซื้อ PO: PO252155 (Ref: CAP250095/ เงื่อนไขชำระเงิน: 40% Down [฿1,517,516.80], 30% After Process Work [฿1,138,137.60], 30% After Complete Work [฿1,138,137.60])",
       "milestones": [
         {
           "id": "ms-tsf-1",
           "milestoneNo": 1,
-          "title": "งวดที่ 1: เงินมัดจำเริ่มงานออกแบบและสั่งผลิตชิ้นส่วน (30%)",
-          "percentage": 30,
-          "amount": 732840,
-          "dueDate": "2026-01-30",
+          "title": "งวดที่ 1: เงินมัดจำลงนามสัญญาและสั่งซื้ออุปกรณ์หลัก (40% Downpayment)",
+          "percentage": 40,
+          "amount": 1517516.8,
+          "dueDate": "2026-01-14",
           "status": "PAID",
-          "invoiceDocNo": "INV-2601-TSF1",
-          "notes": "รับชำระมัดจำเรียบร้อย"
+          "invoiceDocNo": "IV-690100001",
+          "notes": "รับชำระเงินมัดจำ 40% เรียบร้อยตามใบแจ้งหนี้ IV-690100001"
         },
         {
           "id": "ms-tsf-2",
           "milestoneNo": 2,
-          "title": "งวดที่ 2: ประกอบเครื่องจักร ติดตั้งระบบไฟฟ้า & FAT (50%)",
-          "percentage": 50,
-          "amount": 1221400,
+          "title": "งวดที่ 2: ประกอบชิ้นส่วน ติดตั้งระบบไฟฟ้า & FAT (30% After Process Work)",
+          "percentage": 30,
+          "amount": 1138137.6,
           "dueDate": "2026-06-15",
-          "status": "INVOICED",
-          "invoiceDocNo": "INV-2603-TSF2",
-          "notes": "ทดสอบ FAT ผ่าน วางบิลเรียบร้อย"
+          "status": "WAITING",
+          "notes": "อยู่ระหว่างประกอบและทดสอบ Process Work รอวางบิลงวดที่ 2"
         },
         {
           "id": "ms-tsf-3",
           "milestoneNo": 3,
-          "title": "งวดที่ 3: ส่งมอบเครื่องจักรหน้างานและตรวจรับ SAT (20%)",
-          "percentage": 20,
-          "amount": 488560,
+          "title": "งวดที่ 3: ส่งมอบเครื่องจักรหน้างานและตรวจรับ SAT (30% After Complete Work)",
+          "percentage": 30,
+          "amount": 1138137.6,
           "dueDate": "2026-11-15",
           "status": "WAITING",
-          "notes": "กำหนดส่งมอบเครื่องจักรปลายปี 2569"
-        }
-      ]
-    },
-    {
-      "id": "plan-kuroda-vision",
-      "contractTitle": "ชุดระบบกล้องตรวจสอบชิ้นงาน AI Vision Machine B60",
-      "quotationDocNo": "QT-2605-KUR",
-      "referencePoNo": "KURODA-PO-089",
-      "projectCode": "PRJ-KUR-B60",
-      "projectName": "Machine Vision Controller & Camera Inspection",
-      "customerContact": {
-        "id": "cont-kuroda-1",
-        "name": "คุณนพพล อุ่นม่อน (Senior Specialist)",
-        "companyName": "บริษัท คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) จํากัด",
-        "taxId": "0145563001431",
-        "isBranch": false,
-        "branchCode": "00000",
-        "address": "30 หมู่ 9 สวนอุตสาหกรรมโรจนะ ตำบลธนู อำเภออุทัย จังหวัดพระนครศรีอยุธยา 13210",
-        "phone": "080-813-0833, 035-230-471",
-        "email": "noppon.a@kuroda-electric.com",
-        "type": "CUSTOMER",
-        "creditDays": 30,
-        "totalTransactions": 2,
-        "balanceDue": 1074658.78
-      },
-      "totalContractAmount": 1074658.78,
-      "createdAt": "2026-05-12",
-      "updatedAt": "2026-09-28",
-      "notes": "แบ่งชำระ 2 งวด 50% - 50%",
-      "milestones": [
-        {
-          "id": "ms-kur-1",
-          "milestoneNo": 1,
-          "title": "งวดที่ 1: เงินมัดจำและสั่งซื้ออุปกรณ์ Vision Hardware (50%)",
-          "percentage": 50,
-          "amount": 537329.39,
-          "dueDate": "2026-05-25",
-          "status": "PAID",
-          "invoiceDocNo": "INV-2605-001",
-          "notes": "รับชำระเงินมัดจำแล้ว"
-        },
-        {
-          "id": "ms-kur-2",
-          "milestoneNo": 2,
-          "title": "งวดที่ 2: ติดตั้งหน้างาน สอบเทียบความแม่นยำ AI & ส่งมอบ (50%)",
-          "percentage": 50,
-          "amount": 537329.39,
-          "dueDate": "2026-10-15",
-          "status": "WAITING",
-          "notes": "รอกำหนดการติดตั้งหน้างาน"
+          "notes": "รับประกัน 1 ปี กำหนดส่งมอบเครื่องจักรปลายปี 2569"
         }
       ]
     }
@@ -3877,7 +3890,7 @@
       "locationFrom": "HQ_KHLONG_LUANG",
       "locationTo": "SITE_KURODA",
       "referenceDocNo": "DO-2609-001",
-      "referenceProject": "PRJ-KUR-B60",
+      "referenceProject": "Vision Inspection Project",
       "performedBy": "ธนกฤต วิศวกรรม",
       "notes": "ส่งมอบเครื่องควบคุมวิชั่นไปยังไซต์งานคูโรดา โรจนะ"
     },
