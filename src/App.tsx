@@ -34,7 +34,7 @@ import { initialMilestonePlans } from './data/initialMilestonePlans';
 import { AVAILABLE_USER_PROFILES } from './data/userRoles';
 import { addAuditLog } from './utils/auditLogger';
 
-import { AccountingDocument, DocumentType, DocumentStatus, Contact, ProductService, CompanyProfile, DocumentNumberingConfig, UserProfile } from './types';
+import { AccountingDocument, DocumentType, DocumentStatus, Contact, ProductService, CompanyProfile, DocumentNumberingConfig, UserProfile, ContractMilestonePlan } from './types';
 import { defaultNumberingConfig } from './utils/numbering';
 
 export function App() {
@@ -60,10 +60,22 @@ export function App() {
     });
   };
 
-  // Seed milestone plans if not exists
+  // Seed milestone plans & merge missing initial plans
   useEffect(() => {
-    if (!localStorage.getItem('warsgate_milestone_plans')) {
+    const saved = localStorage.getItem('warsgate_milestone_plans');
+    if (!saved) {
       localStorage.setItem('warsgate_milestone_plans', JSON.stringify(initialMilestonePlans));
+    } else {
+      try {
+        const parsed: ContractMilestonePlan[] = JSON.parse(saved);
+        const existingIds = new Set(parsed.map(p => p.id));
+        const missing = initialMilestonePlans.filter(p => !existingIds.has(p.id));
+        if (missing.length > 0) {
+          localStorage.setItem('warsgate_milestone_plans', JSON.stringify([...parsed, ...missing]));
+        }
+      } catch {
+        localStorage.setItem('warsgate_milestone_plans', JSON.stringify(initialMilestonePlans));
+      }
     }
   }, []);
 

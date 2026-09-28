@@ -12,6 +12,7 @@ import {
 import { MilestonePlanModal } from './MilestonePlanModal';
 import { generateNextDocumentNo } from '../../utils/numbering';
 import { addAuditLog } from '../../utils/auditLogger';
+import { initialMilestonePlans } from '../../data/initialMilestonePlans';
 
 interface MilestoneBillingViewProps {
   documents: AccountingDocument[];
@@ -38,13 +39,21 @@ export const MilestoneBillingView: React.FC<MilestoneBillingViewProps> = ({
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed: ContractMilestonePlan[] = JSON.parse(saved);
+        const existingIds = new Set(parsed.map(p => p.id));
+        const missing = initialMilestonePlans.filter(p => !existingIds.has(p.id));
+        if (missing.length > 0) {
+          const merged = [...parsed, ...missing];
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+          return merged;
+        }
+        return parsed;
       } catch (e) {
         console.error('Failed to parse saved milestone plans', e);
       }
     }
-    // Import default plans if none saved
-    return [];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(initialMilestonePlans));
+    return initialMilestonePlans;
   });
 
   const [searchQuery, setSearchQuery] = useState('');
