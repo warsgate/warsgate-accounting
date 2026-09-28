@@ -273,11 +273,19 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
 
+  const customerPoCodes = useMemo(() => ['2607001', '2605001', '2605002', '2505005', '2609002', 'PO252155', '2505004'], []);
+
   // Filter out hidden projects and apply search/status filter
   const visibleProjects = rawProjects.filter(p => !hiddenProjectIds.includes(p.id));
 
   const filteredProjects = visibleProjects.filter(p => {
-    if (filterStatus !== 'ALL' && p.status !== filterStatus) return false;
+    if (filterStatus === 'PO_ONLY') {
+      const isPo = p.referencePoNo && customerPoCodes.some(c => p.referencePoNo?.includes(c));
+      if (!isPo) return false;
+    } else if (filterStatus !== 'ALL' && p.status !== filterStatus) {
+      return false;
+    }
+
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       return (
@@ -293,6 +301,10 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
 
   const totalPoAmount = visibleProjects.reduce((sum, p) => sum + p.totalAmount, 0);
   const completedCount = visibleProjects.filter(p => p.status === 'COMPLETED').length;
+  const poProjectsCount = visibleProjects.filter(p => p.referencePoNo && customerPoCodes.some(c => p.referencePoNo?.includes(c))).length;
+  const poTotalAmount = visibleProjects
+    .filter(p => p.referencePoNo && customerPoCodes.some(c => p.referencePoNo?.includes(c)))
+    .reduce((sum, p) => sum + p.totalAmount, 0);
 
   return (
     <div className="space-y-6 pb-12">
@@ -309,7 +321,7 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
             </span>
           </h1>
           <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5 font-medium flex-wrap">
-            <span>คำนวณความคืบหน้าจริงจาก BOM Master Plan ({visibleProjects.length} โครงการ) มูลค่ารวม {formatMoney(totalPoAmount)} บาท</span>
+            <span>คำนวณความคืบหน้าจริงจาก BOM Master Plan ({visibleProjects.length} โครงการ) มูลค่า 7 PO รวม {formatMoney(poTotalAmount)} บาท</span>
             <span className="w-1 h-1 rounded-full bg-slate-300 inline-block" />
             <span className="text-indigo-600 font-bold flex items-center gap-1">
               <Cpu className="w-3 h-3 text-indigo-500" />
@@ -354,7 +366,8 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
             onChange={e => setFilterStatus(e.target.value)}
             className="px-3 py-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs cursor-pointer"
           >
-            <option value="ALL">🌟 ทั้งหมด ({visibleProjects.length})</option>
+            <option value="ALL">🌟 โครงการทั้งหมด ({visibleProjects.length})</option>
+            <option value="PO_ONLY">📑 7 โครงการที่มี PO ลูกค้า ({poProjectsCount})</option>
             <option value="IN_PROGRESS">⚡ กำลังทำ ({visibleProjects.length - completedCount})</option>
             <option value="COMPLETED">✓ ส่งมอบแล้ว ({completedCount})</option>
           </select>
