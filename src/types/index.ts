@@ -203,4 +203,90 @@ export interface BomProject {
   updatedAt?: string;
 }
 
+// ─── Milestone Billing & Progressive Invoicing ─────────────────────────────
+export type MilestoneStatus = 'WAITING' | 'INVOICED' | 'PAID';
+
+export interface ProjectMilestone {
+  id: string;
+  milestoneNo: number;
+  title: string;
+  percentage: number;
+  amount: number;
+  dueDate?: string;
+  status: MilestoneStatus;
+  invoiceDocNo?: string;
+  invoiceDocId?: string;
+  notes?: string;
+}
+
+export interface ContractMilestonePlan {
+  id: string;
+  contractTitle: string;
+  quotationId?: string;
+  quotationDocNo?: string;
+  referencePoNo?: string;
+  projectCode?: string;
+  projectName: string;
+  customerContact: Contact;
+  totalContractAmount: number;
+  milestones: ProjectMilestone[];
+  createdAt: string;
+  updatedAt: string;
+  notes?: string;
+}
+
+// ─── Multi-User Roles & Permissions & Audit Trail ─────────────────────────
+export type UserRole = 
+  | 'MD_ADMIN'      // กรรมการผู้จัดการ / ดูแลระบบสูงสุด
+  | 'ENGINEER_PM'   // วิศวกรโครงการ / ผู้จัดการโครงการ
+  | 'SALES'         // ฝ่ายขาย (ใบเสนอราคา, วางบิล)
+  | 'PURCHASING'    // ฝ่ายจัดซื้อ (ใบสั่งซื้อ PO, ซัพพลายเออร์)
+  | 'ACCOUNTANT';   // ฝ่ายบัญชีและการเงิน (ใบกำกับภาษี, ภาษี, AR/AP)
+
+export interface UserPermissions {
+  canApprove: boolean;
+  canViewPnL: boolean;
+  canManageSettings: boolean;
+  canEditBOM: boolean;
+  canIssueInvoices: boolean;
+  canIssuePO: boolean;
+  canManageTax: boolean;
+  canDeleteDocs: boolean;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  role: UserRole;
+  roleTitle: string;
+  email: string;
+  avatarColor: string;
+  avatarInitials: string;
+  department: string;
+  permissions: UserPermissions;
+}
+
+export type AuditAction = 
+  | 'CREATE_DOC' 
+  | 'UPDATE_DOC' 
+  | 'DELETE_DOC' 
+  | 'STATUS_CHANGE' 
+  | 'SWITCH_ROLE' 
+  | 'EXPORT_DATA' 
+  | 'IMPORT_DATA' 
+  | 'MILESTONE_INVOICE' 
+  | 'SETTINGS_UPDATE';
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  userName: string;
+  userRole: UserRole;
+  action: AuditAction;
+  targetDocNo?: string;
+  details: string;
+  ipAddress?: string;
+}
+
+
 

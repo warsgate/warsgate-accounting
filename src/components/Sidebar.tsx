@@ -2,7 +2,7 @@ import React from "react";
 import { 
   LayoutDashboard, TrendingUp, TrendingDown, Users, Package,
   BookOpen, Calculator, Settings, ChevronRight, ChevronLeft, Zap, BarChart3,
-  PanelLeftClose, PanelLeftOpen, Cpu, ExternalLink, Clock, Sparkles
+  PanelLeftClose, PanelLeftOpen, Cpu, ExternalLink, Clock, Sparkles, Layers
 } from "lucide-react";
 import { AccountingDocument, Contact, ProductService } from "../types";
 
@@ -48,6 +48,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badgeColor: "bg-sky-50 text-sky-700 border-sky-200",
     },
     {
+      id: "milestone-billing",
+      label: "วางบิลตามงวดงาน",
+      subtitle: "สัญญา 50-40-10 & Progress",
+      icon: Layers,
+      badge: "งวดงาน",
+      badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200 font-bold",
+    },
+    {
       id: "expenses",
       label: "รายจ่าย (Expenses)",
       subtitle: "ใบสั่งซื้อ / ค่าใช้จ่าย / 50 ทวิ",
@@ -55,6 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: `${expenseCount} รายการ`,
       badgeColor: "bg-rose-50 text-rose-700 border-rose-200",
     },
+
     {
       id: "project-pnl",
       label: "กำไรขาดทุนรายจ็อบ",

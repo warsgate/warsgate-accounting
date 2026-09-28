@@ -3,8 +3,9 @@ import {
   Settings, Building2, Phone, MapPin, Hash, ChevronRight, Save, Trash2, 
   AlertTriangle, FileText, CheckCircle2, Sparkles, RefreshCw, Database, 
   Download, Upload, FileSpreadsheet, HardDrive, Check, Copy, AlertCircle, 
-  FileCheck, Layers, Terminal, ShieldCheck
+  FileCheck, Layers, Terminal, ShieldCheck, Search, Filter
 } from 'lucide-react';
+
 import * as XLSX from 'xlsx';
 import { 
   CompanyProfile, DocumentNumberingConfig, DocumentNumberSetting, DocumentType, 
@@ -16,6 +17,9 @@ import {
   initialBankAccounts, initialChartOfAccounts, initialJournalEntries,
   initialDocuments, initialContacts, initialProducts
 } from '../../data/initialData';
+import { AVAILABLE_USER_PROFILES, ROLE_LABELS } from '../../data/userRoles';
+import { getAuditLogs, clearAuditLogs } from '../../utils/auditLogger';
+
 
 interface SettingsViewProps {
   company: CompanyProfile;
@@ -48,7 +52,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   contacts = initialContacts,
   products = initialProducts
 }) => {
-  const [activeTab, setActiveTab] = useState<'company' | 'numbering' | 'backup' | 'danger'>('company');
+  const [activeTab, setActiveTab] = useState<'company' | 'numbering' | 'roles' | 'audit' | 'backup' | 'danger'>('company');
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditFilterRole, setAuditFilterRole] = useState<string>('ALL');
+  const [auditLogsList, setAuditLogsList] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('warsgate_audit_logs');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
 
   // Company Form State
   const [form, setForm] = useState<CompanyProfile>(company);
@@ -423,9 +437,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const navItems = [
     { id: 'company' as const, label: 'ข้อมูลองค์กร & บริษัท', icon: Building2, subtitle: 'Tax ID, ที่อยู่, ผู้มีอำนาจลงนาม' },
     { id: 'numbering' as const, label: 'การตั้งค่าเลขที่เอกสารรัน', icon: Hash, subtitle: 'กำหนด Prefix, รูปแบบวันที่, ลำดับรัน' },
+    { id: 'roles' as const, label: 'สิทธิ์ผู้ใช้งาน (Roles & RBAC)', icon: ShieldCheck, subtitle: 'ตารางสิทธิ์แยกตาม 5 ตำแหน่งงาน' },
+    { id: 'audit' as const, label: 'ประวัติการใช้งาน (Audit Trail)', icon: Terminal, subtitle: 'บันทึกเหตุการณ์และประวัติทำรายการ' },
     { id: 'backup' as const, label: 'สำรอง & กู้คืนฐานข้อมูล', icon: Database, subtitle: 'ดาวน์โหลด JSON/Excel ป้องกันเซิร์ฟเวอร์ปิด' },
     { id: 'danger' as const, label: 'จัดการฐานข้อมูล & ล้างระบบ', icon: AlertTriangle, subtitle: 'รีเซ็ตข้อมูลทดสอบทั้งหมด' },
   ];
+
 
   return (
     <div className="space-y-6 pb-12">
@@ -744,8 +761,310 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
           )}
 
+          {/* ─── TAB: Roles & Permissions (RBAC) ─────────────────────────── */}
+          {activeTab === 'roles' && (
+            <div className="glass-panel p-6 rounded-3xl space-y-6">
+              
+              {/* Header */}
+              <div className="border-b border-slate-100 pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5 text-rose-600" />
+                      <span>สิทธิ์การใช้งานตามบทบาท (Role-Based Access Control - RBAC)</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      กำหนดสิทธิ์และความรับผิดชอบของบุคลากร 5 แผนกในองค์กร WARSGATE เพื่อความปลอดภัยและการแบ่งแยกหน้าที่ (Separation of Duties)
+                    </p>
+                  </div>
+                  <span className="text-[11px] px-3 py-1 rounded-full bg-rose-50 text-rose-700 font-bold border border-rose-200">
+                    5 ตำแหน่งงาน
+                  </span>
+                </div>
+              </div>
+
+              {/* Persona Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {AVAILABLE_USER_PROFILES.map((profile) => (
+                  <div 
+                    key={profile.id}
+                    className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3 flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${profile.avatarColor} text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0`}>
+                          {profile.avatarInitials}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-xs font-bold text-slate-900 truncate">{profile.name}</h3>
+                          <span className="text-[10px] text-slate-500 block truncate">{profile.roleTitle}</span>
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-slate-600 mt-3 leading-relaxed">
+                        {ROLE_LABELS[profile.role].description}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+                      <span>{profile.department}</span>
+                      <span className="font-mono">{profile.email}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Permission Matrix Table */}
+              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+                <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                  <h3 className="text-xs font-bold text-slate-800">
+                    ตารางเมทริกซ์สิทธิ์การเข้าถึงและการทำรายการ (Permission Matrix)
+                  </h3>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-100/75 text-slate-600 font-semibold border-b border-slate-200 text-[11px]">
+                      <tr>
+                        <th className="py-2.5 px-3.5">ฟังก์ชัน / สิทธิ์การทำรายการ</th>
+                        <th className="py-2.5 px-3 text-center">MD / Admin</th>
+                        <th className="py-2.5 px-3 text-center">วิศวกร (PM)</th>
+                        <th className="py-2.5 px-3 text-center">ฝ่ายขาย</th>
+                        <th className="py-2.5 px-3 text-center">จัดซื้อ</th>
+                        <th className="py-2.5 px-3 text-center">บัญชี/การเงิน</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-slate-700">
+                      {[
+                        { title: 'ดูงบกำไรขาดทุน P&L & แดชบอร์ดบริหาร', permKey: 'canViewPnL', md: true, eng: true, sales: false, pur: false, acc: true },
+                        { title: 'อนุมัติเอกสารและสัญญาโครงการ', permKey: 'canApprove', md: true, eng: false, sales: false, pur: false, acc: true },
+                        { title: 'ออกใบเสนอราคา (Quotation) & แผนงวดงาน', permKey: 'canIssueInvoices', md: true, eng: false, sales: true, pur: false, acc: true },
+                        { title: 'ซิงค์ Mechanical BOM & วิเคราะห์ Cost Matrix', permKey: 'canEditBOM', md: true, eng: true, sales: false, pur: true, acc: false },
+                        { title: 'สร้างใบสั่งซื้อ (PO) & จัดการซัพพลายเออร์', permKey: 'canIssuePO', md: true, eng: true, sales: false, pur: true, acc: true },
+                        { title: 'ออกใบแจ้งหนี้ / ใบกำกับภาษี / ใบเสร็จรับเงิน', permKey: 'canIssueInvoices', md: true, eng: false, sales: true, pur: false, acc: true },
+                        { title: 'รายงานภาษี ภ.พ.30, 50 ทวิ & AR/AP Aging', permKey: 'canManageTax', md: true, eng: false, sales: false, pur: false, acc: true },
+                        { title: 'ตั้งค่าระบบ, สำรองและล้างฐานข้อมูล', permKey: 'canManageSettings', md: true, eng: false, sales: false, pur: false, acc: false },
+                        { title: 'ลบเอกสารออกจากระบบถาวร', permKey: 'canDeleteDocs', md: true, eng: false, sales: false, pur: false, acc: true },
+                      ].map((row, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/70 transition">
+                          <td className="py-2.5 px-3.5 font-medium text-slate-800">
+                            {row.title}
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            {row.md ? (
+                              <span className="inline-block w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-center leading-5 text-xs">✓</span>
+                            ) : (
+                              <span className="inline-block w-5 h-5 rounded-full bg-slate-100 text-slate-300 font-bold text-center leading-5 text-xs">-</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            {row.eng ? (
+                              <span className="inline-block w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-center leading-5 text-xs">✓</span>
+                            ) : (
+                              <span className="inline-block w-5 h-5 rounded-full bg-slate-100 text-slate-300 font-bold text-center leading-5 text-xs">-</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            {row.sales ? (
+                              <span className="inline-block w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-center leading-5 text-xs">✓</span>
+                            ) : (
+                              <span className="inline-block w-5 h-5 rounded-full bg-slate-100 text-slate-300 font-bold text-center leading-5 text-xs">-</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            {row.pur ? (
+                              <span className="inline-block w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-center leading-5 text-xs">✓</span>
+                            ) : (
+                              <span className="inline-block w-5 h-5 rounded-full bg-slate-100 text-slate-300 font-bold text-center leading-5 text-xs">-</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            {row.acc ? (
+                              <span className="inline-block w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-center leading-5 text-xs">✓</span>
+                            ) : (
+                              <span className="inline-block w-5 h-5 rounded-full bg-slate-100 text-slate-300 font-bold text-center leading-5 text-xs">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* ─── TAB: Audit Trail Log ──────────────────────────────────────── */}
+          {activeTab === 'audit' && (
+            <div className="glass-panel p-6 rounded-3xl space-y-6">
+              
+              {/* Header */}
+              <div className="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <Terminal className="w-5 h-5 text-rose-600" />
+                    <span>ประวัติการทำรายการในระบบ (Audit Trail Log)</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    บันทึกประวัติการสร้าง แก้ไข ลบเอกสาร การออกใบแจ้งหนี้งวดงาน และการสลับบทบาทผู้ใช้งานย้อนหลัง
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const logs = getAuditLogs();
+                      const csvContent = "data:text/csv;charset=utf-8," + 
+                        ["ID,Timestamp,User,Role,Action,TargetDoc,Details,IP"]
+                        .concat(logs.map(l => `"${l.id}","${l.timestamp}","${l.userName}","${l.userRole}","${l.action}","${l.targetDocNo || ''}","${l.details.replace(/"/g, '""')}","${l.ipAddress || ''}"`))
+                        .join("\n");
+                      const encodedUri = encodeURI(csvContent);
+                      const link = document.createElement("a");
+                      link.setAttribute("href", encodedUri);
+                      link.setAttribute("download", `warsgate_audit_log_${new Date().toISOString().split('T')[0]}.csv`);
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Export CSV</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (window.confirm('ต้องการล้างประวัติการทำรายการทั้งหมดใช่หรือไม่?')) {
+                        clearAuditLogs();
+                        setAuditLogsList([]);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs flex items-center gap-1.5 transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>ล้างประวัติ</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="relative w-full sm:w-80">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="ค้นหาชื่อผู้ทำรายการ, เลขที่เอกสาร, หรือรายละเอียด..."
+                    value={auditSearch}
+                    onChange={(e) => setAuditSearch(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-rose-400"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <span className="text-xs text-slate-400">กรองตามตำแหน่ง:</span>
+                  <select
+                    value={auditFilterRole}
+                    onChange={(e) => setAuditFilterRole(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-rose-400"
+                  >
+                    <option value="ALL">ทุกตำแหน่ง (All Roles)</option>
+                    <option value="MD_ADMIN">MD / Admin</option>
+                    <option value="ENGINEER_PM">วิศวกร (PM)</option>
+                    <option value="SALES">ฝ่ายขาย (Sales)</option>
+                    <option value="PURCHASING">จัดซื้อ (Purchasing)</option>
+                    <option value="ACCOUNTANT">บัญชี/การเงิน (Accountant)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Audit Log Table */}
+              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+                <div className="overflow-x-auto max-h-[500px]">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-100/80 text-slate-600 font-semibold border-b border-slate-200 text-[11px] sticky top-0 backdrop-blur-sm z-10">
+                      <tr>
+                        <th className="py-2.5 px-3.5 w-36">วัน-เวลา</th>
+                        <th className="py-2.5 px-3.5 w-44">ผู้ทำรายการ</th>
+                        <th className="py-2.5 px-3 w-28">ประเภทการกระทำ</th>
+                        <th className="py-2.5 px-3 w-28">เอกสารอ้างอิง</th>
+                        <th className="py-2.5 px-3.5">รายละเอียดเหตุการณ์</th>
+                        <th className="py-2.5 px-3 w-24 text-right">IP Address</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {getAuditLogs()
+                        .filter(log => {
+                          const matchQuery = 
+                            log.userName.toLowerCase().includes(auditSearch.toLowerCase()) ||
+                            (log.targetDocNo && log.targetDocNo.toLowerCase().includes(auditSearch.toLowerCase())) ||
+                            log.details.toLowerCase().includes(auditSearch.toLowerCase());
+                          const matchRole = auditFilterRole === 'ALL' || log.userRole === auditFilterRole;
+                          return matchQuery && matchRole;
+                        })
+                        .map((log) => {
+                          const actionLabels: Record<string, { label: string; color: string }> = {
+                            CREATE_DOC: { label: 'สร้างเอกสาร', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                            UPDATE_DOC: { label: 'แก้ไขข้อมูล', color: 'bg-sky-50 text-sky-700 border-sky-200' },
+                            DELETE_DOC: { label: 'ลบข้อมูล', color: 'bg-rose-50 text-rose-700 border-rose-200' },
+                            STATUS_CHANGE: { label: 'เปลี่ยนสถานะ', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+                            SWITCH_ROLE: { label: 'สลับบทบาท', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+                            MILESTONE_INVOICE: { label: 'วางบิลงวดงาน', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+                            EXPORT_DATA: { label: 'ส่งออกข้อมูล', color: 'bg-teal-50 text-teal-700 border-teal-200' },
+                            IMPORT_DATA: { label: 'กู้คืนข้อมูล', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+                            SETTINGS_UPDATE: { label: 'แก้ไขตั้งค่า', color: 'bg-slate-100 text-slate-700 border-slate-200' },
+                          };
+                          const act = actionLabels[log.action] || { label: log.action, color: 'bg-slate-100 text-slate-700' };
+
+                          return (
+                            <tr key={log.id} className="hover:bg-slate-50/80 transition">
+                              <td className="py-2.5 px-3.5 font-mono text-slate-500 whitespace-nowrap text-[11px]">
+                                {log.timestamp}
+                              </td>
+                              <td className="py-2.5 px-3.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-slate-800 truncate block">
+                                    {log.userName}
+                                  </span>
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded font-mono bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                                    {log.userRole}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold whitespace-nowrap inline-block ${act.color}`}>
+                                  {act.label}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3">
+                                {log.targetDocNo ? (
+                                  <span className="font-mono text-slate-700 font-bold bg-slate-100 px-1.5 py-0.5 rounded text-[11px]">
+                                    {log.targetDocNo}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-300">-</span>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3.5 text-slate-700 leading-relaxed">
+                                {log.details}
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono text-slate-400 text-[10px]">
+                                {log.ipAddress || '192.168.1.1'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          )}
+
           {/* ─── TAB 3: Backup & Restore ───────────────────────────────────── */}
           {activeTab === 'backup' && (
+
             <div className="glass-panel p-6 rounded-3xl space-y-6">
               
               {/* Header */}

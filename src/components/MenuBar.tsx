@@ -3,8 +3,9 @@ import {
   FileText, Plus, Search, RefreshCw, Printer, Settings,
   BarChart3, DollarSign, ShoppingCart, ShoppingBag, Users, Package,
   BookOpen, ShieldCheck, HelpCircle, Cpu, Download,
-  ExternalLink, ChevronRight, Check, Zap, Sparkles, Command, Clock
+  ExternalLink, ChevronRight, Check, Zap, Sparkles, Command, Clock, Layers
 } from "lucide-react";
+
 import { AccountingDocument } from "../types";
 import { exportSalesToExcel } from "../utils/excelExport";
 
@@ -172,11 +173,18 @@ export const MenuBar: React.FC<MenuBarProps> = ({
           action: () => { setActiveTab("sales"); setOpenMenu(null); }
         },
         {
+          label: "📑 วางบิลตามงวดงานสัญญา (Milestone Billing)",
+          icon: Layers,
+          active: activeTab === "milestone-billing",
+          action: () => { setActiveTab("milestone-billing"); setOpenMenu(null); }
+        },
+        {
           label: "ศูนย์รายจ่าย & สั่งซื้อ (Expenses)",
           icon: ShoppingCart,
           active: activeTab === "expenses" || activeTab === "expense",
           action: () => { setActiveTab("expenses"); setOpenMenu(null); }
         },
+
         { type: "divider" },
         {
           label: "📊 กำไรขาดทุนรายโครงการ (Project P&L)",

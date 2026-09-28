@@ -17,6 +17,7 @@ import { BomPoGeneratorModal } from './components/Expense/BomPoGeneratorModal';
 import { ProjectCostMatrixModal } from './components/ProjectCostMatrixModal';
 import { ProjectPnLView } from './components/Analytics/ProjectPnLView';
 import { CashFlowAgingView } from './components/Analytics/CashFlowAgingView';
+import { MilestoneBillingView } from './components/MilestoneBilling/MilestoneBillingView';
 
 import { 
   initialCompanyProfile, 
@@ -27,12 +28,43 @@ import {
   initialJournalEntries, 
   initialBankAccounts 
 } from './data/initialData';
+import { initialMilestonePlans } from './data/initialMilestonePlans';
+import { AVAILABLE_USER_PROFILES } from './data/userRoles';
+import { addAuditLog } from './utils/auditLogger';
 
-import { AccountingDocument, DocumentType, DocumentStatus, Contact, ProductService, CompanyProfile, DocumentNumberingConfig } from './types';
+import { AccountingDocument, DocumentType, DocumentStatus, Contact, ProductService, CompanyProfile, DocumentNumberingConfig, UserProfile } from './types';
 import { defaultNumberingConfig } from './utils/numbering';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('warsgate_current_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return AVAILABLE_USER_PROFILES[0];
+  });
+
+  const handleSwitchUser = (user: UserProfile) => {
+    setCurrentUser(user);
+    localStorage.setItem('warsgate_current_user', JSON.stringify(user));
+    addAuditLog({
+      userName: user.name,
+      userRole: user.role,
+      action: 'SWITCH_ROLE',
+      details: `สลับบทบาทผู้ใช้งานเป็น ${user.name} (${user.roleTitle})`
+    });
+  };
+
+  // Seed milestone plans if not exists
+  useEffect(() => {
+    if (!localStorage.getItem('warsgate_milestone_plans')) {
+      localStorage.setItem('warsgate_milestone_plans', JSON.stringify(initialMilestonePlans));
+    }
+  }, []);
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('warsgate_sidebar_collapsed') === 'true';
   });
@@ -366,6 +398,8 @@ export function App() {
         }}
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={toggleSidebar}
+        currentUser={currentUser}
+        onSwitchUser={handleSwitchUser}
       />
 
       {/* Main Workspace Layout */}
@@ -418,6 +452,19 @@ export function App() {
                 onDeleteDocument={handleDeleteDocument}
               />
             )}
+
+            {activeTab === 'milestone-billing' && (
+              <MilestoneBillingView
+                documents={documents}
+                contacts={contacts}
+                company={company}
+                numberingConfig={numberingConfig}
+                onSaveDocument={handleSaveDocument}
+                openViewDocument={(doc) => setViewDoc(doc)}
+                setActiveTab={setActiveTab}
+              />
+            )}
+
 
             {(activeTab === 'expenses' || activeTab === 'expense') && (
               <ExpenseView
