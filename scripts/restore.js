@@ -30,14 +30,19 @@ try {
   console.log(`  • Documents:        ${backup.documents?.length || 0} items`);
   console.log(`  • Contacts:         ${backup.contacts?.length || 0} items`);
   console.log(`  • Products:         ${backup.products?.length || 0} items`);
+  console.log(`  • Milestone Plans:  ${backup.milestonePlans?.length || 0} contracts`);
+  console.log(`  • Stock Movements:  ${backup.stockMovements?.length || 0} records`);
   console.log(`  • Chart of Accounts:${backup.chartOfAccounts?.length || 0} accounts`);
   console.log(`  • Journal Entries:  ${backup.journalEntries?.length || 0} entries`);
   console.log(`  • Bank Accounts:    ${backup.bankAccounts?.length || 0} accounts`);
+  console.log(`  • User Roles:       ${backup.userProfiles?.length || 0} personas`);
+  console.log(`  • Audit Trail Logs: ${backup.auditLogs?.length || 0} entries`);
   console.log(`------------------------------------------------------`);
   console.log(`✅ Backup file is valid and ready for restore.`);
   console.log(`Tip: In the web application, go to 'Settings' -> 'Backup & Restore'`);
   console.log(`     and upload '${latestJsonPath}' to restore with 1-click!`);
   console.log(`======================================================\n`);
+
 } catch (err) {
   console.error(`❌ Error verifying backup:`, err.message);
   process.exit(1);

@@ -12,6 +12,10 @@ import {
   initialChartOfAccounts,
   initialJournalEntries
 } from '../src/data/initialData.ts';
+import { initialMilestonePlans } from '../src/data/initialMilestonePlans.ts';
+import { initialStockMovements, STOCK_LOCATIONS } from '../src/data/initialStockMovements.ts';
+import { AVAILABLE_USER_PROFILES } from '../src/data/userRoles.ts';
+import { initialAuditLogs } from '../src/utils/auditLogger.ts';
 import { defaultNumberingConfig } from '../src/utils/numbering.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,9 +36,9 @@ const timestampIso = `${dateStr}T${timeStr}+07:00`;
 
 // 1. Prepare Full Database Backup Payload
 const backupPayload = {
-  version: '1.0.0',
+  version: '2.0.0',
   backupDate: timestampIso,
-  appName: 'WARSGATE Accounting System',
+  appName: 'WARSGATE Accounting & ERP System',
   metadata: {
     documentsCount: initialDocuments.length,
     contactsCount: initialContacts.length,
@@ -42,6 +46,10 @@ const backupPayload = {
     chartOfAccountsCount: initialChartOfAccounts.length,
     journalEntriesCount: initialJournalEntries.length,
     bankAccountsCount: initialBankAccounts.length,
+    milestonePlansCount: initialMilestonePlans.length,
+    stockMovementsCount: initialStockMovements.length,
+    auditLogsCount: initialAuditLogs.length,
+    userRolesCount: AVAILABLE_USER_PROFILES.length,
   },
   company: initialCompanyProfile,
   numberingConfig: defaultNumberingConfig,
@@ -51,6 +59,11 @@ const backupPayload = {
   documents: initialDocuments,
   chartOfAccounts: initialChartOfAccounts,
   journalEntries: initialJournalEntries,
+  milestonePlans: initialMilestonePlans,
+  stockMovements: initialStockMovements,
+  stockLocations: STOCK_LOCATIONS,
+  userProfiles: AVAILABLE_USER_PROFILES,
+  auditLogs: initialAuditLogs
 };
 
 // 2. Save JSON files
@@ -86,7 +99,7 @@ XLSX.utils.book_append_sheet(wb, wsCompany, 'Company');
 // Sheet: Contacts
 const contactsData = initialContacts.map(c => ({
   'ID': c.id,
-  'ประเภท': c.type === 'CUSTOMER' ? 'ลูกค้า (Customer)' : 'ซัพพลายเออร์ (Supplier)',
+  'ประเภท': c.type === 'CUSTOMER' ? 'ลูกค้า (Customer)' : c.type === 'SUPPLIER' ? 'ซัพพลายเออร์ (Supplier)' : 'ทั้งลูกค้าและคู่ค้า',
   'ชื่อผู้ติดต่อ': c.name,
   'ชื่อบริษัท/องค์กร': c.companyName,
   'เลขประจำตัวผู้เสียภาษี': c.taxId,
@@ -125,16 +138,15 @@ const docsData = initialDocuments.map(d => ({
   'เลขที่เอกสาร': d.documentNo,
   'วันที่ออกเอกสาร': d.issueDate,
   'วันครบกำหนด': d.dueDate || '',
-  'ชื่อลูกค้า/ซัพพลายเออร์': d.contactName,
-  'เลขประจำตัวผู้เสียภาษี': d.contactTaxId,
-  'ที่อยู่คู่ค้า': d.contactAddress,
+  'ชื่อลูกค้า/ซัพพลายเออร์': d.contact?.companyName || d.contact?.name || '',
+  'เลขอ้างอิง PO ลูกค้า': d.referencePoNo || '',
+  'โครงการ': d.projectNote || '',
   'ยอดก่อนภาษี (Subtotal)': d.subtotal,
   'ภาษีมูลค่าเพิ่ม (VAT 7%)': d.vatAmount,
   'ยอดรวมทั้งสิ้น (Grand Total)': d.grandTotal,
-  'หัก ณ ที่จ่าย (WHT)': d.whtAmount || 0,
-  'ยอดชำระสุทธิ (Net Total)': d.netTotal || d.grandTotal,
+  'หัก ณ ที่จ่าย (WHT)': d.withholdingTaxTotal || 0,
+  'ยอดชำระสุทธิ (Net Total)': d.netPayment || d.grandTotal,
   'สถานะ': d.status,
-  'เลขอ้างอิง (Ref No)': d.referenceNo || '',
   'หมายเหตุ': d.notes || '',
 }));
 const wsDocs = XLSX.utils.json_to_sheet(docsData);
@@ -148,28 +160,71 @@ initialDocuments.forEach(d => {
       'เลขที่เอกสาร': d.documentNo,
       'ประเภทเอกสาร': d.type,
       'วันที่': d.issueDate,
-      'ลูกค้า/คู่ค้า': d.contactName,
+      'ลูกค้า/คู่ค้า': d.contact?.companyName || d.contact?.name || '',
       'ลำดับที่': idx + 1,
-      'รหัสสินค้า': item.productCode || '',
-      'ชื่อรายการสินค้า/บริการ': item.description,
+      'รหัสสินค้า': item.code || '',
+      'ชื่อรายการสินค้า/บริการ': item.name,
       'จำนวน': item.quantity,
       'หน่วย': item.unit || '',
-      'ราคาต่อหน่วย': item.unitPrice,
+      'ราคาต่อหน่วย': item.pricePerUnit || 0,
       'ส่วนลด (บาท)': item.discount || 0,
-      'จำนวนเงิน (บาท)': item.total,
+      'จำนวนเงิน (บาท)': item.amount || 0,
     });
   });
 });
 const wsDocItems = XLSX.utils.json_to_sheet(docItemsData);
 XLSX.utils.book_append_sheet(wb, wsDocItems, 'Doc_Items');
 
+// Sheet: Milestone Progressive Billing Plans
+const milestoneData = [];
+initialMilestonePlans.forEach(p => {
+  p.milestones.forEach(m => {
+    milestoneData.push({
+      'รหัสสัญญา': p.id,
+      'ชื่อสัญญา/โครงการ': p.contractTitle,
+      'ลูกค้า': p.customerContact.companyName,
+      'เลขที่ PO': p.referencePoNo || '',
+      'ใบเสนอราคา QT': p.quotationDocNo || '',
+      'มูลค่าสัญญารวม (บาท)': p.totalContractAmount,
+      'งวดที่': m.milestoneNo,
+      'ชื่องวดงาน': m.title,
+      'สัดส่วน (%)': m.percentage,
+      'จำนวนเงินงวด (บาท)': m.amount,
+      'กำหนดวางบิล': m.dueDate || '',
+      'สถานะงวด': m.status,
+      'เลขที่ใบแจ้งหนี้ Invoice': m.invoiceDocNo || '',
+    });
+  });
+});
+const wsMilestones = XLSX.utils.json_to_sheet(milestoneData);
+XLSX.utils.book_append_sheet(wb, wsMilestones, 'MilestonePlans');
+
+// Sheet: Stock Movements Ledger
+const stockMovementsData = initialStockMovements.map(m => ({
+  'ID': m.id,
+  'วัน-เวลา': m.date,
+  'รหัสสินค้า': m.productCode,
+  'ชื่อสินค้า/อุปกรณ์': m.productName,
+  'ประเภท': m.type,
+  'จำนวน': m.quantity,
+  'สถานที่ต้นทาง': m.locationFrom || '',
+  'สถานที่ปลายทาง': m.locationTo || '',
+  'เอกสารอ้างอิง': m.referenceDocNo || '',
+  'โครงการ': m.referenceProject || '',
+  'ผู้ทำรายการ': m.performedBy,
+  'หมายเหตุ': m.notes || '',
+}));
+const wsStockMovements = XLSX.utils.json_to_sheet(stockMovementsData);
+XLSX.utils.book_append_sheet(wb, wsStockMovements, 'StockMovements');
+
 // Sheet: Chart of Accounts
 const coaData = initialChartOfAccounts.map(c => ({
   'รหัสบัญชี': c.code,
   'ชื่อบัญชี': c.name,
   'หมวดบัญชี': c.category,
-  'ประเภทเดบิต/เครดิตปกติ': c.normalBalance,
-  'คำอธิบาย': c.description || '',
+  'ประเภทเดบิต/เครดิตปกติ': c.type || '',
+  'เดบิต (Dr)': c.debit,
+  'เครดิต (Cr)': c.credit,
 }));
 const wsCoa = XLSX.utils.json_to_sheet(coaData);
 XLSX.utils.book_append_sheet(wb, wsCoa, 'ChartOfAccounts');
@@ -179,7 +234,7 @@ const jvData = [];
 initialJournalEntries.forEach(j => {
   (j.entries || []).forEach((entry, idx) => {
     jvData.push({
-      'เลขที่ใบสำคัญ': j.entryNo,
+      'เลขที่ใบสำคัญ': j.jvNo,
       'วันที่': j.date,
       'คำอธิบายรายการ': j.description,
       'เอกสารอ้างอิง': j.referenceNo || '',
@@ -208,6 +263,38 @@ const bankData = initialBankAccounts.map(b => ({
 const wsBank = XLSX.utils.json_to_sheet(bankData);
 XLSX.utils.book_append_sheet(wb, wsBank, 'BankAccounts');
 
+// Sheet: User Roles & Permissions
+const userRolesData = AVAILABLE_USER_PROFILES.map(u => ({
+  'ID': u.id,
+  'ชื่อ-นามสกุล': u.name,
+  'ตำแหน่ง': u.roleTitle,
+  'รหัสบทบาท': u.role,
+  'แผนก': u.department,
+  'อีเมล': u.email,
+  'อนุมัติเอกสาร': u.permissions.canApprove ? 'ใช่' : 'ไม่ใช่',
+  'ดูงบ P&L': u.permissions.canViewPnL ? 'ใช่' : 'ไม่ใช่',
+  'ออก Invoice': u.permissions.canIssueInvoices ? 'ใช่' : 'ไม่ใช่',
+  'ออก PO': u.permissions.canIssuePO ? 'ใช่' : 'ไม่ใช่',
+  'จัดการ BOM': u.permissions.canEditBOM ? 'ใช่' : 'ไม่ใช่',
+  'จัดการภาษี': u.permissions.canManageTax ? 'ใช่' : 'ไม่ใช่',
+}));
+const wsUserRoles = XLSX.utils.json_to_sheet(userRolesData);
+XLSX.utils.book_append_sheet(wb, wsUserRoles, 'UserRoles');
+
+// Sheet: Audit Trail Logs
+const auditLogsData = initialAuditLogs.map(l => ({
+  'ID': l.id,
+  'วัน-เวลา': l.timestamp,
+  'ผู้ทำรายการ': l.userName,
+  'บทบาท': l.userRole,
+  'ประเภทการกระทำ': l.action,
+  'เอกสารอ้างอิง': l.targetDocNo || '',
+  'รายละเอียด': l.details,
+  'IP Address': l.ipAddress || '',
+}));
+const wsAuditLogs = XLSX.utils.json_to_sheet(auditLogsData);
+XLSX.utils.book_append_sheet(wb, wsAuditLogs, 'AuditLogs');
+
 // Save Excel files
 const latestExcelPath = path.join(backupsDir, 'warsgate_accounting_backup_latest.xlsx');
 const datedExcelPath = path.join(backupsDir, `warsgate_accounting_backup_${dateStr}.xlsx`);
@@ -220,30 +307,33 @@ console.log(`   - ${latestExcelPath}`);
 console.log(`   - ${datedExcelPath}`);
 
 // 4. Create README in backups directory
-const readmeContent = `# WARSGATE Accounting System - Database Backups (สำรองฐานข้อมูล)
+const readmeContent = `# WARSGATE Accounting & ERP System - Full Database Backups
 
-ไดเรกทอรีนี้บรรจุไฟล์สำรองฐานข้อมูลทั้งหมดของระบบบัญชี **บริษัท วอร์สเกต จำกัด** 
-เพื่อป้องกันการสูญหายของข้อมูลในกรณีที่เกิดเหตุขัดข้องกับเซิร์ฟเวอร์หรือต้องการย้ายเครื่อง
+ไดเรกทอรีนี้บรรจุไฟล์สำรองฐานข้อมูลทั้งหมดของระบบบัญชีและ ERP **บริษัท วอร์สเกต จำกัด** 
+เพื่อความปลอดภัยสูงสุดของข้อมูลการเงิน, สัญญาโครงการ, และสต็อกอะไหล่เครื่องจักร
 
-## 📁 ไฟล์สำรองข้อมูลล่าสุด (Latest Backups)
+## 📁 ไฟล์สำรองข้อมูลล่าสุด (Latest Backups ณ วันที่ ${timestampIso})
 
-1. **\`warsgate_backup_latest.json\`** (และไฟล์ตามวันที่ \`warsgate_backup_${dateStr}.json\`)
-   - ไฟล์ JSON ครบถ้วน 100% รวมเอกสารทั้งหมด, รายการสินค้า, ลูกค้า, ผังบัญชี, เลขที่เอกสารรัน
-   - ใช้สำหรับกู้คืนระบบ (Restore) ผ่านทางหน้าเว็บ หรือผ่านสคริปต์อัตโนมัติ
+1. **\`warsgate_backup_latest.json\`** (และไฟล์ประจำวัน \`warsgate_backup_${dateStr}.json\`)
+   - ไฟล์ JSON ครบถ้วน 100% รวมเอกสารทั้งหมด, รายการสินค้า, ลูกค้า, ผังบัญชี, แผนงวดงานสัญญา, สต็อก Ledger, ผู้ใช้งาน และ Audit Logs
+   - ใช้สำหรับกู้คืนระบบ (Restore) ผ่านหน้าเว็บหรือ CLI
 
-2. **\`warsgate_accounting_backup_latest.xlsx\`** (และไฟล์ตามวันที่ \`warsgate_accounting_backup_${dateStr}.xlsx\`)
-   - ไฟล์ Excel สรุปข้อมูลแยก Sheet ชัดเจน ได้แก่:
+2. **\`warsgate_accounting_backup_latest.xlsx\`** (และไฟล์ประจำวัน \`warsgate_accounting_backup_${dateStr}.xlsx\`)
+   - ไฟล์ Excel รวม 11 Sheets ครอบคลุม:
      - **Company**: ข้อมูลองค์กร และเลขประจำตัวผู้เสียภาษี
      - **Contacts**: รายชื่อลูกค้า / ซัพพลายเออร์ และยอดคงเหลือ
      - **Products**: แคตตาล็อกสินค้า, ราคาขาย, ราคาทุน, สต็อกคงเหลือ
-     - **Documents**: สรุปเอกสารบัญชีทุกฉบับ (ใบเสนอราคา, ใบแจ้งหนี้, ใบเสร็จ, ใบส่งของชั่วคราว, ใบสั่งซื้อ ฯลฯ)
+     - **Documents**: สรุปเอกสารบัญชีทุกฉบับ (ใบเสนอราคา, ใบแจ้งหนี้, ใบเสร็จ, ใบส่งของ, ใบสั่งซื้อ ฯลฯ)
      - **Doc_Items**: รายการสินค้าย่อยในเอกสารแต่ละใบ
+     - **MilestonePlans**: สัญญาและแผนวางบิลตามงวดงาน (50-40-10, 30-50-20)
+     - **StockMovements**: สมุดบันทึกความเคลื่อนไหวสต็อก (Stock Ledger)
      - **ChartOfAccounts**: ผังบัญชี 5 หมวด
-     - **JournalEntries**: สมุดรายวันทั่วไป
+     - **JournalEntries**: สมุดรายวันทั่วไป (JV)
      - **BankAccounts**: บัญชีธนาคาร
+     - **UserRoles**: สิทธิ์ผู้ใช้งาน 5 แผนก
+     - **AuditLogs**: ประวัติการทำรายการในระบบ
 
 ## 🚀 คำสั่งสำรองและกู้คืนข้อมูลผ่าน Terminal
-
 - **สำรองข้อมูลทันที**:
   \`\`\`bash
   npm run backup
@@ -253,13 +343,10 @@ const readmeContent = `# WARSGATE Accounting System - Database Backups (สำ�
   npm run restore
   \`\`\`
 
-## 🌐 สำรองและกู้คืนข้อมูลผ่านหน้าเว็บ (Web UI)
-ผู้ใช้งานสามารถกดเข้าไปที่เมนู **"ตั้งค่าระบบ (Settings)" -> "สำรอง & กู้คืนข้อมูล (Backup & Restore)"** เพื่อดาวน์โหลดไฟล์ JSON / Excel หรือเลือกอัปโหลดไฟล์ JSON เพื่อกู้คืนข้อมูลได้ทันทีในคลิกเดียว
-
 ---
-*สร้างอัตโนมัติเมื่อ: ${timestampIso} โดย WARSGATE Accounting Backup Utility*
+*สร้างอัตโนมัติเมื่อ: ${timestampIso} โดย WARSGATE Accounting & ERP Backup Utility*
 `;
 
 fs.writeFileSync(path.join(backupsDir, 'README.md'), readmeContent, 'utf8');
 
-console.log(`\n🎉 Backup completed successfully! (${initialDocuments.length} documents, ${initialContacts.length} contacts, ${initialProducts.length} products)`);
+console.log(`\n🎉 Backup completed successfully! (Version 2.0.0 Enterprise)`);

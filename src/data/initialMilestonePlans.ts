@@ -1,5 +1,6 @@
-import { ContractMilestonePlan } from '../types';
-import { initialContacts } from './initialData';
+import type { ContractMilestonePlan } from '../types/index.ts';
+import { initialContacts } from './initialData.ts';
+
 
 export const initialMilestonePlans: ContractMilestonePlan[] = [
   {

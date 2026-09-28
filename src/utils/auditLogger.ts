@@ -1,4 +1,5 @@
-import { AuditLogEntry, UserRole, AuditAction } from '../types';
+import type { AuditLogEntry, UserRole, AuditAction } from '../types/index.ts';
+
 
 const AUDIT_LOG_STORAGE_KEY = 'warsgate_audit_logs';
 

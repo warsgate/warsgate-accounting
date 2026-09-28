@@ -1,4 +1,5 @@
-import { UserProfile, UserRole } from '../types';
+import type { UserProfile, UserRole } from '../types/index.ts';
+
 
 export const AVAILABLE_USER_PROFILES: UserProfile[] = [
   {

@@ -1,4 +1,5 @@
-import { StockMovement } from '../types';
+import type { StockMovement } from '../types/index.ts';
+
 
 export const STOCK_LOCATIONS = [
   { id: 'HQ_KHLONG_LUANG', name: 'คลังหลัก คลองหลวง (HQ Warehouse)', badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
