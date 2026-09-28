@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, CheckCircle2, Pencil, Link2, FileText, ArrowRight, Cpu, Layers } from 'lucide-react';
+import { X, Plus, Trash2, CheckCircle2, Pencil, Link2, FileText, ArrowRight, Cpu, Layers, Sparkles } from 'lucide-react';
 import { AccountingDocument, Contact, ProductService, DocumentType, DocumentItem, DocumentStatus, DocumentNumberingConfig } from '../types';
 import { formatMoney } from '../utils/formatters';
 import { defaultNumberingConfig, previewDocumentNo } from '../utils/numbering';
@@ -118,6 +118,9 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   );
   const [referenceDocNo, setReferenceDocNo] = useState<string>(
     initialDocument?.referenceDocNo || fromDocument?.documentNo || ''
+  );
+  const [projectNote, setProjectNote] = useState<string>(
+    initialDocument?.projectNote || fromDocument?.projectNote || ''
   );
 
   const [paymentMethod, setPaymentMethod] = useState<'BANK_TRANSFER' | 'CASH' | 'CHEQUE' | 'CREDIT_CARD'>(
@@ -318,6 +321,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         dueDate,
         referencePoNo: referencePoNo.trim() || undefined,
         referenceDocNo: referenceDocNo.trim() || undefined,
+        projectNote: projectNote.trim() || undefined,
         contact,
         items,
         subtotal,
@@ -360,6 +364,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         dueDate,
         referencePoNo: referencePoNo.trim() || undefined,
         referenceDocNo: referenceDocNo.trim() || undefined,
+        projectNote: projectNote.trim() || undefined,
         contact,
         items,
         subtotal,
@@ -515,6 +520,24 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-mono focus:outline-none focus:border-rose-400"
               />
             </div>
+          </div>
+
+          {/* ── Project / Job Name Row ─────────────────────────────────────── */}
+          <div className="p-3.5 rounded-2xl bg-indigo-50/50 border border-indigo-200/80">
+            <label className="block text-indigo-950 font-bold text-xs mb-1 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <span>โครงการ / ชื่องาน (Project / Job Name)</span>
+            </label>
+            <input
+              type="text"
+              value={projectNote}
+              onChange={e => setProjectNote(e.target.value)}
+              placeholder="เช่น Traceability Solenoid Line, Spindle Roll, PNP Assembly Station"
+              className="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2 text-slate-900 font-bold text-xs focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 shadow-xs"
+            />
+            <span className="text-[10px] text-indigo-600/80 mt-0.5 block">
+              ระบุหรือแก้ไขชื่องาน/โครงการตรงนี้ เพื่อแสดงในคอลัมน์ "โครงการ / ชื่องาน" ในหน้าศูนย์ขายและเอกสารพิมพ์
+            </span>
           </div>
 
           {/* ── Customer PO Ref & Internal Ref Row ───────────────────────────── */}
