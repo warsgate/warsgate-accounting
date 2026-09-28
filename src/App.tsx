@@ -84,6 +84,28 @@ export function App() {
     }
   }, []);
 
+  // Purge obsolete mock documents and sync official documents
+  useEffect(() => {
+    const obsoleteDocNos = new Set([
+      'INV-2505-004', 'INV-2605-001', 'INV-2605-002/1', 
+      'INV-2505-005/2', 'INV-2505-005/3', 'INV-2512-2155/1',
+      'INV-2512-2155/2', 'INV-2512-2155/3', 'INV-2609-002',
+      'QT-2609-002', 'QT-202607-002', 'INV-202607-001', 'PO-202607-001'
+    ]);
+    const obsoleteDocIds = new Set([
+      'doc-kuroda-qt-2609002', 'doc-qt-001', 'doc-inv-001', 'doc-po-001'
+    ]);
+
+    setDocuments(prev => {
+      const filtered = prev.filter(d => !obsoleteDocNos.has(d.documentNo) && !obsoleteDocIds.has(d.id));
+      if (filtered.length !== prev.length) {
+        localStorage.setItem('warsgate_documents', JSON.stringify(filtered));
+        return filtered;
+      }
+      return prev;
+    });
+  }, []);
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('warsgate_sidebar_collapsed') === 'true';
   });
@@ -127,7 +149,11 @@ export function App() {
         const obsoleteDocNos = new Set([
           'INV-2505-004', 'INV-2605-001', 'INV-2605-002/1', 
           'INV-2505-005/2', 'INV-2505-005/3', 'INV-2512-2155/1',
-          'INV-2512-2155/2', 'INV-2512-2155/3', 'INV-2609-002'
+          'INV-2512-2155/2', 'INV-2512-2155/3', 'INV-2609-002',
+          'QT-2609-002', 'QT-202607-002', 'INV-202607-001', 'PO-202607-001'
+        ]);
+        const obsoleteDocIds = new Set([
+          'doc-kuroda-qt-2609002', 'doc-qt-001', 'doc-inv-001', 'doc-po-001'
         ]);
 
         // Status reconciliation map for official documents
@@ -140,13 +166,12 @@ export function App() {
           'INV-690600001': 'PAID',
           'INV-690400001': 'PAID',
           'IV-690100001': 'PAID',
-          'INV-202607-001': 'PAID',
           'INV-2608-001': 'PENDING', // Line ADC งวดที่ 1 (50%) วางบิลแล้ว
         };
 
         // Exclude any document that was explicitly deleted by the user or obsolete draft invoice
         const filteredParsed = parsed
-          .filter(d => !deletedIds.has(d.id) && !obsoleteDocNos.has(d.documentNo))
+          .filter(d => !deletedIds.has(d.id) && !obsoleteDocIds.has(d.id) && !obsoleteDocNos.has(d.documentNo))
           .map(d => {
             if (d.documentNo && officialStatusMap[d.documentNo]) {
               return { ...d, status: officialStatusMap[d.documentNo] };
