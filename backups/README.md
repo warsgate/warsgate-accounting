@@ -3,13 +3,13 @@
 ไดเรกทอรีนี้บรรจุไฟล์สำรองฐานข้อมูลทั้งหมดของระบบบัญชีและ ERP **บริษัท วอร์สเกต จำกัด** 
 เพื่อความปลอดภัยสูงสุดของข้อมูลการเงิน, สัญญาโครงการ, และสต็อกอะไหล่เครื่องจักร
 
-## 📁 ไฟล์สำรองข้อมูลล่าสุด (Latest Backups ณ วันที่ 2026-09-28T23:57:23+07:00)
+## 📁 ไฟล์สำรองข้อมูลล่าสุด (Latest Backups ณ วันที่ 2026-09-29T00:39:03+07:00)
 
-1. **`warsgate_backup_latest.json`** (และไฟล์ประจำวัน `warsgate_backup_2026-09-28.json`)
+1. **`warsgate_backup_latest.json`** (และไฟล์ประจำวัน `warsgate_backup_2026-09-29.json`)
    - ไฟล์ JSON ครบถ้วน 100% รวมเอกสารทั้งหมด, รายการสินค้า, ลูกค้า, ผังบัญชี, แผนงวดงานสัญญา, สต็อก Ledger, ผู้ใช้งาน และ Audit Logs
    - ใช้สำหรับกู้คืนระบบ (Restore) ผ่านหน้าเว็บหรือ CLI
 
-2. **`warsgate_accounting_backup_latest.xlsx`** (และไฟล์ประจำวัน `warsgate_accounting_backup_2026-09-28.xlsx`)
+2. **`warsgate_accounting_backup_latest.xlsx`** (และไฟล์ประจำวัน `warsgate_accounting_backup_2026-09-29.xlsx`)
    - ไฟล์ Excel รวม 11 Sheets ครอบคลุม:
      - **Company**: ข้อมูลองค์กร และเลขประจำตัวผู้เสียภาษี
      - **Contacts**: รายชื่อลูกค้า / ซัพพลายเออร์ และยอดคงเหลือ
@@ -35,4 +35,4 @@
   ```
 
 ---
-*สร้างอัตโนมัติเมื่อ: 2026-09-28T23:57:23+07:00 โดย WARSGATE Accounting & ERP Backup Utility*
+*สร้างอัตโนมัติเมื่อ: 2026-09-29T00:39:03+07:00 โดย WARSGATE Accounting & ERP Backup Utility*

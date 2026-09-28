@@ -18,6 +18,8 @@ import { ProjectCostMatrixModal } from './components/ProjectCostMatrixModal';
 import { ProjectPnLView } from './components/Analytics/ProjectPnLView';
 import { CashFlowAgingView } from './components/Analytics/CashFlowAgingView';
 import { MilestoneBillingView } from './components/MilestoneBilling/MilestoneBillingView';
+import { BillingNoteView } from './components/Billing/BillingNoteView';
+import { initialBillingNotes, initialWarrantyRetentions } from './data/initialBillingNotes';
 import { LineNotificationModal } from './components/Settings/LineNotificationModal';
 import { ProjectGanttTracker } from './components/Analytics/ProjectGanttTracker';
 
@@ -34,7 +36,7 @@ import { initialMilestonePlans } from './data/initialMilestonePlans';
 import { AVAILABLE_USER_PROFILES } from './data/userRoles';
 import { addAuditLog } from './utils/auditLogger';
 
-import { AccountingDocument, DocumentType, DocumentStatus, Contact, ProductService, CompanyProfile, DocumentNumberingConfig, UserProfile, ContractMilestonePlan } from './types';
+import { AccountingDocument, DocumentType, DocumentStatus, Contact, ProductService, CompanyProfile, DocumentNumberingConfig, UserProfile, ContractMilestonePlan, BillingNote, WarrantyRetentionItem } from './types';
 import { defaultNumberingConfig } from './utils/numbering';
 
 export function App() {
@@ -206,6 +208,22 @@ export function App() {
       }
     }
     return initialDocuments.filter(d => !deletedIds.has(d.id));
+  });
+
+  const [billingNotes, setBillingNotes] = useState<BillingNote[]>(() => {
+    const saved = localStorage.getItem('warsgate_billing_notes');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    return initialBillingNotes;
+  });
+
+  const [warrantyRetentions, setWarrantyRetentions] = useState<WarrantyRetentionItem[]>(() => {
+    const saved = localStorage.getItem('warsgate_warranty_retentions');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    return initialWarrantyRetentions;
   });
 
   const [milestonePlans, setMilestonePlans] = useState<ContractMilestonePlan[]>(() => {
@@ -566,6 +584,25 @@ export function App() {
                 onSaveDocument={handleSaveDocument}
                 openViewDocument={(doc) => setViewDoc(doc)}
                 setActiveTab={setActiveTab}
+              />
+            )}
+
+            {activeTab === 'billing-note' && (
+              <BillingNoteView
+                documents={documents}
+                contacts={contacts}
+                company={company}
+                billingNotes={billingNotes}
+                setBillingNotes={setBillingNotes}
+                warrantyRetentions={warrantyRetentions}
+                setWarrantyRetentions={setWarrantyRetentions}
+                setActiveTab={setActiveTab}
+                openCreateModal={(type, defaultPoNo, defaultContact) => {
+                  setFromDoc(null);
+                  setEditingDoc(null);
+                  setCreateDocType(type);
+                }}
+                openViewDocument={(doc) => setViewDoc(doc)}
               />
             )}
 

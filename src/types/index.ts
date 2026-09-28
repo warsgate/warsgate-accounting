@@ -331,3 +331,58 @@ export interface MonthlyClosingRecord {
 
 
 
+
+
+// ─── Billing Note & Statement of Account ────────────────────────────────────
+export interface BillingNoteItem {
+  invoiceId: string;
+  invoiceDocNo: string;
+  referencePoNo?: string;
+  projectName?: string;
+  issueDate: string;
+  dueDate: string;
+  subtotal: number;
+  vatAmount: number;
+  whtAmount: number;
+  grandTotal: number;
+  netPayment: number;
+}
+
+export interface BillingNote {
+  id: string;
+  documentNo: string; // e.g. BN-2609-001
+  issueDate: string;
+  dueDate: string;
+  contact: Contact;
+  items: BillingNoteItem[];
+  subtotal: number;
+  vatAmount: number;
+  whtAmount: number;
+  grandTotal: number;
+  netPayment: number;
+  notes?: string;
+  status: 'PENDING' | 'ACCEPTED' | 'PAID' | 'CANCELLED';
+  collectedDate?: string;
+  chequeDate?: string;
+  createdAt: string;
+}
+
+// ─── Warranty & Retention Tracking ──────────────────────────────────────────
+export type WarrantyStatus = 'UNDER_WARRANTY' | 'DUE_FOR_RELEASE' | 'INVOICED' | 'RELEASED';
+
+export interface WarrantyRetentionItem {
+  id: string;
+  projectCode?: string;
+  projectName: string;
+  referencePoNo: string;
+  customerContact: Contact;
+  contractAmount: number;
+  retentionPercent: number; // e.g. 5% or 10%
+  retentionAmount: number;
+  warrantyPeriodMonths: number; // e.g. 12
+  warrantyStartDate: string;
+  warrantyEndDate: string;
+  status: WarrantyStatus;
+  invoiceDocNo?: string;
+  notes?: string;
+}

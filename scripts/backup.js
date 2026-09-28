@@ -13,6 +13,7 @@ import {
   initialJournalEntries
 } from '../src/data/initialData.ts';
 import { initialMilestonePlans } from '../src/data/initialMilestonePlans.ts';
+import { initialBillingNotes, initialWarrantyRetentions } from '../src/data/initialBillingNotes.ts';
 import { initialStockMovements, STOCK_LOCATIONS } from '../src/data/initialStockMovements.ts';
 import { AVAILABLE_USER_PROFILES } from '../src/data/userRoles.ts';
 import { initialAuditLogs } from '../src/utils/auditLogger.ts';
@@ -47,6 +48,8 @@ const backupPayload = {
     journalEntriesCount: initialJournalEntries.length,
     bankAccountsCount: initialBankAccounts.length,
     milestonePlansCount: initialMilestonePlans.length,
+    billingNotesCount: initialBillingNotes.length,
+    warrantyRetentionsCount: initialWarrantyRetentions.length,
     stockMovementsCount: initialStockMovements.length,
     auditLogsCount: initialAuditLogs.length,
     userRolesCount: AVAILABLE_USER_PROFILES.length,
@@ -60,6 +63,8 @@ const backupPayload = {
   chartOfAccounts: initialChartOfAccounts,
   journalEntries: initialJournalEntries,
   milestonePlans: initialMilestonePlans,
+  billingNotes: initialBillingNotes,
+  warrantyRetentions: initialWarrantyRetentions,
   stockMovements: initialStockMovements,
   stockLocations: STOCK_LOCATIONS,
   userProfiles: AVAILABLE_USER_PROFILES,
@@ -198,6 +203,49 @@ initialMilestonePlans.forEach(p => {
 });
 const wsMilestones = XLSX.utils.json_to_sheet(milestoneData);
 XLSX.utils.book_append_sheet(wb, wsMilestones, 'MilestonePlans');
+
+
+// Sheet: Billing Notes (ใบวางบิลรวม)
+const billingNotesData = [];
+initialBillingNotes.forEach(bn => {
+  bn.items.forEach(item => {
+    billingNotesData.push({
+      "เลขที่ใบวางบิล": bn.documentNo,
+      "วันที่ออก": bn.issueDate,
+      "กำหนดชำระ": bn.dueDate,
+      "วันนัดจ่ายเช็ค": bn.chequeDate || "",
+      "ลูกค้า": bn.contact.companyName,
+      "เลขที่ใบแจ้งหนี้": item.invoiceDocNo,
+      "โครงการ / PO": item.projectName || item.referencePoNo || "",
+      "ยอดก่อนภาษี (บาท)": item.subtotal,
+      "ภาษี VAT 7%": item.vatAmount,
+      "หัก ณ ที่จ่าย 3%": item.whtAmount,
+      "ยอดสุทธิ (บาท)": item.netPayment,
+      "สถานะใบวางบิล": bn.status,
+      "หมายเหตุ": bn.notes || "",
+    });
+  });
+});
+const wsBillingNotes = XLSX.utils.json_to_sheet(billingNotesData);
+XLSX.utils.book_append_sheet(wb, wsBillingNotes, "BillingNotes");
+
+// Sheet: Warranty & Retention (เงินประกันผลงาน & รับประกัน)
+const retentionData = initialWarrantyRetentions.map(r => ({
+  "รหัส": r.id,
+  "โครงการ": r.projectName,
+  "เลขที่ PO": r.referencePoNo,
+  "ลูกค้า": r.customerContact.companyName,
+  "มูลค่าสัญญา (บาท)": r.contractAmount,
+  "สัดส่วน Retention (%)": r.retentionPercent,
+  "ยอดเงินประกันผลงาน (บาท)": r.retentionAmount,
+  "ระยะเวลารับประกัน (เดือน)": r.warrantyPeriodMonths,
+  "วันเริ่มรับประกัน": r.warrantyStartDate,
+  "วันสิ้นสุดรับประกัน": r.warrantyEndDate,
+  "สถานะเงินประกัน": r.status,
+  "หมายเหตุ": r.notes || "",
+}));
+const wsRetention = XLSX.utils.json_to_sheet(retentionData);
+XLSX.utils.book_append_sheet(wb, wsRetention, "WarrantyRetentions");
 
 // Sheet: Stock Movements Ledger
 const stockMovementsData = initialStockMovements.map(m => ({

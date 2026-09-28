@@ -1,6 +1,6 @@
 import React from "react";
 import { 
-  LayoutDashboard, TrendingUp, TrendingDown, Users, Package,
+  LayoutDashboard, FileCheck, TrendingUp, TrendingDown, Users, Package,
   BookOpen, Calculator, Settings, ChevronRight, ChevronLeft, Zap, BarChart3,
   PanelLeftClose, PanelLeftOpen, Cpu, ExternalLink, Clock, Sparkles, Layers, Calendar
 } from "lucide-react";
@@ -53,6 +53,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       subtitle: "สัญญา 50-40-10 & Progress",
       icon: Layers,
       badge: "งวดงาน",
+      badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200 font-bold",
+    },
+    {
+      id: "billing-note",
+      label: "ใบวางบิลรวม & ประกัน",
+      subtitle: "Billing Note & Retention",
+      icon: FileCheck,
+      badge: "฿3.6M",
       badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200 font-bold",
     },
     {
