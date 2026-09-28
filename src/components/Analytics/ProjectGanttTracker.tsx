@@ -8,6 +8,7 @@ import {
 import { AccountingDocument, ContractMilestonePlan, BomProject } from '../../types';
 import { formatThaiDate, formatMoney, getProjectName } from '../../utils/formatters';
 import { bomBridge, FALLBACK_BOM_PROJECTS } from '../../services/bomBridgeService';
+import { initialMilestonePlans } from '../../data/initialMilestonePlans';
 
 interface ProjectDeliveryPlan {
   id: string;
@@ -26,6 +27,7 @@ interface ProjectDeliveryPlan {
   bomOrderedCount?: number;
   bomReceivedCount?: number;
   bomTargetBudget?: number;
+  hasMasterPlan?: boolean;
   phases: Array<{
     id: string;
     name: string;
@@ -35,7 +37,11 @@ interface ProjectDeliveryPlan {
     status: 'COMPLETED' | 'IN_PROGRESS';
     engineer: string;
     billingPercent: number;
+    billingAmount?: number;
     invoiced: boolean;
+    milestoneStatus?: 'PAID' | 'INVOICED' | 'WAITING';
+    invoiceDocNo?: string;
+    notes?: string;
   }>;
 }
 
@@ -111,13 +117,20 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
     fetchBomData();
   }, []);
 
-  // 3. Load Milestone Plans from LocalStorage
+  // 3. Load Milestone Plans from LocalStorage merged with initial canonical plans
   const milestonePlans: ContractMilestonePlan[] = useMemo(() => {
     try {
       const saved = localStorage.getItem('warsgate_milestone_plans');
-      return saved ? JSON.parse(saved) : [];
+      if (saved) {
+        const parsed: ContractMilestonePlan[] = JSON.parse(saved);
+        const map = new Map<string, ContractMilestonePlan>();
+        initialMilestonePlans.forEach(p => map.set(p.id, p));
+        parsed.forEach(p => map.set(p.id, p));
+        return Array.from(map.values());
+      }
+      return initialMilestonePlans;
     } catch {
-      return [];
+      return initialMilestonePlans;
     }
   }, []);
 
@@ -191,98 +204,140 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
       
       const displayDwg = confirmedInfo?.dwgNo || bom.dwgNo;
 
-      // ─── Real BOM Master Plan Progress Calculation ───
+      // ─── Real BOM Master Plan & PO Milestone Plan Calculation ───
       const parts = bom.parts || [];
       const totalParts = parts.length || bom.totalPartsCount || 0;
       const receivedParts = parts.filter(p => p.status === 'Received' || p.status === 'Assembled' || p.status === 'Delivered').length;
       const orderedOnlyParts = parts.filter(p => (p.status === 'Ordered' || (p.poNumber && p.poNumber.trim() !== '')) && p.status !== 'Received' && p.status !== 'Assembled' && p.status !== 'Delivered').length;
       const totalProcuredParts = Math.min(totalParts, receivedParts + orderedOnlyParts);
-      const isCompletedProject = bom.status === 'Completed' || bom.status === 'Delivered';
+      const isCompletedProject = bom.status === 'Completed' || bom.status === 'Delivered' || (matchedPlan && matchedPlan.milestones.every(m => m.status === 'PAID'));
 
-      // Phase 1: CAD Design & DWG Plan (100% when BOM exists)
-      const p1Progress = 100;
-      
-      // Phase 2: BOM Procurement (Based on Ordered / Received parts)
-      const p2Progress = isCompletedProject 
-        ? 100 
-        : (totalParts > 0 ? Math.min(100, Math.round((totalProcuredParts / totalParts) * 100)) : 100);
+      let dynamicPhases: ProjectDeliveryPlan['phases'] = [];
 
-      // Phase 3: Machining & Mechanical Assembly
-      const p3Progress = isCompletedProject 
-        ? 100 
-        : (totalParts > 0 ? (receivedParts > 0 ? Math.min(100, Math.round((receivedParts / totalParts) * 100)) : (totalProcuredParts > 0 ? 70 : 25)) : 80);
+      if (matchedPlan && matchedPlan.milestones && matchedPlan.milestones.length > 0) {
+        // ─── Direct from PO Master Plan Milestones ───
+        dynamicPhases = matchedPlan.milestones.map((m, idx) => {
+          let progress = 0;
+          let status: 'COMPLETED' | 'IN_PROGRESS' = 'IN_PROGRESS';
 
-      // Phase 4: Electrical Wiring & PLC/HMI Programming
-      const p4Progress = isCompletedProject 
-        ? 100 
-        : (receivedParts > 0 ? 85 : (totalProcuredParts > 0 ? 60 : 30));
+          if (isCompletedProject || m.status === 'PAID') {
+            progress = 100;
+            status = 'COMPLETED';
+          } else if (m.status === 'INVOICED') {
+            // Invoiced: Work in progress / Process Work stage
+            progress = isCompletedProject ? 100 : (receivedParts > 0 ? 85 : 75);
+            status = progress === 100 ? 'COMPLETED' : 'IN_PROGRESS';
+          } else {
+            // WAITING: Final delivery / SAT stage
+            progress = isCompletedProject ? 100 : (totalProcuredParts >= totalParts && totalParts > 0 ? 30 : 10);
+            status = progress === 100 ? 'COMPLETED' : 'IN_PROGRESS';
+          }
 
-      // Phase 5: Commissioning & Site Acceptance Test (SAT)
-      const p5Progress = isCompletedProject 
-        ? 100 
-        : (receivedParts >= totalParts && totalParts > 0 ? 90 : (totalProcuredParts > 0 ? 40 : 15));
+          const startDate = idx === 0 
+            ? baseDate 
+            : (matchedPlan.milestones[idx - 1]?.dueDate || baseDate);
+          const endDate = m.dueDate || new Date(new Date(startDate).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-      const dynamicPhases = [
-        {
-          id: `${bom.id}-ph1`,
-          name: `1. ออกแบบ 3D CAD & รหัสแบบ (${displayDwg || 'Standard DWG'})`,
-          startDate: baseDate,
-          endDate: new Date(new Date(baseDate).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          progress: p1Progress,
-          status: 'COMPLETED' as const,
-          engineer: 'คุณจีระวัฒน์ (Lead Eng)',
-          billingPercent: matchedPlan ? (matchedPlan.milestones[0]?.percentage || 50) : 50,
-          invoiced: true
-        },
-        {
-          id: `${bom.id}-ph2`,
-          name: `2. สั่งซื้อพาร์ท & อะไหล่ BOM Master Plan (สำเร็จ ${totalProcuredParts}/${totalParts} รายการ)`,
-          startDate: new Date(new Date(baseDate).getTime() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          endDate: new Date(new Date(baseDate).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          progress: p2Progress,
-          status: (p2Progress === 100 ? 'COMPLETED' : 'IN_PROGRESS') as 'COMPLETED' | 'IN_PROGRESS',
-          engineer: 'ฝ่ายจัดซื้อ / Purchasing Team',
-          billingPercent: 0,
-          invoiced: false
-        },
-        {
-          id: `${bom.id}-ph3`,
-          name: `3. กัดงาน CNC Machining & ประกอบกลไก (รับเข้า ${receivedParts}/${totalParts} ชิ้น)`,
-          startDate: new Date(new Date(baseDate).getTime() + 31 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          endDate: new Date(new Date(baseDate).getTime() + 45 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          progress: p3Progress,
-          status: (p3Progress === 100 ? 'COMPLETED' : 'IN_PROGRESS') as 'COMPLETED' | 'IN_PROGRESS',
-          engineer: 'คุณวีรพล (Mechanical Eng)',
-          billingPercent: matchedPlan ? (matchedPlan.milestones[1]?.percentage || 40) : 40,
-          invoiced: isCompletedProject
-        },
-        {
-          id: `${bom.id}-ph4`,
-          name: '4. วายริ่งตู้ไฟฟ้า & เขียนโปรแกรม PLC/HMI (EE & Control)',
-          startDate: new Date(new Date(baseDate).getTime() + 46 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          endDate: new Date(new Date(baseDate).getTime() + 55 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          progress: p4Progress,
-          status: (p4Progress === 100 ? 'COMPLETED' : 'IN_PROGRESS') as 'COMPLETED' | 'IN_PROGRESS',
-          engineer: 'คุณอรรถพล (Software Eng)',
-          billingPercent: 0,
-          invoiced: false
-        },
-        {
-          id: `${bom.id}-ph5`,
-          name: '5. ทดสอบเดินเครื่อง & ส่งมอบงานจริง (FAT / SAT)',
-          startDate: new Date(new Date(baseDate).getTime() + 56 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          endDate: new Date(new Date(baseDate).getTime() + 65 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          progress: p5Progress,
-          status: (p5Progress === 100 ? 'COMPLETED' : 'IN_PROGRESS') as 'COMPLETED' | 'IN_PROGRESS',
-          engineer: 'คุณจีระวัฒน์ / ทีมหน้างาน',
-          billingPercent: matchedPlan ? (matchedPlan.milestones[2]?.percentage || 10) : 10,
-          invoiced: isCompletedProject
-        }
-      ];
+          return {
+            id: `${bom.id}-${m.id}`,
+            name: m.title,
+            startDate,
+            endDate,
+            progress,
+            status,
+            engineer: 'คุณจีระวัฒน์ (Lead Eng)',
+            billingPercent: m.percentage,
+            billingAmount: m.amount,
+            invoiced: m.status === 'PAID' || m.status === 'INVOICED',
+            milestoneStatus: m.status,
+            invoiceDocNo: m.invoiceDocNo,
+            notes: m.notes
+          };
+        });
+      } else {
+        // ─── Standard Engineering Phases Fallback (for BOMs without contract PO) ───
+        const p1Progress = 100;
+        const p2Progress = isCompletedProject 
+          ? 100 
+          : (totalParts > 0 ? Math.min(100, Math.round((totalProcuredParts / totalParts) * 100)) : 100);
+        const p3Progress = isCompletedProject 
+          ? 100 
+          : (totalParts > 0 ? (receivedParts > 0 ? Math.min(100, Math.round((receivedParts / totalParts) * 100)) : (totalProcuredParts > 0 ? 70 : 25)) : 80);
+        const p4Progress = isCompletedProject 
+          ? 100 
+          : (receivedParts > 0 ? 85 : (totalProcuredParts > 0 ? 60 : 30));
+        const p5Progress = isCompletedProject 
+          ? 100 
+          : (receivedParts >= totalParts && totalParts > 0 ? 90 : (totalProcuredParts > 0 ? 40 : 15));
 
+        dynamicPhases = [
+          {
+            id: `${bom.id}-ph1`,
+            name: `1. ออกแบบ 3D CAD & รหัสแบบ (${displayDwg || 'Standard DWG'})`,
+            startDate: baseDate,
+            endDate: new Date(new Date(baseDate).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            progress: p1Progress,
+            status: 'COMPLETED' as const,
+            engineer: 'คุณจีระวัฒน์ (Lead Eng)',
+            billingPercent: 50,
+            invoiced: true
+          },
+          {
+            id: `${bom.id}-ph2`,
+            name: `2. สั่งซื้อพาร์ท & อะไหล่ BOM Master Plan (สำเร็จ ${totalProcuredParts}/${totalParts} รายการ)`,
+            startDate: new Date(new Date(baseDate).getTime() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            endDate: new Date(new Date(baseDate).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            progress: p2Progress,
+            status: (p2Progress === 100 ? 'COMPLETED' : 'IN_PROGRESS') as 'COMPLETED' | 'IN_PROGRESS',
+            engineer: 'ฝ่ายจัดซื้อ / Purchasing Team',
+            billingPercent: 0,
+            invoiced: false
+          },
+          {
+            id: `${bom.id}-ph3`,
+            name: `3. กัดงาน CNC Machining & ประกอบกลไก (รับเข้า ${receivedParts}/${totalParts} ชิ้น)`,
+            startDate: new Date(new Date(baseDate).getTime() + 31 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            endDate: new Date(new Date(baseDate).getTime() + 45 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            progress: p3Progress,
+            status: (p3Progress === 100 ? 'COMPLETED' : 'IN_PROGRESS') as 'COMPLETED' | 'IN_PROGRESS',
+            engineer: 'คุณวีรพล (Mechanical Eng)',
+            billingPercent: 40,
+            invoiced: !!isCompletedProject
+          },
+          {
+            id: `${bom.id}-ph4`,
+            name: '4. วายริ่งตู้ไฟฟ้า & เขียนโปรแกรม PLC/HMI (EE & Control)',
+            startDate: new Date(new Date(baseDate).getTime() + 46 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            endDate: new Date(new Date(baseDate).getTime() + 55 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            progress: p4Progress,
+            status: (p4Progress === 100 ? 'COMPLETED' : 'IN_PROGRESS') as 'COMPLETED' | 'IN_PROGRESS',
+            engineer: 'คุณอรรถพล (Software Eng)',
+            billingPercent: 0,
+            invoiced: false
+          },
+          {
+            id: `${bom.id}-ph5`,
+            name: '5. ทดสอบเดินเครื่อง & ส่งมอบงานจริง (FAT / SAT)',
+            startDate: new Date(new Date(baseDate).getTime() + 56 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            endDate: new Date(new Date(baseDate).getTime() + 65 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            progress: p5Progress,
+            status: (p5Progress === 100 ? 'COMPLETED' : 'IN_PROGRESS') as 'COMPLETED' | 'IN_PROGRESS',
+            engineer: 'คุณจีระวัฒน์ / ทีมหน้างาน',
+            billingPercent: 10,
+            invoiced: !!isCompletedProject
+          }
+        ];
+      }
+
+      // Calculate Overall Progress (weighted by milestone billing percent if available)
       const overallProgress = isCompletedProject 
         ? 100 
-        : Math.round(dynamicPhases.reduce((s, p) => s + p.progress, 0) / dynamicPhases.length);
+        : Math.min(100, Math.round(
+            dynamicPhases.reduce((acc, ph) => {
+              const weight = (ph.billingPercent || 0) > 0 ? (ph.billingPercent / 100) : (1 / dynamicPhases.length);
+              return acc + (ph.progress * weight);
+            }, 0)
+          ));
 
       list.push({
         id: bom.id,
@@ -301,6 +356,7 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
         bomOrderedCount: totalProcuredParts,
         bomReceivedCount: receivedParts,
         bomTargetBudget: bom.targetBudget || bom.totalEstimatedCost,
+        hasMasterPlan: !!(matchedPlan && matchedPlan.milestones && matchedPlan.milestones.length > 0),
         phases: dynamicPhases
       });
     });
@@ -519,46 +575,88 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
               <div className="pt-2">
                 <button
                   onClick={() => setExpandedProjectId(isExpanded ? null : proj.id)}
-                  className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-indigo-50/80 text-slate-700 hover:text-indigo-700 font-bold text-xs flex items-center justify-between transition border border-slate-200"
+                  className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-indigo-50/80 text-slate-700 hover:text-indigo-700 font-bold text-xs flex items-center justify-between transition border border-slate-200 shadow-2xs"
                 >
                   <span className="flex items-center gap-1.5">
                     <Layers className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>ขั้นตอนส่งมอบ & ความคืบหน้า BOM ({proj.phases.length} ขั้นตอน)</span>
+                    <span>{proj.hasMasterPlan ? `ขั้นตอนส่งมอบตาม Master Plan (${proj.phases.length} งวดงาน)` : `ขั้นตอนส่งมอบ & BOM Plan (${proj.phases.length} ขั้นตอน)`}</span>
                   </span>
                   {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
 
                 {isExpanded && (
-                  <div className="mt-2.5 space-y-2 p-3 bg-slate-50/90 rounded-2xl border border-slate-200 text-xs">
+                  <div className="mt-2.5 space-y-2 p-3 bg-slate-50/95 rounded-2xl border border-slate-200 text-xs shadow-inner">
                     {proj.phases.map(ph => (
-                      <div key={ph.id} className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-2 shadow-2xs">
-                        <div className="space-y-0.5 min-w-0">
-                          <span className="font-bold text-slate-800 block text-[11px] truncate">
-                            {ph.name}
-                          </span>
-                          <span className="text-[9.5px] text-slate-400 font-mono block">
-                            {formatThaiDate(ph.startDate)} - {formatThaiDate(ph.endDate)} • {ph.engineer}
-                          </span>
+                      <div key={ph.id} className="p-3 bg-white rounded-xl border border-slate-200/80 shadow-2xs space-y-2 hover:border-indigo-200 transition">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {ph.milestoneStatus ? (
+                                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border ${
+                                  ph.milestoneStatus === 'PAID'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : ph.milestoneStatus === 'INVOICED'
+                                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                                }`}>
+                                  {ph.milestoneStatus === 'PAID' ? '✓ ชำระแล้ว' : ph.milestoneStatus === 'INVOICED' ? '⚡ วางบิลแล้ว' : '🕒 รอส่งมอบ'} ({ph.billingPercent}%)
+                                </span>
+                              ) : (
+                                ph.billingPercent > 0 && (
+                                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    งวด {ph.billingPercent}%
+                                  </span>
+                                )
+                              )}
+                              
+                              {ph.billingAmount ? (
+                                <span className="font-mono text-[11px] font-bold text-slate-800">
+                                  ฿{formatMoney(ph.billingAmount)}
+                                </span>
+                              ) : null}
+
+                              {ph.invoiceDocNo && (
+                                <span className="font-mono text-[9.5px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium">
+                                  {ph.invoiceDocNo}
+                                </span>
+                              )}
+                            </div>
+
+                            <span className="font-bold text-slate-900 block text-xs leading-snug">
+                              {ph.name}
+                            </span>
+                            
+                            <span className="text-[10px] text-slate-400 font-mono block">
+                              กำหนดส่งมอบ: {formatThaiDate(ph.endDate)} • {ph.engineer}
+                            </span>
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            <span className={`text-[10.5px] font-bold font-mono px-2 py-0.5 rounded-lg inline-block ${
+                              ph.progress === 100
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                            }`}>
+                              {ph.progress}%
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="shrink-0 flex items-center gap-1.5">
-                          {ph.billingPercent > 0 && (
-                            <span className={`text-[9.5px] font-mono font-bold px-1.5 py-0.5 rounded border ${
-                              ph.invoiced
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-amber-50 text-amber-700 border-amber-200'
-                            }`}>
-                              งวด {ph.billingPercent}%
-                            </span>
-                          )}
-                          <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-lg ${
-                            ph.progress === 100
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-indigo-100 text-indigo-800'
-                          }`}>
-                            {ph.progress}%
-                          </span>
+                        {/* Milestone Progress Bar */}
+                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+                          <div 
+                            className={`h-full rounded-full transition-all ${
+                              ph.progress === 100 ? 'bg-emerald-500' : 'bg-indigo-600'
+                            }`}
+                            style={{ width: `${ph.progress}%` }}
+                          />
                         </div>
+
+                        {ph.notes && (
+                          <p className="text-[10px] text-slate-500 bg-slate-50/80 p-1.5 rounded-lg border border-slate-100 font-sans">
+                            💡 {ph.notes}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
