@@ -1,26 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
-  Package, 
-  Plus, 
-  Search, 
-  Pencil, 
-  Trash2, 
-  AlertTriangle, 
-  Wrench, 
-  Box, 
-  TrendingUp, 
-  Zap, 
-  Cpu, 
-  ShieldCheck, 
+  Package, Plus, Search, Pencil, Trash2, AlertTriangle, 
+  Wrench, Box, TrendingUp, Zap, Cpu, ShieldCheck, ArrowRightLeft,
+  Download, Filter, Layers, MapPin, Building2, CheckCircle2, Clock, Sparkles,
+  ArrowDownLeft, ArrowUpRight, RefreshCw, ShoppingCart
 } from 'lucide-react';
-import { ProductService } from '../../types';
+import { ProductService, StockMovement, StockMovementType } from '../../types';
 import { formatMoney } from '../../utils/formatters';
+import { STOCK_LOCATIONS, initialStockMovements } from '../../data/initialStockMovements';
+import { addAuditLog } from '../../utils/auditLogger';
 
 interface InventoryViewProps {
   products: ProductService[];
   onAddProduct: (product: ProductService) => void;
   onUpdateProduct: (product: ProductService) => void;
   onDeleteProduct: (id: string) => void;
+  onOpenCreatePoForProduct?: (product: ProductService) => void;
 }
 
 type FormData = {
@@ -55,28 +50,107 @@ const CATEGORY_COLORS: Record<string, string> = {
   MAINTENANCE: 'bg-amber-500/10 text-amber-700 border-amber-200/80',
 };
 
+const MOVEMENT_LABELS: Record<StockMovementType, { label: string; color: string; icon: any }> = {
+  IN: { label: 'รับเข้า (Stock In)', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: ArrowDownLeft },
+  OUT: { label: 'เบิกใช้ (Stock Out)', color: 'bg-rose-50 text-rose-700 border-rose-200', icon: ArrowUpRight },
+  TRANSFER: { label: 'โอนย้ายไซต์ (Transfer)', color: 'bg-sky-50 text-sky-700 border-sky-200', icon: ArrowRightLeft },
+  ADJUST: { label: 'ปรับปรุงสต็อก (Adjust)', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: RefreshCw },
+};
+
+const STOCK_STORAGE_KEY = 'warsgate_stock_movements';
+
 export const InventoryView: React.FC<InventoryViewProps> = ({
-  products, onAddProduct, onUpdateProduct, onDeleteProduct,
+  products,
+  onAddProduct,
+  onUpdateProduct,
+  onDeleteProduct,
+  onOpenCreatePoForProduct
 }) => {
+  const [activeTab, setActiveTab] = useState<'CATALOG' | 'LEDGER' | 'LOCATIONS'>('CATALOG');
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'ALL' | 'PRODUCT' | 'SERVICE'>('ALL');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'PRODUCT' | 'SERVICE' | 'LOW_STOCK'>('ALL');
+  
+  // Modal States
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
   const [editingItem, setEditingItem] = useState<ProductService | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState<ProductService | null>(null);
 
-  // ── Filter ──────────────────────────────────────────────────────────────────
-  const filtered = products.filter(p => {
-    const matchType = typeFilter === 'ALL' || p.type === typeFilter;
-    const q = searchTerm.toLowerCase();
-    const matchSearch = !searchTerm ||
-      p.code.toLowerCase().includes(q) ||
-      p.name.toLowerCase().includes(q) ||
-      (p.description && p.description.toLowerCase().includes(q));
-    return matchType && matchSearch;
+  // Stock Movement Ledger State
+  const [movements, setMovements] = useState<StockMovement[]>(() => {
+    const saved = localStorage.getItem(STOCK_STORAGE_KEY);
+    if (saved) {
+      try { return JSON.parse(saved); } catch {}
+    }
+    return initialStockMovements;
   });
 
-  // ── Open Add / Edit ────────────────────────────────────────────────────────
+  const [showMovementModal, setShowMovementModal] = useState(false);
+  const [movementForm, setMovementForm] = useState<{
+    productId: string;
+    type: StockMovementType;
+    quantity: number;
+    locationFrom: string;
+    locationTo: string;
+    referenceDocNo: string;
+    referenceProject: string;
+    performedBy: string;
+    notes: string;
+  }>({
+    productId: products[0]?.id || '',
+    type: 'IN',
+    quantity: 1,
+    locationFrom: 'HQ_KHLONG_LUANG',
+    locationTo: 'SITE_PNP',
+    referenceDocNo: '',
+    referenceProject: '',
+    performedBy: 'สมชาย จัดหา',
+    notes: ''
+  });
+
+  const saveMovements = (list: StockMovement[]) => {
+    setMovements(list);
+    localStorage.setItem(STOCK_STORAGE_KEY, JSON.stringify(list));
+  };
+
+  // ── Valuation Analytics ──────────────────────────────────────────────────
+  const analytics = useMemo(() => {
+    const hardwareProducts = products.filter(p => p.type === 'PRODUCT');
+    const totalCostValue = hardwareProducts.reduce((sum, p) => sum + ((p.stockQty || 0) * (p.costPrice || 0)), 0);
+    const totalRetailValue = hardwareProducts.reduce((sum, p) => sum + ((p.stockQty || 0) * (p.unitPrice || 0)), 0);
+    const lowStockItems = hardwareProducts.filter(p => (p.stockQty || 0) <= (p.minStockAlert || 0));
+    const totalUnits = hardwareProducts.reduce((sum, p) => sum + (p.stockQty || 0), 0);
+
+    return {
+      totalProducts: products.length,
+      hardwareCount: hardwareProducts.length,
+      totalCostValue,
+      totalRetailValue,
+      lowStockCount: lowStockItems.length,
+      totalUnits,
+      profitPotential: totalRetailValue - totalCostValue
+    };
+  }, [products]);
+
+  // ── Filtered Products ─────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    return products.filter(p => {
+      let matchType = true;
+      if (typeFilter === 'PRODUCT') matchType = p.type === 'PRODUCT';
+      else if (typeFilter === 'SERVICE') matchType = p.type === 'SERVICE';
+      else if (typeFilter === 'LOW_STOCK') matchType = p.type === 'PRODUCT' && (p.stockQty || 0) <= (p.minStockAlert || 0);
+
+      const q = searchTerm.toLowerCase();
+      const matchSearch = !searchTerm ||
+        p.code.toLowerCase().includes(q) ||
+        p.name.toLowerCase().includes(q) ||
+        (p.description && p.description.toLowerCase().includes(q));
+
+      return matchType && matchSearch;
+    });
+  }, [products, typeFilter, searchTerm]);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
   const openAdd = () => {
     setFormData(emptyForm);
     setEditingItem(null);
@@ -99,517 +173,691 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     setFormData(emptyForm);
   };
 
-  // ── Auto-generate SKU ──────────────────────────────────────────────────────
-  const SKU_PREFIXES: Record<string, string> = {
-    AUTOMATION_HARDWARE: 'HW',
-    SOFTWARE: 'SW',
-    ENGINEERING_SERVICE: 'ENG',
-    MAINTENANCE: 'MNT',
-  };
-
-  const autoGenerateSKU = () => {
-    const prefix = SKU_PREFIXES[formData.category] || 'SKU';
-    const existing = products
-      .map(p => p.code)
-      .filter(code => code.startsWith(`${prefix}-`))
-      .map(code => {
-        const num = parseInt(code.split('-').pop() || '0', 10);
-        return isNaN(num) ? 0 : num;
-      });
-    const nextNum = existing.length > 0 ? Math.max(...existing) + 1 : 1;
-    const newSKU = `${prefix}-${String(nextNum).padStart(3, '0')}`;
-    setF('code', newSKU);
-  };
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formData.code || !formData.name) return;
+
     if (modalMode === 'add') {
-      const newItem: ProductService = {
-        id: `PROD-${Date.now()}`,
-        code: formData.code || `ITEM-${Math.floor(Math.random() * 9000 + 1000)}`,
-        name: formData.name.trim(),
-        category: formData.category,
-        type: formData.type,
-        unit: formData.unit || 'ชิ้น',
-        unitPrice: Number(formData.unitPrice) || 0,
-        costPrice: Number(formData.costPrice) || 0,
-        stockQty: formData.type === 'PRODUCT' ? (Number(formData.stockQty) || 0) : 0,
-        minStockAlert: Number(formData.minStockAlert) || 0,
-        description: formData.description.trim(),
+      const newProduct: ProductService = {
+        id: `prod-${Date.now()}`,
+        ...formData,
       };
-      onAddProduct(newItem);
+      onAddProduct(newProduct);
+      addAuditLog({
+        userName: 'สมชาย จัดหา',
+        userRole: 'PURCHASING',
+        action: 'CREATE_DOC',
+        targetDocNo: newProduct.code,
+        details: `เพิ่มสินค้าใหม่ในคลัง: ${newProduct.name} (${newProduct.code})`
+      });
     } else if (modalMode === 'edit' && editingItem) {
-      onUpdateProduct({
+      const updated: ProductService = {
         ...editingItem,
-        code: formData.code,
-        name: formData.name.trim(),
-        category: formData.category,
-        type: formData.type,
-        unit: formData.unit,
-        unitPrice: Number(formData.unitPrice),
-        costPrice: Number(formData.costPrice),
-        stockQty: formData.type === 'PRODUCT' ? Number(formData.stockQty) : 0,
-        minStockAlert: Number(formData.minStockAlert),
-        description: formData.description.trim(),
+        ...formData,
+      };
+      onUpdateProduct(updated);
+      addAuditLog({
+        userName: 'สมชาย จัดหา',
+        userRole: 'PURCHASING',
+        action: 'UPDATE_DOC',
+        targetDocNo: updated.code,
+        details: `แก้ไขข้อมูลสินค้า: ${updated.name} (${updated.code})`
       });
     }
     closeModal();
   };
 
-  const setF = (field: keyof FormData, value: any) =>
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    onDeleteProduct(deleteTarget.id);
+    addAuditLog({
+      userName: 'สมชาย จัดหา',
+      userRole: 'PURCHASING',
+      action: 'DELETE_DOC',
+      targetDocNo: deleteTarget.code,
+      details: `ลบสินค้าออกจากคลัง: ${deleteTarget.name} (${deleteTarget.code})`
+    });
+    setDeleteTarget(null);
+  };
 
-  const margin = (p: ProductService) =>
-    p.unitPrice > 0 ? (((p.unitPrice - p.costPrice) / p.unitPrice) * 100).toFixed(1) : '0';
+  // Handle Save Stock Movement
+  const handleSaveMovement = (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetProduct = products.find(p => p.id === movementForm.productId);
+    if (!targetProduct) return;
 
-  // ── Summary Metrics ─────────────────────────────────────────────────────────
-  const totalProducts = products.filter(p => p.type === 'PRODUCT').length;
-  const totalServices = products.filter(p => p.type === 'SERVICE').length;
-  const lowStock = products.filter(p => p.type === 'PRODUCT' && p.stockQty <= p.minStockAlert).length;
-  const totalUnitsInStock = products.filter(p => p.type === 'PRODUCT').reduce((sum, p) => sum + (p.stockQty || 0), 0);
-  const totalInventoryRetailValue = products.filter(p => p.type === 'PRODUCT').reduce((sum, p) => sum + ((p.stockQty || 0) * (p.unitPrice || 0)), 0);
-  const totalInventoryCostValue = products.filter(p => p.type === 'PRODUCT').reduce((sum, p) => sum + ((p.stockQty || 0) * (p.costPrice || 0)), 0);
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    const newMovement: StockMovement = {
+      id: `sm-${Date.now()}`,
+      date: dateStr,
+      productId: targetProduct.id,
+      productCode: targetProduct.code,
+      productName: targetProduct.name,
+      type: movementForm.type,
+      quantity: Number(movementForm.quantity),
+      locationFrom: movementForm.type === 'IN' ? undefined : movementForm.locationFrom,
+      locationTo: movementForm.type === 'OUT' ? undefined : movementForm.locationTo,
+      referenceDocNo: movementForm.referenceDocNo || undefined,
+      referenceProject: movementForm.referenceProject || undefined,
+      performedBy: movementForm.performedBy,
+      notes: movementForm.notes || undefined
+    };
+
+    // Calculate stock update
+    let newQty = targetProduct.stockQty;
+    if (movementForm.type === 'IN') {
+      newQty += Number(movementForm.quantity);
+    } else if (movementForm.type === 'OUT') {
+      newQty = Math.max(0, newQty - Number(movementForm.quantity));
+    } else if (movementForm.type === 'ADJUST') {
+      newQty = Number(movementForm.quantity);
+    }
+
+    onUpdateProduct({
+      ...targetProduct,
+      stockQty: newQty
+    });
+
+    saveMovements([newMovement, ...movements]);
+
+    addAuditLog({
+      userName: movementForm.performedBy,
+      userRole: 'PURCHASING',
+      action: 'STOCK_MOVEMENT',
+      targetDocNo: targetProduct.code,
+      details: `บันทึกความเคลื่อนไหวสต็อก [${newMovement.type}] สินค้า ${targetProduct.name} จำนวน ${movementForm.quantity} ${targetProduct.unit} (ยอดคงเหลือใหม่: ${newQty})`
+    });
+
+    setShowMovementModal(false);
+  };
 
   return (
-    <div className="space-y-3 pb-2 flex flex-col h-[calc(100vh-80px)] overflow-hidden">
-
-      {/* ── Compact Futuristic Header & Action Bar ──────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
-        <div>
-          <h1 className="text-xl font-extrabold text-slate-900 flex items-center gap-2 tracking-tight">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-600 via-indigo-600 to-sky-500 flex items-center justify-center text-white shadow-sm shadow-purple-200">
-              <Package className="w-4 h-4" />
+    <div className="space-y-6 pb-12">
+      
+      {/* ── Top Header Banner ──────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-3xl text-white shadow-xl border border-indigo-900/50">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-purple-500/30 shrink-0">
+            <Package className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl md:text-2xl font-black tracking-tight text-white">
+                ระบบจัดการคลังสินค้า & บันทึกการเคลื่อนไหวสต็อก
+              </h1>
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/30 font-bold uppercase tracking-wider">
+                Multi-Site Ledger
+              </span>
             </div>
-            <span className="bg-gradient-to-r from-slate-900 via-purple-950 to-indigo-900 bg-clip-text text-transparent">
-              คลังสินค้า & รายการบริการ (Inventory Matrix)
-            </span>
-          </h1>
-          <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5 font-medium">
-            <span>ฐานข้อมูลฮาร์ดแวร์ Automation, บอร์ด PLC, ระบบซอฟต์แวร์ และค่าแรงวิศวกรรม</span>
-            <span className="w-1 h-1 rounded-full bg-slate-300 inline-block" />
-            <span className="text-purple-600 font-bold">WARSGATE System</span>
-          </p>
+            <p className="text-xs text-slate-300 mt-1">
+              ติดตามสต็อกอะไหล่เครื่องจักร, บันทึกการเบิกใช้ลงโครงการ, โอนย้ายข้ามไซต์งาน (PNP, TSF, Kuroda) และคำนวณมูลค่าสินค้าคงเหลือ
+            </p>
+          </div>
         </div>
 
-        <button
-          onClick={openAdd}
-          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-200/70 transition-all hover:scale-[1.01] active:scale-95"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>+ เพิ่มสินค้า / บริการใหม่</span>
-        </button>
+        {/* Tab Buttons */}
+        <div className="flex items-center gap-1.5 p-1 bg-white/10 rounded-2xl border border-white/10 backdrop-blur-md shrink-0">
+          <button
+            onClick={() => setActiveTab('CATALOG')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              activeTab === 'CATALOG'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-slate-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <Box className="w-4 h-4" />
+            <span>รายการสินค้า ({products.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('LEDGER')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              activeTab === 'LEDGER'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-slate-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <ArrowRightLeft className="w-4 h-4" />
+            <span>บันทึกความเคลื่อนไหว</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('LOCATIONS')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              activeTab === 'LOCATIONS'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-slate-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <MapPin className="w-4 h-4" />
+            <span>แยกตามไซต์งาน ({STOCK_LOCATIONS.length})</span>
+          </button>
+        </div>
       </div>
 
-      {/* ── Compact Futuristic KPI Cards (4 Balanced Cards) ────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 shrink-0">
+      {/* ── KPI Valuation Summary Row ───────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* Card 1: Hardware Products */}
-        <div className="relative overflow-hidden p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-white via-sky-50/30 to-blue-50/50 border border-sky-200/80 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-600">สินค้าและฮาร์ดแวร์</span>
-            <div className="w-6 h-6 rounded-md bg-sky-100 text-sky-700 flex items-center justify-center font-bold">
-              <Cpu className="w-3.5 h-3.5" />
+        {/* Total Cost Value */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">มูลค่าต้นทุนสต็อกรวม</span>
+            <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
+              <Box className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-lg sm:text-xl font-extrabold font-mono text-sky-700">{totalProducts}</span>
-            <span className="text-[10px] font-semibold text-slate-400">รายการ SKU</span>
-          </div>
-          <div className="mt-1 pt-1 border-t border-sky-100/80 flex items-center justify-between text-[9px] text-slate-500">
-            <span>สต็อกคงเหลือรวม:</span>
-            <strong className="font-mono text-slate-700">{totalUnitsInStock} ชิ้น</strong>
+          <div>
+            <div className="text-xl font-black text-slate-900 font-mono">
+              ฿{formatMoney(analytics.totalCostValue)}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-1">
+              จากฮาร์ดแวร์ {analytics.totalUnits} ชิ้น ({analytics.hardwareCount} รายการ)
+            </div>
           </div>
         </div>
 
-        {/* Card 2: Software & Engineering Services */}
-        <div className="relative overflow-hidden p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-white via-purple-50/30 to-indigo-50/50 border border-purple-200/80 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-600">บริการ & ซอฟต์แวร์</span>
-            <div className="w-6 h-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-              <Zap className="w-3.5 h-3.5" />
+        {/* Total Retail Value */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">มูลค่าราคาขายตลาด</span>
+            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+              <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-lg sm:text-xl font-extrabold font-mono text-purple-700">{totalServices}</span>
-            <span className="text-[10px] font-semibold text-slate-400">รายการบริการ</span>
-          </div>
-          <div className="mt-1 pt-1 border-t border-purple-100/80 flex items-center justify-between text-[9px] text-slate-500">
-            <span>ประเภท:</span>
-            <strong className="text-purple-700 truncate max-w-[120px]">PLC, SCADA, Manpower</strong>
+          <div>
+            <div className="text-xl font-black text-emerald-700 font-mono">
+              ฿{formatMoney(analytics.totalRetailValue)}
+            </div>
+            <div className="text-[11px] text-emerald-600 mt-1 font-semibold">
+              กำไรส่วนต่างคาดการณ์ +฿{formatMoney(analytics.profitPotential)}
+            </div>
           </div>
         </div>
 
-        {/* Card 3: Stock Health Radar */}
-        <div className="relative overflow-hidden p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-white via-emerald-50/30 to-teal-50/50 border border-emerald-200/80 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-600">สุขภาพสต็อก</span>
-            <div className={`w-6 h-6 rounded-md flex items-center justify-center font-bold ${lowStock > 0 ? 'bg-rose-100 text-rose-700 animate-pulse' : 'bg-emerald-100 text-emerald-700'}`}>
-              {lowStock > 0 ? <AlertTriangle className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+        {/* Low Stock Items Alert */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-700">สต็อกใกล้หมดเตือนสั่งซื้อ</span>
+            <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
+              <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className={`text-lg sm:text-xl font-extrabold font-mono ${lowStock > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
-              {lowStock > 0 ? `${lowStock} รายการ` : '100%'}
-            </span>
-            <span className="text-[10px] font-semibold text-slate-400">
-              {lowStock > 0 ? 'สต็อกต่ำเกณฑ์' : 'สต็อกสมบูรณ์'}
-            </span>
-          </div>
-          <div className="mt-1 pt-1 border-t border-emerald-100/80 flex items-center justify-between text-[9px]">
-            <span className="text-slate-500">สถานะ:</span>
-            <span className={`font-bold flex items-center gap-1 ${lowStock > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${lowStock > 0 ? 'bg-rose-500 animate-ping' : 'bg-emerald-500'}`} />
-              {lowStock > 0 ? 'ต้องสั่งซื้อเพิ่ม' : 'พร้อมส่งมอบ'}
-            </span>
+          <div>
+            <div className="text-xl font-black text-amber-700">
+              {analytics.lowStockCount} <span className="text-xs font-normal text-slate-400">รายการ</span>
+            </div>
+            <div className="text-[11px] text-amber-600 mt-1 font-medium">
+              ต่ำกว่าจุดสั่งซื้อ Min Stock Alert
+            </div>
           </div>
         </div>
 
-        {/* Card 4: Inventory Asset Valuation */}
-        <div className="relative overflow-hidden p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-white via-amber-50/30 to-orange-50/50 border border-amber-200/80 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-600">มูลค่าสต็อกคงคลัง</span>
-            <div className="w-6 h-6 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
-              <TrendingUp className="w-3.5 h-3.5" />
+        {/* Multi-Location Sites */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-indigo-700">คลัง & ไซต์งานโครงการ</span>
+            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+              <MapPin className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-base sm:text-lg font-extrabold font-mono text-amber-800 tracking-tight">฿{formatMoney(totalInventoryRetailValue)}</span>
-          </div>
-          <div className="mt-1 pt-1 border-t border-amber-100/80 flex items-center justify-between text-[9px] text-slate-500">
-            <span>ต้นทุนรวม:</span>
-            <strong className="font-mono text-slate-700">฿{formatMoney(totalInventoryCostValue)}</strong>
+          <div>
+            <div className="text-xl font-black text-indigo-700">
+              {STOCK_LOCATIONS.length} <span className="text-xs font-normal text-slate-400">สถานที่</span>
+            </div>
+            <div className="text-[11px] text-indigo-600 mt-1 font-medium">
+              คลังคลองหลวง, ไซต์ PNP, TSF, Kuroda
+            </div>
           </div>
         </div>
 
       </div>
 
-      {/* ── Compact Cyber-Toolbar ───────────────────────────────────────────── */}
-      <div className="glass-panel p-2 sm:p-2.5 rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shadow-sm border border-slate-200/90 bg-white/90 shrink-0">
-        
-        {/* Left: Cyber Search Input */}
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-purple-500" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="ค้นหารหัส SKU, ชื่อสินค้า, บอร์ด PLC, สเปกบริการ..."
-            className="w-full bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200/90 rounded-lg pl-8 pr-3 py-1 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-400/20 transition"
-          />
-        </div>
+      {/* ── TAB 1: Product Catalog View ────────────────────────────────────── */}
+      {activeTab === 'CATALOG' && (
+        <div className="space-y-4">
+          
+          {/* Action Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="ค้นหารหัสสินค้า, ชื่ออุปกรณ์, คำอธิบาย..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-purple-500"
+              />
+            </div>
 
-        {/* Right: Futuristic Pill Category Switcher */}
-        <div className="flex items-center gap-1 p-0.5 bg-slate-100/90 rounded-lg border border-slate-200 text-xs shrink-0">
-          <button
-            onClick={() => setTypeFilter('ALL')}
-            className={`px-3 py-1 rounded-md font-bold transition flex items-center gap-1.5 text-xs ${
-              typeFilter === 'ALL'
-                ? 'bg-purple-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <span>ทั้งหมด</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${typeFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
-              {products.length}
-            </span>
-          </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
+              <button
+                onClick={() => setTypeFilter('ALL')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+                  typeFilter === 'ALL' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                ทั้งหมด ({products.length})
+              </button>
+              <button
+                onClick={() => setTypeFilter('PRODUCT')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+                  typeFilter === 'PRODUCT' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                ฮาร์ดแวร์ / สินค้า
+              </button>
+              <button
+                onClick={() => setTypeFilter('SERVICE')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+                  typeFilter === 'SERVICE' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                บริการ / ค่าแรง
+              </button>
+              <button
+                onClick={() => setTypeFilter('LOW_STOCK')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap flex items-center gap-1 ${
+                  typeFilter === 'LOW_STOCK' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+                }`}
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>สต็อกใกล้หมด ({analytics.lowStockCount})</span>
+              </button>
 
-          <button
-            onClick={() => setTypeFilter('PRODUCT')}
-            className={`px-3 py-1 rounded-md font-bold transition flex items-center gap-1.5 text-xs ${
-              typeFilter === 'PRODUCT'
-                ? 'bg-purple-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Box className="w-3 h-3" />
-            <span>สินค้า ({totalProducts})</span>
-          </button>
-
-          <button
-            onClick={() => setTypeFilter('SERVICE')}
-            className={`px-3 py-1 rounded-md font-bold transition flex items-center gap-1.5 text-xs ${
-              typeFilter === 'SERVICE'
-                ? 'bg-purple-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Wrench className="w-3 h-3" />
-            <span>บริการ ({totalServices})</span>
-          </button>
-        </div>
-
-      </div>
-
-      {/* ── Table Container (Flex 1 to occupy remaining height) ──────────────── */}
-      <div className="glass-panel p-2 sm:p-3 rounded-2xl shadow-sm border border-slate-200 flex-1 min-h-0 flex flex-col">
-        {filtered.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 my-auto">
-            <Package className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p className="font-medium text-xs">ไม่พบรายการสินค้าหรือบริการตามคำค้นหา</p>
-            <p className="text-[11px] mt-0.5">ลองเปลี่ยนคำค้นหา หรือกดปุ่มเพิ่มรายการใหม่</p>
+              <button
+                onClick={openAdd}
+                className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition active:scale-95 whitespace-nowrap ml-auto"
+              >
+                <Plus className="w-4 h-4" />
+                <span>เพิ่มสินค้าใหม่</span>
+              </button>
+            </div>
           </div>
-        ) : (
-          <div className="table-scroll flex-1 min-h-0 rounded-xl border border-slate-200 shadow-inner">
-            <table className="w-full text-left text-xs min-w-[760px]">
-              <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-sm text-slate-600 font-semibold border-b border-slate-200 shadow-sm">
-                <tr>
-                  <th className="py-2.5 px-3">รหัสสินค้า / SKU</th>
-                  <th className="py-2.5 px-3">ชื่อสินค้า / บริการ</th>
-                  <th className="py-2.5 px-3">หมวดหมู่ระบบ</th>
-                  <th className="py-2.5 px-3 text-right">ราคาทุน</th>
-                  <th className="py-2.5 px-3 text-right">ราคาขาย</th>
-                  <th className="py-2.5 px-3 text-right">มาร์จิ้น %</th>
-                  <th className="py-2.5 px-3 text-center">สถานะสต็อก</th>
-                  <th className="py-2.5 px-3 text-center">จัดการ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {filtered.map(item => {
-                  const isLowStock = item.type === 'PRODUCT' && item.stockQty <= item.minStockAlert;
-                  return (
-                    <tr key={item.id} className="hover:bg-purple-50/30 transition group">
-                      <td className="py-2 px-3">
-                        <span className="font-mono font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
-                          {item.code}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 max-w-xs">
-                        <div className="font-bold text-slate-900 truncate text-[11px]">{item.name}</div>
-                        {item.description && <div className="text-[9px] text-slate-400 truncate mt-0.5">{item.description}</div>}
-                      </td>
-                      <td className="py-2 px-3">
-                        <span className={`text-[9px] px-2 py-0.5 rounded-full border font-semibold ${CATEGORY_COLORS[item.category]}`}>
-                          {CATEGORY_LABELS[item.category]}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 text-right font-mono text-slate-400 text-[11px]">฿{formatMoney(item.costPrice)}</td>
-                      <td className="py-2 px-3 text-right font-mono font-bold text-emerald-600 text-[11px]">฿{formatMoney(item.unitPrice)}</td>
-                      <td className="py-2 px-3 text-right">
-                        <span className="font-mono font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200 text-[10px]">
-                          +{margin(item)}%
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        {item.type === 'SERVICE' ? (
-                          <span className="text-slate-400 text-[11px]">—</span>
-                        ) : (
-                          <span className={`font-mono font-bold text-sm ${isLowStock ? 'text-rose-600' : 'text-slate-700'}`}>
-                            {item.stockQty} {item.unit}
-                            {isLowStock && <span className="ml-1 text-[9px] text-rose-500">⚠ ต่ำ</span>}
+
+          {/* Product Table */}
+          <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-100/80 text-slate-600 font-semibold border-b border-slate-200 text-[11px]">
+                  <tr>
+                    <th className="py-3 px-4 w-32">รหัสสินค้า</th>
+                    <th className="py-3 px-4">ชื่อสินค้า / บริการ</th>
+                    <th className="py-3 px-3 w-40">หมวดหมู่</th>
+                    <th className="py-3 px-3 w-28 text-right">ราคาขาย (บาท)</th>
+                    <th className="py-3 px-3 w-28 text-right">ต้นทุน (บาท)</th>
+                    <th className="py-3 px-3 w-32 text-center">คงเหลือ / จุดเตือน</th>
+                    <th className="py-3 px-4 w-32 text-center">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filtered.map(p => {
+                    const isProduct = p.type === 'PRODUCT';
+                    const isLowStock = isProduct && (p.stockQty || 0) <= (p.minStockAlert || 0);
+
+                    return (
+                      <tr key={p.id} className="hover:bg-slate-50/80 transition group">
+                        <td className="py-3 px-4 font-mono font-bold text-slate-800">
+                          {p.code}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-slate-900">{p.name}</div>
+                          {p.description && (
+                            <div className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{p.description}</div>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold inline-block ${CATEGORY_COLORS[p.category] || 'bg-slate-100 text-slate-700'}`}>
+                            {CATEGORY_LABELS[p.category] || p.category}
                           </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => openEdit(item)}
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50 transition shadow-sm"
-                            title="แก้ไข">
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => setDeleteTarget(item)}
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition shadow-sm"
-                            title="ลบ">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                          ฿{formatMoney(p.unitPrice)}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono text-slate-500">
+                          ฿{formatMoney(p.costPrice)}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          {isProduct ? (
+                            <div className="inline-flex items-center gap-1.5">
+                              <span className={`font-mono font-black text-xs px-2 py-0.5 rounded-lg border ${
+                                isLowStock
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                  : 'bg-slate-100 text-slate-800 border-slate-200'
+                              }`}>
+                                {p.stockQty} {p.unit}
+                              </span>
+                              {isLowStock && (
+                                <span className="text-[10px] bg-rose-100 text-rose-800 px-1.5 py-0.2 rounded font-bold" title={`ต่ำกว่าเกณฑ์เตือน ${p.minStockAlert}`}>
+                                  ต่ำ
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic">บริการ (N/A)</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => openEdit(p)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition"
+                              title="แก้ไขสินค้า"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(p)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                              title="ลบสินค้า"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* ══ ADD / EDIT MODAL ═════════════════════════════════════════════════ */}
-      {modalMode && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden my-auto">
+        </div>
+      )}
 
-            <div className={`px-6 py-4 flex items-center justify-between ${
-              modalMode === 'edit' ? 'bg-gradient-to-r from-sky-600 to-sky-700' : 'bg-gradient-to-r from-purple-600 to-purple-700'
-            }`}>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                {modalMode === 'edit' ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                {modalMode === 'edit' ? `แก้ไข: ${editingItem?.name}` : 'เพิ่มสินค้า / บริการใหม่'}
-              </h2>
-              <button onClick={closeModal} className="text-white/70 hover:text-white text-lg leading-none">✕</button>
+      {/* ── TAB 2: Stock Movement Ledger View ───────────────────────────────── */}
+      {activeTab === 'LEDGER' && (
+        <div className="space-y-4">
+          
+          {/* Ledger Actions Header */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="flex items-center gap-2">
+              <ArrowRightLeft className="w-5 h-5 text-purple-600" />
+              <div>
+                <h3 className="text-xs font-bold text-slate-800">
+                  สมุดบันทึกความเคลื่อนไหวสต็อก (Stock Movement Ledger)
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  บันทึกประวัติการรับเข้า เบิกจ่าย และโอนย้ายพาร์ทลงเครื่องจักรรายโครงการ
+                </p>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const csv = "data:text/csv;charset=utf-8," +
+                    ["Date,ProductCode,ProductName,Type,Quantity,LocationFrom,LocationTo,RefDoc,Project,PerformedBy,Notes"]
+                    .concat(movements.map(m => `"${m.date}","${m.productCode}","${m.productName}","${m.type}","${m.quantity}","${m.locationFrom || ''}","${m.locationTo || ''}","${m.referenceDocNo || ''}","${m.referenceProject || ''}","${m.performedBy}","${m.notes || ''}"`))
+                    .join("\n");
+                  const link = document.createElement("a");
+                  link.href = encodeURI(csv);
+                  link.download = `stock_movement_ledger_${new Date().toISOString().split('T')[0]}.csv`;
+                  link.click();
+                }}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export CSV</span>
+              </button>
 
-              {/* ประเภท */}
-              <div>
-                <label className="block text-slate-500 font-semibold mb-1">ประเภทรายการ</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(['PRODUCT', 'SERVICE'] as const).map(t => (
-                    <button key={t} type="button" onClick={() => setF('type', t)}
-                      className={`py-2 rounded-xl font-bold border text-xs transition ${
-                        formData.type === t
-                          ? t === 'PRODUCT' ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-amber-50 border-amber-300 text-amber-700'
-                          : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
-                      }`}>
-                      {t === 'PRODUCT' ? '📦 สินค้า (มีสต็อก)' : '🔧 บริการ (Man-Day)'}
-                    </button>
-                  ))}
+              <button
+                onClick={() => setShowMovementModal(true)}
+                className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-200 transition active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                <span>บันทึกความเคลื่อนไหวใหม่</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Movement Ledger Table */}
+          <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-100/80 text-slate-600 font-semibold border-b border-slate-200 text-[11px]">
+                  <tr>
+                    <th className="py-3 px-4 w-36">วัน-เวลา</th>
+                    <th className="py-3 px-3 w-32">ประเภทรายการ</th>
+                    <th className="py-3 px-3 w-32">รหัสสินค้า</th>
+                    <th className="py-3 px-4">ชื่อสินค้า / อุปกรณ์</th>
+                    <th className="py-3 px-3 w-24 text-center">จำนวน</th>
+                    <th className="py-3 px-3 w-48">ต้นทาง ➔ ปลายทาง</th>
+                    <th className="py-3 px-3 w-32">เอกสาร / โครงการ</th>
+                    <th className="py-3 px-3 w-28">ผู้ทำรายการ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {movements.map(m => {
+                    const meta = MOVEMENT_LABELS[m.type] || MOVEMENT_LABELS.IN;
+                    const Icon = meta.icon;
+
+                    const locFrom = STOCK_LOCATIONS.find(l => l.id === m.locationFrom)?.name || m.locationFrom || '-';
+                    const locTo = STOCK_LOCATIONS.find(l => l.id === m.locationTo)?.name || m.locationTo || '-';
+
+                    return (
+                      <tr key={m.id} className="hover:bg-slate-50/80 transition">
+                        <td className="py-3 px-4 font-mono text-slate-500 text-[11px]">
+                          {m.date}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold ${meta.color}`}>
+                            <Icon className="w-3 h-3" />
+                            {meta.label}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-mono font-bold text-slate-800">
+                          {m.productCode}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-slate-900">{m.productName}</div>
+                          {m.notes && <div className="text-[10px] text-slate-400 italic mt-0.5">{m.notes}</div>}
+                        </td>
+                        <td className="py-3 px-3 text-center font-mono font-bold text-slate-900">
+                          {m.type === 'OUT' ? `-${m.quantity}` : `+${m.quantity}`}
+                        </td>
+                        <td className="py-3 px-3 text-[11px] text-slate-600">
+                          <div className="flex items-center gap-1 truncate max-w-[200px]" title={`${locFrom} ➔ ${locTo}`}>
+                            <span className="truncate">{locFrom.split('(')[0]}</span>
+                            <span>➔</span>
+                            <span className="truncate font-semibold text-slate-800">{locTo.split('(')[0]}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          {m.referenceDocNo && (
+                            <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 block truncate">
+                              {m.referenceDocNo}
+                            </span>
+                          )}
+                          {m.referenceProject && (
+                            <span className="text-[10px] text-purple-600 font-semibold block truncate">
+                              {m.referenceProject}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-slate-700 font-medium">
+                          {m.performedBy}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* ── TAB 3: Multi-Location Sites Matrix ──────────────────────────────── */}
+      {activeTab === 'LOCATIONS' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {STOCK_LOCATIONS.map(loc => {
+              // Calculate items present at this location from movements
+              const locMovements = movements.filter(m => m.locationTo === loc.id || m.locationFrom === loc.id);
+              
+              return (
+                <div key={loc.id} className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${loc.badgeColor}`}>
+                        ACTIVE SITE
+                      </span>
+                      <MapPin className="w-4 h-4 text-slate-400" />
+                    </div>
+
+                    <h3 className="text-sm font-bold text-slate-900 mt-2">
+                      {loc.name}
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      ประวัติการเคลื่อนไหวสต็อกล่าสุด: {locMovements.length} รายการ
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500">สถานะคลัง:</span>
+                    <span className="font-bold text-emerald-600 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> เชื่อมโยงพร้อมเบิกจ่าย
+                    </span>
+                  </div>
                 </div>
-              </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-              {/* รหัส + หมวดหมู่ */}
+      {/* ── Add / Edit Product Modal ───────────────────────────────────────── */}
+      {modalMode && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-200">
+            <div className="p-5 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                <Package className="w-4 h-4 text-purple-400" />
+                {modalMode === 'add' ? 'เพิ่มสินค้า / รายการบริการใหม่' : 'แก้ไขข้อมูลสินค้า'}
+              </h3>
+              <button onClick={closeModal} className="p-1 rounded-lg text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveProduct} className="p-5 space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-500 font-semibold mb-1 flex items-center justify-between">
-                    <span>รหัสสินค้า (SKU) *</span>
-                    <button type="button" onClick={autoGenerateSKU}
-                      className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold text-[10px] transition">
-                      <Zap className="w-3 h-3" />
-                      Auto
-                    </button>
-                  </label>
-                  <input required type="text" value={formData.code} onChange={e => setF('code', e.target.value)}
-                    placeholder="กด Auto หรือพิมพ์เอง"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-mono font-bold focus:outline-none focus:border-purple-400" />
+                  <label className="block font-bold text-slate-700 mb-1">รหัสสินค้า *</label>
+                  <input
+                    type="text" required value={formData.code}
+                    onChange={e => setFormData({ ...formData, code: e.target.value })}
+                    placeholder="เช่น PLC-S7-1200"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+                  />
                 </div>
                 <div>
-                  <label className="block text-slate-500 font-semibold mb-1">หมวดหมู่</label>
-                  <select value={formData.category} onChange={e => {
-                    setF('category', e.target.value);
-                  }}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:border-purple-400">
-                    <option value="AUTOMATION_HARDWARE">⚙️ Automation Hardware</option>
-                    <option value="SOFTWARE">💾 Software</option>
-                    <option value="ENGINEERING_SERVICE">🔧 Engineering Service</option>
-                    <option value="MAINTENANCE">🛠️ Maintenance</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* ชื่อสินค้า */}
-              <div>
-                <label className="block text-slate-500 font-semibold mb-1">ชื่อสินค้า / บริการ *</label>
-                <input required type="text" value={formData.name} onChange={e => setF('name', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-semibold focus:outline-none focus:border-purple-400" />
-              </div>
-
-              {/* คำอธิบาย */}
-              <div>
-                <label className="block text-slate-500 font-semibold mb-1">คำอธิบาย</label>
-                <textarea rows={2} value={formData.description} onChange={e => setF('description', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-700 resize-none focus:outline-none focus:border-purple-400" />
-              </div>
-
-              {/* ราคา */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-slate-500 font-semibold mb-1">หน่วย</label>
+                  <label className="block font-bold text-slate-700 mb-1">ประเภท</label>
                   <select
-                    value={[
-                      'เครื่อง','ชุด','อัน','ตัว','กล่อง','ใบ','แผ่น','เส้น','ม้วน','กิโลกรัม',
-                      'ลิตร','บาร์เรล','Man-Day','Man-Hour','เดือน','ปี','สัญญา','งวด','โปรเจค','ชิ้น'
-                    ].includes(formData.unit) ? formData.unit : '__custom__'}
-                    onChange={e => {
-                      if (e.target.value !== '__custom__') setF('unit', e.target.value);
-                      else setF('unit', '');
-                    }}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:border-purple-400"
+                    value={formData.type}
+                    onChange={e => setFormData({ ...formData, type: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
                   >
-                    <optgroup label="📦 สินค้า / อุปกรณ์">
-                      <option value="เครื่อง">เครื่อง</option>
-                      <option value="ชุด">ชุด</option>
-                      <option value="อัน">อัน</option>
-                      <option value="ตัว">ตัว</option>
-                      <option value="ชิ้น">ชิ้น</option>
-                      <option value="กล่อง">กล่อง</option>
-                      <option value="ใบ">ใบ</option>
-                      <option value="แผ่น">แผ่น</option>
-                      <option value="เส้น">เส้น</option>
-                      <option value="ม้วน">ม้วน</option>
-                      <option value="กิโลกรัม">กิโลกรัม</option>
-                      <option value="ลิตร">ลิตร</option>
-                      <option value="บาร์เรล">บาร์เรล</option>
-                    </optgroup>
-                    <optgroup label="🔧 บริการ / โปรเจค">
-                      <option value="Man-Day">Man-Day</option>
-                      <option value="Man-Hour">Man-Hour</option>
-                      <option value="เดือน">เดือน</option>
-                      <option value="ปี">ปี</option>
-                      <option value="สัญญา">สัญญา</option>
-                      <option value="งวด">งวด</option>
-                      <option value="โปรเจค">โปรเจค</option>
-                    </optgroup>
-                    <option value="__custom__">✏️ กำหนดเอง...</option>
+                    <option value="PRODUCT">สินค้า / ฮาร์ดแวร์</option>
+                    <option value="SERVICE">บริการ / งานวิศวกรรม</option>
                   </select>
-                  {/* Custom unit input */}
-                  {!['เครื่อง','ชุด','อัน','ตัว','กล่อง','ใบ','แผ่น','เส้น','ม้วน','กิโลกรัม',
-                     'ลิตร','บาร์เรล','Man-Day','Man-Hour','เดือน','ปี','สัญญา','งวด','โปรเจค','ชิ้น'].includes(formData.unit) && (
-                    <input
-                      autoFocus
-                      type="text"
-                      placeholder="พิมพ์หน่วยที่ต้องการ..."
-                      value={formData.unit}
-                      onChange={e => setF('unit', e.target.value)}
-                      className="mt-2 w-full bg-purple-50 border border-purple-300 rounded-xl p-2.5 text-slate-800 font-semibold focus:outline-none focus:border-purple-500"
-                    />
-                  )}
-                </div>
-                <div>
-                  <label className="block text-slate-500 font-semibold mb-1">ราคาทุน (บาท)</label>
-                  <input type="number" min={0} value={formData.costPrice} onChange={e => setF('costPrice', Number(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-mono focus:outline-none focus:border-purple-400" />
-                </div>
-                <div>
-                  <label className="block text-slate-500 font-semibold mb-1">ราคาขาย (บาท) *</label>
-                  <input required type="number" min={0} value={formData.unitPrice} onChange={e => setF('unitPrice', Number(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-mono font-bold focus:outline-none focus:border-purple-400" />
                 </div>
               </div>
 
-              {/* สต็อก — เฉพาะ PRODUCT */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">ชื่อสินค้า / บริการ *</label>
+                <input
+                  type="text" required value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="เช่น Siemens PLC SIMATIC S7-1200"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">หมวดหมู่</label>
+                  <select
+                    value={formData.category}
+                    onChange={e => setFormData({ ...formData, category: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+                  >
+                    <option value="AUTOMATION_HARDWARE">ฮาร์ดแวร์ / อุปกรณ์อัตโนมัติ</option>
+                    <option value="SOFTWARE">ซอฟต์แวร์ / ระบบโปรแกรม</option>
+                    <option value="ENGINEERING_SERVICE">บริการวิศวกรรม / ติดตั้ง</option>
+                    <option value="MAINTENANCE">บำรุงรักษา / PM</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">หน่วยนับ</label>
+                  <input
+                    type="text" value={formData.unit}
+                    onChange={e => setFormData({ ...formData, unit: e.target.value })}
+                    placeholder="ชุด, เครื่อง, pcs, วัน"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">ราคาขาย (บาท)</label>
+                  <input
+                    type="number" min="0" step="0.01" value={formData.unitPrice}
+                    onChange={e => setFormData({ ...formData, unitPrice: parseFloat(e.target.value) || 0 })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">ราคาต้นทุน (บาท)</label>
+                  <input
+                    type="number" min="0" step="0.01" value={formData.costPrice}
+                    onChange={e => setFormData({ ...formData, costPrice: parseFloat(e.target.value) || 0 })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono"
+                  />
+                </div>
+              </div>
+
               {formData.type === 'PRODUCT' && (
-                <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-blue-50 border border-blue-200">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-blue-600 font-semibold mb-1">จำนวนสต็อกคงเหลือ</label>
-                    <input type="number" min={0} value={formData.stockQty} onChange={e => setF('stockQty', Number(e.target.value))}
-                      className="w-full bg-white border border-blue-200 rounded-xl p-2.5 text-slate-800 font-mono font-bold focus:outline-none focus:border-blue-400" />
+                    <label className="block font-bold text-slate-700 mb-1">จำนวนในสต็อก</label>
+                    <input
+                      type="number" min="0" value={formData.stockQty}
+                      onChange={e => setFormData({ ...formData, stockQty: parseInt(e.target.value) || 0 })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-purple-700"
+                    />
                   </div>
                   <div>
-                    <label className="block text-blue-600 font-semibold mb-1">แจ้งเตือนสต็อกต่ำ</label>
-                    <input type="number" min={0} value={formData.minStockAlert} onChange={e => setF('minStockAlert', Number(e.target.value))}
-                      className="w-full bg-white border border-blue-200 rounded-xl p-2.5 text-slate-800 font-mono focus:outline-none focus:border-blue-400" />
+                    <label className="block font-bold text-slate-700 mb-1">แจ้งเตือนขั้นต่ำ</label>
+                    <input
+                      type="number" min="0" value={formData.minStockAlert}
+                      onChange={e => setFormData({ ...formData, minStockAlert: parseInt(e.target.value) || 0 })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono"
+                    />
                   </div>
                 </div>
               )}
 
-              {/* กำไรขั้นต้น preview */}
-              {formData.unitPrice > 0 && (
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-emerald-700 font-semibold">
-                    <TrendingUp className="w-4 h-4" />
-                    <span>กำไรขั้นต้น:</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-mono font-bold text-emerald-700">
-                      {formatMoney(formData.unitPrice - formData.costPrice)}
-                    </span>
-                    <span className="text-emerald-500 ml-2 font-bold">
-                      ({formData.unitPrice > 0 ? (((formData.unitPrice - formData.costPrice) / formData.unitPrice) * 100).toFixed(1) : 0}%)
-                    </span>
-                  </div>
-                </div>
-              )}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">คำอธิบาย</label>
+                <textarea
+                  rows={2} value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="รายละเอียดสเปกอุปกรณ์..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+                />
+              </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button type="button" onClick={closeModal}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold transition">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" onClick={closeModal} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold">
                   ยกเลิก
                 </button>
-                <button type="submit"
-                  className={`px-5 py-2 rounded-xl text-white font-bold shadow-sm transition active:scale-95 ${
-                    modalMode === 'edit' ? 'bg-sky-600 hover:bg-sky-500' : 'bg-purple-600 hover:bg-purple-500'
-                  }`}>
-                  {modalMode === 'edit' ? '💾 บันทึกการแก้ไข' : '➕ เพิ่มรายการ'}
+                <button type="submit" className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-md shadow-purple-200">
+                  {modalMode === 'add' ? 'เพิ่มสินค้า' : 'บันทึกการแก้ไข'}
                 </button>
               </div>
             </form>
@@ -617,37 +865,157 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
         </div>
       )}
 
-      {/* ══ DELETE CONFIRM ═══════════════════════════════════════════════════ */}
+      {/* ── New Movement Modal ─────────────────────────────────────────────── */}
+      {showMovementModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-200">
+            <div className="p-5 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                <ArrowRightLeft className="w-4 h-4 text-purple-400" />
+                บันทึกความเคลื่อนไหวสต็อก (Stock Movement)
+              </h3>
+              <button onClick={() => setShowMovementModal(false)} className="p-1 rounded-lg text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveMovement} className="p-5 space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">เลือกสินค้า / อุปกรณ์ *</label>
+                <select
+                  value={movementForm.productId}
+                  onChange={e => setMovementForm({ ...movementForm, productId: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+                >
+                  {products.filter(p => p.type === 'PRODUCT').map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.code} - {p.name} (คงเหลือ: {p.stockQty} {p.unit})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">ประเภทการทำรายการ</label>
+                  <select
+                    value={movementForm.type}
+                    onChange={e => setMovementForm({ ...movementForm, type: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold"
+                  >
+                    <option value="IN">รับเข้าสต็อก (Stock In)</option>
+                    <option value="OUT">เบิกใช้ลงโครงการ (Stock Out)</option>
+                    <option value="TRANSFER">โอนย้ายข้ามไซต์งาน (Transfer)</option>
+                    <option value="ADJUST">ปรับปรุงยอดนับจริง (Adjust)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">จำนวน *</label>
+                  <input
+                    type="number" min="1" required value={movementForm.quantity}
+                    onChange={e => setMovementForm({ ...movementForm, quantity: parseInt(e.target.value) || 1 })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">สถานที่ต้นทาง</label>
+                  <select
+                    value={movementForm.locationFrom}
+                    onChange={e => setMovementForm({ ...movementForm, locationFrom: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+                  >
+                    {STOCK_LOCATIONS.map(l => (
+                      <option key={l.id} value={l.id}>{l.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">สถานที่ปลายทาง</label>
+                  <select
+                    value={movementForm.locationTo}
+                    onChange={e => setMovementForm({ ...movementForm, locationTo: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+                  >
+                    {STOCK_LOCATIONS.map(l => (
+                      <option key={l.id} value={l.id}>{l.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">เลขที่เอกสารอ้างอิง (PO / DO)</label>
+                  <input
+                    type="text" value={movementForm.referenceDocNo}
+                    onChange={e => setMovementForm({ ...movementForm, referenceDocNo: e.target.value })}
+                    placeholder="เช่น PO-2609-001"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">รหัส/ชื่อโครงการ</label>
+                  <input
+                    type="text" value={movementForm.referenceProject}
+                    onChange={e => setMovementForm({ ...movementForm, referenceProject: e.target.value })}
+                    placeholder="เช่น PRJ-PNP-SOL"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">หมายเหตุ</label>
+                <textarea
+                  rows={2} value={movementForm.notes}
+                  onChange={e => setMovementForm({ ...movementForm, notes: e.target.value })}
+                  placeholder="ระบุวัตถุประสงค์หรือรายละเอียดเพิ่มเติม..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" onClick={() => setShowMovementModal(false)} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold">
+                  ยกเลิก
+                </button>
+                <button type="submit" className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-md shadow-purple-200">
+                  ยืนยันบันทึกสต็อก
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirmation Modal ──────────────────────────────────────── */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-sm shadow-2xl p-6 space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl p-6 space-y-4 border border-slate-200">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-rose-600" />
+              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-800">ยืนยันการลบ</h3>
-                <p className="text-xs text-slate-400 mt-0.5">ไม่สามารถย้อนกลับได้</p>
+                <h3 className="font-bold text-slate-900 text-sm">ยืนยันการลบสินค้า?</h3>
+                <p className="text-xs text-slate-500">{deleteTarget.name} ({deleteTarget.code})</p>
               </div>
             </div>
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200">
-              <p className="text-xs font-bold text-rose-700">{deleteTarget.name}</p>
-              <p className="text-[11px] text-rose-500 font-mono mt-0.5">รหัส: {deleteTarget.code}</p>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-xs transition">
+            <p className="text-xs text-slate-600">
+              การลบรายการนี้จะไม่สามารถกู้คืนได้ และจะถูกบันทึกลงใน Audit Trail Log
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs">
                 ยกเลิก
               </button>
-              <button onClick={() => { onDeleteProduct(deleteTarget.id); setDeleteTarget(null); }}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 transition active:scale-95">
-                <Trash2 className="w-3.5 h-3.5" />
-                ลบออกจากระบบ
+              <button onClick={handleConfirmDelete} className="px-4 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-md shadow-rose-200">
+                ยืนยันลบ
               </button>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };

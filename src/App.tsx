@@ -550,8 +550,10 @@ export function App() {
               <AccountingView
                 chartOfAccounts={chartOfAccounts}
                 journalEntries={journalEntries}
+                documents={documents}
               />
             )}
+
 
             {activeTab === 'tax' && (
               <TaxView

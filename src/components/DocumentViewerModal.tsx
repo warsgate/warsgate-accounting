@@ -3,6 +3,8 @@ import { X, Printer, Download, CheckCircle, ShieldCheck, FileText, Award, Cpu, S
 import { AccountingDocument, CompanyProfile } from '../types';
 import { formatMoney, formatNumber, formatThaiDate, arabicToThaiBahtText, getProjectName } from '../utils/formatters';
 import { WhtCertificateView } from './WhtCertificateView';
+import { downloadEtaxXml } from '../utils/etaxGenerator';
+
 
 interface DocumentViewerModalProps {
   document: AccountingDocument | null;
@@ -192,6 +194,16 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                 <span>📑 ออกใบเสร็จรับเงิน</span>
               </button>
             )}
+            {['TAX_INVOICE', 'INVOICE', 'RECEIPT'].includes(doc.type) && (
+              <button
+                onClick={() => downloadEtaxXml(doc, company)}
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 text-emerald-800 font-bold text-xs border border-emerald-300 flex items-center gap-1.5 transition shadow-sm"
+                title="ดาวน์โหลดไฟล์ XML ตามมาตรฐาน e-Tax Invoice ของกรมสรรพากร และ ETDA"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>⚡ e-Tax XML (ETDA)</span>
+              </button>
+            )}
             <button
               onClick={handlePrint}
               className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs flex items-center gap-2 shadow-glow transition active:scale-95"
@@ -205,6 +217,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
             >
               <X className="w-4 h-4" />
             </button>
+
           </div>
         </div>
 

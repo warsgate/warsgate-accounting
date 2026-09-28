@@ -275,6 +275,9 @@ export type AuditAction =
   | 'EXPORT_DATA' 
   | 'IMPORT_DATA' 
   | 'MILESTONE_INVOICE' 
+  | 'STOCK_MOVEMENT'
+  | 'MONTHLY_CLOSING'
+  | 'ETAX_EXPORT'
   | 'SETTINGS_UPDATE';
 
 export interface AuditLogEntry {
@@ -287,6 +290,44 @@ export interface AuditLogEntry {
   details: string;
   ipAddress?: string;
 }
+
+// ─── Multi-Location Inventory & Stock Movement Ledger ─────────────────────
+export type StockMovementType = 'IN' | 'OUT' | 'TRANSFER' | 'ADJUST';
+
+export interface StockMovement {
+  id: string;
+  date: string;
+  productId: string;
+  productCode: string;
+  productName: string;
+  type: StockMovementType;
+  quantity: number;
+  locationFrom?: string;
+  locationTo?: string;
+  referenceDocNo?: string;
+  referenceProject?: string;
+  performedBy: string;
+  notes?: string;
+}
+
+// ─── Monthly Accounting Closing & Financial Statements ────────────────────
+export interface MonthlyClosingRecord {
+  month: string; // YYYY-MM
+  closedDate: string;
+  closedBy: string;
+  status: 'OPEN' | 'CLOSED';
+  totalRevenue: number;
+  totalExpense: number;
+  netProfit: number;
+  vatOutput: number;
+  vatInput: number;
+  netVatToPay: number;
+  accountsReceivableEnding: number;
+  accountsPayableEnding: number;
+  cashEnding: number;
+  notes?: string;
+}
+
 
 
 
