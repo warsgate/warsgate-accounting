@@ -129,12 +129,41 @@ export function App() {
           'INV-2505-005/2', 'INV-2505-005/3', 'INV-2512-2155/1',
           'INV-2512-2155/2', 'INV-2512-2155/3'
         ]);
+
+        // Status reconciliation map for official documents
+        const officialStatusMap: Record<string, DocumentStatus> = {
+          'INV-690800001': 'PAID',
+          'INV-690600005': 'PAID',
+          'INV-690600004': 'PAID',
+          'INV-690600003': 'PAID',
+          'INV-690600002': 'PAID',
+          'INV-690600001': 'PAID',
+          'INV-690400001': 'PAID',
+          'IV-690100001': 'PAID',
+          'INV-202607-001': 'PAID',
+          'INV-2608-001': 'PENDING',
+          'INV-2609-002': 'PENDING',
+        };
+
         // Exclude any document that was explicitly deleted by the user or obsolete draft invoice
-        const filteredParsed = parsed.filter(d => !deletedIds.has(d.id) && !obsoleteDocNos.has(d.documentNo));
+        const filteredParsed = parsed
+          .filter(d => !deletedIds.has(d.id) && !obsoleteDocNos.has(d.documentNo))
+          .map(d => {
+            if (d.documentNo && officialStatusMap[d.documentNo]) {
+              return { ...d, status: officialStatusMap[d.documentNo] };
+            }
+            return d;
+          });
+
         const existingIds = new Set(filteredParsed.map(d => d.id));
+        const existingDocNos = new Set(filteredParsed.map(d => d.documentNo));
         
         // Only load initial documents that are NOT in existing AND NOT in deleted list
-        const missing = initialDocuments.filter(d => !existingIds.has(d.id) && !deletedIds.has(d.id));
+        const missing = initialDocuments.filter(d => 
+          !existingIds.has(d.id) && 
+          !deletedIds.has(d.id) && 
+          (!d.documentNo || !existingDocNos.has(d.documentNo))
+        );
         
         // Deduplicate documents by type + documentNo, preserving user-edited documents
         const seenKeys = new Set<string>();
@@ -153,6 +182,27 @@ export function App() {
       }
     }
     return initialDocuments.filter(d => !deletedIds.has(d.id));
+  });
+
+  const [milestonePlans, setMilestonePlans] = useState<ContractMilestonePlan[]>(() => {
+    const saved = localStorage.getItem('warsgate_milestone_plans');
+    if (saved) {
+      try {
+        const parsed: ContractMilestonePlan[] = JSON.parse(saved);
+        const map = new Map<string, ContractMilestonePlan>();
+        initialMilestonePlans.forEach(p => map.set(p.id, p));
+        parsed.forEach(p => {
+          if (p.id !== 'plan-kuroda-vision' && !map.has(p.id)) {
+            map.set(p.id, p);
+          }
+        });
+        const merged = Array.from(map.values());
+        localStorage.setItem('warsgate_milestone_plans', JSON.stringify(merged));
+        return merged;
+      } catch {}
+    }
+    localStorage.setItem('warsgate_milestone_plans', JSON.stringify(initialMilestonePlans));
+    return initialMilestonePlans;
   });
 
   const [contacts, setContacts] = useState<Contact[]>(() => {
@@ -562,6 +612,7 @@ export function App() {
                 documents={documents}
                 contacts={contacts}
                 company={company}
+                milestonePlans={milestonePlans}
                 setActiveTab={setActiveTab}
                 openViewDocument={(doc) => setViewDoc(doc)}
               />

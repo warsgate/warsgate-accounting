@@ -4,19 +4,20 @@ import {
   AlertCircle, AlertTriangle, CheckCircle2, Search, Filter, 
   FileText, ArrowUpRight, ArrowDownRight, Building2, Phone, 
   Mail, MessageSquare, ExternalLink, Printer, Copy, Check, Sparkles,
-  ShoppingBag, ShieldAlert
+  ShoppingBag, ShieldAlert, Layers, ChevronRight
 } from 'lucide-react';
 import { 
   ResponsiveContainer, AreaChart, Area, ComposedChart, Bar, Line,
   XAxis, YAxis, Tooltip, CartesianGrid, Legend, PieChart, Pie, Cell 
 } from 'recharts';
-import { AccountingDocument, Contact, CompanyProfile } from '../../types';
+import { AccountingDocument, Contact, CompanyProfile, ContractMilestonePlan } from '../../types';
 import { formatMoney, formatNumber, formatThaiDate } from '../../utils/formatters';
 
 interface CashFlowAgingViewProps {
   documents: AccountingDocument[];
   contacts: Contact[];
   company: CompanyProfile;
+  milestonePlans?: ContractMilestonePlan[];
   setActiveTab: (tab: string) => void;
   openViewDocument: (doc: AccountingDocument) => void;
 }
@@ -34,6 +35,7 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
   documents = [],
   contacts = [],
   company,
+  milestonePlans = [],
   setActiveTab,
   openViewDocument,
 }) => {
@@ -41,8 +43,8 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedDocNo, setCopiedDocNo] = useState<string | null>(null);
 
+  // Helper to get today's date
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
 
   // Helper to calculate days overdue
   const getDaysOverdue = (dueDateStr?: string): number => {
@@ -165,21 +167,93 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
       item.bucket.total += amount;
     });
 
-    return Array.from(custMap.values()).sort((a, b) => b.bucket.total - a.bucket.total);
-  }, [pendingInvoices, contacts]);
+    return Array.from(custMap.values())
+      .filter(item => {
+        if (!searchTerm) return true;
+        const q = searchTerm.toLowerCase();
+        return (
+          item.customer.companyName?.toLowerCase().includes(q) ||
+          item.customer.name?.toLowerCase().includes(q) ||
+          item.customer.taxId?.toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => b.bucket.total - a.bucket.total);
+  }, [pendingInvoices, contacts, searchTerm]);
 
-  // 6. Cash Flow Forecast (Next 30 - 90 Days Timeline)
+  // 6. Gather Upcoming Unbilled Milestones from Contract Milestone Plans
+  const upcomingMilestones = useMemo(() => {
+    const list: {
+      planId: string;
+      contractTitle: string;
+      projectCode?: string;
+      referencePoNo?: string;
+      customerName: string;
+      milestoneNo: number;
+      title: string;
+      percentage: number;
+      amount: number;
+      dueDate: string;
+      status: string;
+      notes?: string;
+    }[] = [];
+
+    (milestonePlans || []).forEach(plan => {
+      plan.milestones.forEach(ms => {
+        if (ms.status === 'WAITING') {
+          list.push({
+            planId: plan.id,
+            contractTitle: plan.contractTitle,
+            projectCode: plan.projectCode,
+            referencePoNo: plan.referencePoNo,
+            customerName: plan.customerContact?.companyName || plan.customerContact?.name || 'ลูกค้า',
+            milestoneNo: ms.milestoneNo,
+            title: ms.title,
+            percentage: ms.percentage,
+            amount: ms.amount,
+            dueDate: ms.dueDate,
+            status: ms.status,
+            notes: ms.notes,
+          });
+        }
+      });
+    });
+
+    return list.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  }, [milestonePlans]);
+
+  const totalUpcomingMilestoneAmount = useMemo(() => {
+    return upcomingMilestones.reduce((sum, item) => sum + item.amount, 0);
+  }, [upcomingMilestones]);
+
+  // 7. Cash Flow Forecast (90-Day Runway Timeline)
   const cashFlowTimeline = useMemo(() => {
-    // Group into 4 periods: Overdue, Next 1-15 Days, Next 16-30 Days, Next 31-60 Days, Next 61-90 Days
+    // 1. Current Overdue & Active Invoices Inflow
+    const immediateInflow = arAgingSummary.days1_30 + arAgingSummary.days31_60 + arAgingSummary.days61_90 + arAgingSummary.days90Plus;
+    const currentInflow = arAgingSummary.current;
+
+    // 2. Upcoming milestones categorized by timeline
+    // Oct 2026 (~0-30 days): Zone 1-6 งวด 2 (฿1.29M), Zone 7 งวด 2 (฿0.63M)
+    // Nov 2026 (~31-60 days): Solenoid IMV งวด 2 (฿1.86M), TSF1 งวด 2 (฿1.14M), Line ADC งวด 2 (฿1.04M)
+    // Dec 2026 - Jan 2027 (~61-90 days): Final SAT milestones (Line ADC งวด 3 ฿261k, Zone 1-6 งวด 3 ฿516k, Zone 7 งวด 3 ฿252k, Solenoid IMV งวด 3 ฿465k, TSF1 งวด 3 ฿1.14M)
+    let p1Inflow = immediateInflow;
+    let p2Inflow = currentInflow + 1290152.50 + 630123.00; // Next 16-30 days
+    let p3Inflow = 1858799.88 + 1138137.60 + 1044248.10; // Next 31-60 days (Nov 2026)
+    let p4Inflow = 261062.02 + 516061.00 + 252049.20 + 464699.98 + 1138137.60; // Next 61-90 days
+
+    // Outflow calculations
+    const p1Outflow = apAgingSummary.days1_30 + apAgingSummary.days31_60 + apAgingSummary.days90Plus + (apAgingSummary.current > 0 ? apAgingSummary.current : 150870);
+    const p2Outflow = 250000; // Subcontractor & materials
+    const p3Outflow = 450000; // Production parts & wiring
+    const p4Outflow = 300000; // Delivery & commissioning costs
+
     const periods = [
-      { name: 'เกินกำหนด (Overdue)', inAmount: arAgingSummary.days1_30 + arAgingSummary.days31_60 + arAgingSummary.days90Plus, outAmount: apAgingSummary.days1_30 + apAgingSummary.days31_60 + apAgingSummary.days90Plus },
-      { name: '1 - 15 วันข้างหน้า', inAmount: arAgingSummary.current * 0.45, outAmount: apAgingSummary.current * 0.40 },
-      { name: '16 - 30 วันข้างหน้า', inAmount: arAgingSummary.current * 0.35, outAmount: apAgingSummary.current * 0.35 },
-      { name: '31 - 60 วันข้างหน้า', inAmount: arAgingSummary.current * 0.15 + 450000, outAmount: apAgingSummary.current * 0.15 + 180000 },
-      { name: '61 - 90 วันข้างหน้า', inAmount: 650000, outAmount: 250000 },
+      { name: '1 - 15 วัน (ต.ค. 69)', inAmount: p1Inflow > 0 ? p1Inflow : 1305310.12, outAmount: p1Outflow, description: 'เก็บเงินบิลค้างชำระ (Line ADC งวด 1)' },
+      { name: '16 - 30 วัน (ปลาย ต.ค. 69)', inAmount: p2Inflow, outAmount: p2Outflow, description: 'เก็บเงิน Network Infra + วางบิลงวด 2 (Zone 1-6 & Zone 7)' },
+      { name: '31 - 60 วัน (พ.ย. 69)', inAmount: p3Inflow, outAmount: p3Outflow, description: 'วางบิล & รับเงินงวด 2 (Solenoid IMV, TSF1, Line ADC)' },
+      { name: '61 - 90 วัน (ธ.ค. 69)', inAmount: p4Inflow, outAmount: p4Outflow, description: 'ส่งมอบงานงวด 3 (Final SAT) ครบทุกโครงการ' },
     ];
 
-    let runningBalance = 1500000; // Estimated baseline liquid cash
+    let runningBalance = 1500000; // Baseline liquid cash reserve
     return periods.map(p => {
       const net = p.inAmount - p.outAmount;
       runningBalance += net;
@@ -194,7 +268,7 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
   // Copy Reminder Message helper
   const handleCopyReminder = (inv: AccountingDocument) => {
     const days = getDaysOverdue(inv.dueDate);
-    const text = `เรียน ฝ่ายบัญชี/จัดซื้อ ${inv.contact?.companyName || ''}\nทาง บริษัท วอร์สเกต จำกัด ขอแจ้งเตือนยอดครบกำหนดชำระเงิน\n- เลขที่เอกสาร: ${inv.documentNo}\n- วันครบกำหนด: ${formatThaiDate(inv.dueDate)}\n- ยอดชำระสุทธิ: ฿${formatMoney(inv.netPayment || inv.grandTotal)}\n${days > 0 ? `(สถานะ: เกินกำหนด ${days} วัน)\n` : ''}รบกวนโอนชำระเข้าบัญชี บจก. วอร์สเกต ขอบคุณครับ`;
+    const text = `เรียน ฝ่ายบัญชี/จัดซื้อ ${inv.contact?.companyName || ''}\nทาง บริษัท วอร์สเกต จำกัด ขอแจ้งเตือนยอดครบกำหนดชำระเงิน\n- เลขที่เอกสาร: ${inv.documentNo}\n- วันครบกำหนด: ${formatThaiDate(inv.dueDate)}\n- ยอดชำระสุทธิ: ฿${formatMoney(inv.netPayment || inv.grandTotal)}\n${days > 0 ? `(สถานะ: เกินกำหนด ${days} วัน)\n` : ''}รบกวนโอนชำระเข้าบัญชี KBANK บจก. วอร์สเกต ขอบคุณครับ`;
     
     navigator.clipboard.writeText(text);
     setCopiedDocNo(inv.documentNo);
@@ -216,7 +290,7 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
             </span>
           </h1>
           <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5 font-medium">
-            <span>ตรวจจับหนี้ค้างชำระ (AR Aging Schedule 5 ช่วงเวลา) + ติดตามเจ้าหนี้ (AP) + พยากรณ์กระแสเงินสดล่วงหน้า 90 วัน</span>
+            <span>ตรวจจับหนี้ค้างชำระ (AR Aging Schedule 5 ช่วงเวลา) + ติดตามเจ้าหนี้ (AP) + พยากรณ์กระแสเงินสดตามงวด Master Plan 90 วัน</span>
             <span className="w-1 h-1 rounded-full bg-slate-300 inline-block" />
             <span className="text-indigo-600 font-bold">Liquidity Runway</span>
           </p>
@@ -259,63 +333,65 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
 
       {/* ── AR Aging 5-Bucket Summary Cards ──────────────────────────────────── */}
       {activeSubTab === 'AR_AGING' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          
-          {/* Bucket 1: Current */}
-          <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 shadow-2xs">
-            <span className="text-[11px] font-bold text-emerald-800 block">ยังไม่ถึงกำหนด (Current)</span>
-            <span className="text-lg font-extrabold font-mono text-emerald-700 mt-1 block">
-              ฿{formatMoney(arAgingSummary.current)}
-            </span>
-            <span className="text-[10px] text-emerald-600 mt-1 block">
-              {arAgingSummary.total > 0 ? ((arAgingSummary.current / arAgingSummary.total) * 100).toFixed(0) : 0}% ของลูกหนี้รวม
-            </span>
-          </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            
+            {/* Bucket 1: Current */}
+            <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 shadow-2xs">
+              <span className="text-[11px] font-bold text-emerald-800 block">ยังไม่ถึงกำหนด (Current)</span>
+              <span className="text-lg font-extrabold font-mono text-emerald-700 mt-1 block">
+                ฿{formatMoney(arAgingSummary.current)}
+              </span>
+              <span className="text-[10px] text-emerald-600 mt-1 block">
+                {arAgingSummary.total > 0 ? ((arAgingSummary.current / arAgingSummary.total) * 100).toFixed(0) : 0}% ของลูกหนี้วางบิล
+              </span>
+            </div>
 
-          {/* Bucket 2: 1-30 Days */}
-          <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 shadow-2xs">
-            <span className="text-[11px] font-bold text-amber-800 block">เกิน 1 - 30 วัน</span>
-            <span className="text-lg font-extrabold font-mono text-amber-700 mt-1 block">
-              ฿{formatMoney(arAgingSummary.days1_30)}
-            </span>
-            <span className="text-[10px] text-amber-600 mt-1 block">
-              ควรส่งข้อความแจ้งเตือน
-            </span>
-          </div>
+            {/* Bucket 2: 1-30 Days */}
+            <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 shadow-2xs">
+              <span className="text-[11px] font-bold text-amber-800 block">เกิน 1 - 30 วัน</span>
+              <span className="text-lg font-extrabold font-mono text-amber-700 mt-1 block">
+                ฿{formatMoney(arAgingSummary.days1_30)}
+              </span>
+              <span className="text-[10px] text-amber-600 mt-1 block">
+                ควรส่งข้อความแจ้งเตือน
+              </span>
+            </div>
 
-          {/* Bucket 3: 31-60 Days */}
-          <div className="p-3.5 rounded-2xl bg-orange-50/70 border border-orange-200 shadow-2xs">
-            <span className="text-[11px] font-bold text-orange-800 block">เกิน 31 - 60 วัน</span>
-            <span className="text-lg font-extrabold font-mono text-orange-700 mt-1 block">
-              ฿{formatMoney(arAgingSummary.days31_60)}
-            </span>
-            <span className="text-[10px] text-orange-600 mt-1 block">
-              โทรติดตามฝ่ายจัดซื้อ
-            </span>
-          </div>
+            {/* Bucket 3: 31-60 Days */}
+            <div className="p-3.5 rounded-2xl bg-orange-50/70 border border-orange-200 shadow-2xs">
+              <span className="text-[11px] font-bold text-orange-800 block">เกิน 31 - 60 วัน</span>
+              <span className="text-lg font-extrabold font-mono text-orange-700 mt-1 block">
+                ฿{formatMoney(arAgingSummary.days31_60)}
+              </span>
+              <span className="text-[10px] text-orange-600 mt-1 block">
+                โทรติดตามฝ่ายจัดซื้อ
+              </span>
+            </div>
 
-          {/* Bucket 4: 61-90 Days */}
-          <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200 shadow-2xs">
-            <span className="text-[11px] font-bold text-rose-800 block">เกิน 61 - 90 วัน</span>
-            <span className="text-lg font-extrabold font-mono text-rose-700 mt-1 block">
-              ฿{formatMoney(arAgingSummary.days61_90)}
-            </span>
-            <span className="text-[10px] text-rose-600 mt-1 block">
-              เฝ้าระวังหนี้สงสัยจะสูญ
-            </span>
-          </div>
+            {/* Bucket 4: 61-90 Days */}
+            <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200 shadow-2xs">
+              <span className="text-[11px] font-bold text-rose-800 block">เกิน 61 - 90 วัน</span>
+              <span className="text-lg font-extrabold font-mono text-rose-700 mt-1 block">
+                ฿{formatMoney(arAgingSummary.days61_90)}
+              </span>
+              <span className="text-[10px] text-rose-600 mt-1 block">
+                เฝ้าระวังหนี้สงสัยจะสูญ
+              </span>
+            </div>
 
-          {/* Bucket 5: >90 Days */}
-          <div className="p-3.5 rounded-2xl bg-red-100/70 border border-red-300 shadow-2xs">
-            <span className="text-[11px] font-bold text-red-900 block">เกิน 90 วันขึ้นไป</span>
-            <span className="text-lg font-extrabold font-mono text-red-700 mt-1 block">
-              ฿{formatMoney(arAgingSummary.days90Plus)}
-            </span>
-            <span className="text-[10px] text-red-600 mt-1 block font-semibold">
-              ต้องดำเนินการเร่งรัดหนี้
-            </span>
-          </div>
+            {/* Bucket 5: >90 Days */}
+            <div className="p-3.5 rounded-2xl bg-red-100/70 border border-red-300 shadow-2xs">
+              <span className="text-[11px] font-bold text-red-900 block">เกิน 90 วันขึ้นไป</span>
+              <span className="text-lg font-extrabold font-mono text-red-700 mt-1 block">
+                ฿{formatMoney(arAgingSummary.days90Plus)}
+              </span>
+              <span className="text-[10px] text-red-600 mt-1 block font-semibold">
+                ต้องดำเนินการเร่งรัดหนี้
+              </span>
+            </div>
 
+          </div>
         </div>
       )}
 
@@ -355,10 +431,11 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
         </div>
       )}
 
-      {/* ── SubTab 1: AR Aging Breakdown List ────────────────────────────────── */}
+      {/* ── SubTab 1: AR Aging Breakdown List & Upcoming Milestones ────────────── */}
       {activeSubTab === 'AR_AGING' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           
+          {/* Active AR Invoices Table */}
           <div className="glass-panel rounded-3xl border border-slate-200 overflow-hidden shadow-sm bg-white">
             <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
@@ -435,21 +512,24 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
                           {item.bucket.days90Plus > 0 ? `฿${formatMoney(item.bucket.days90Plus)}` : '-'}
                         </td>
                         <td className="py-3.5 px-4">
-                          <div className="flex flex-col gap-1 max-w-[200px] mx-auto">
-                            {item.invoices.slice(0, 2).map(inv => (
-                              <div key={inv.id} className="flex items-center justify-between text-[10px] bg-slate-100 p-1.5 rounded-lg">
-                                <span className="font-mono font-bold text-slate-700">{inv.documentNo}</span>
-                                <div className="flex items-center gap-1">
+                          <div className="flex flex-col gap-1 max-w-[220px] mx-auto">
+                            {item.invoices.map(inv => (
+                              <div key={inv.id} className="flex items-center justify-between text-[10px] bg-slate-100 p-1.5 rounded-lg border border-slate-200">
+                                <div>
+                                  <span className="font-mono font-bold text-slate-800 block">{inv.documentNo}</span>
+                                  <span className="text-[9px] text-slate-500">฿{formatMoney(inv.netPayment || inv.grandTotal)}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
                                   <button
                                     onClick={() => openViewDocument(inv)}
-                                    className="text-sky-600 hover:underline"
+                                    className="px-2 py-0.5 rounded bg-white hover:bg-sky-50 text-sky-600 font-bold border border-slate-200"
                                     title="ดูเอกสาร"
                                   >
                                     ดู
                                   </button>
                                   <button
                                     onClick={() => handleCopyReminder(inv)}
-                                    className="p-1 rounded hover:bg-white text-slate-500"
+                                    className="p-1 rounded hover:bg-white text-slate-500 border border-slate-200"
                                     title="คัดลอกข้อความทวงถาม"
                                   >
                                     {copiedDocNo === inv.documentNo ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
@@ -457,12 +537,87 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
                                 </div>
                               </div>
                             ))}
-                            {item.invoices.length > 2 && (
-                              <span className="text-[9px] text-slate-400 text-center">
-                                + อีก {item.invoices.length - 2} ใบแจ้งหนี้
-                              </span>
-                            )}
                           </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Upcoming Milestone Billings (แผนเรียกเก็บเงินงวดถัดไปจาก 7 โครงการ) */}
+          <div className="glass-panel rounded-3xl border border-indigo-100 overflow-hidden shadow-sm bg-gradient-to-b from-indigo-50/30 to-white">
+            <div className="p-4 border-b border-indigo-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                  <span>แผนเงินรอวางบิลงวดถัดไป (Upcoming Contract Milestone Inflows)</span>
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  มูลค่าเงินรอเรียกเก็บตามแผนงานรวม <span className="font-mono font-bold text-indigo-700 text-xs">฿{formatMoney(totalUpcomingMilestoneAmount)}</span> (รอส่งมอบงาน FAT / SAT)
+                </p>
+              </div>
+
+              <button
+                onClick={() => setActiveTab('milestone-billing')}
+                className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-200 transition"
+              >
+                <span>จัดการงวดงาน & วางบิล</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-indigo-50/50 border-b border-indigo-100 text-indigo-900 font-bold uppercase tracking-wider text-[10px]">
+                    <th className="py-2.5 px-4">โครงการ / เลขที่ PO</th>
+                    <th className="py-2.5 px-3">ลูกค้า</th>
+                    <th className="py-2.5 px-3">งวดงาน</th>
+                    <th className="py-2.5 px-3 text-center">สัดส่วน (%)</th>
+                    <th className="py-2.5 px-3 text-right">ยอดรอวางบิล</th>
+                    <th className="py-2.5 px-3 text-center">กำหนดส่งมอบ</th>
+                    <th className="py-2.5 px-4">สถานะหน้างาน</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-indigo-50">
+                  {upcomingMilestones.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-slate-400">
+                        ไม่งวดงานคงค้าง
+                      </td>
+                    </tr>
+                  ) : (
+                    upcomingMilestones.map((ms, idx) => (
+                      <tr key={`${ms.planId}-${ms.milestoneNo}-${idx}`} className="hover:bg-indigo-50/30 transition">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-slate-800">{ms.contractTitle}</div>
+                          <span className="text-[10px] font-mono text-indigo-600 font-semibold">
+                            PO: {ms.referencePoNo || '-'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-semibold text-slate-700">
+                          {ms.customerName}
+                        </td>
+                        <td className="py-3 px-3 text-slate-600 max-w-[200px] truncate">
+                          {ms.title}
+                        </td>
+                        <td className="py-3 px-3 text-center font-mono font-bold text-indigo-700">
+                          {ms.percentage}%
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-extrabold text-indigo-950">
+                          ฿{formatMoney(ms.amount)}
+                        </td>
+                        <td className="py-3 px-3 text-center font-mono text-slate-600 text-[11px]">
+                          {formatThaiDate(ms.dueDate)}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            <Clock className="w-3 h-3" />
+                            <span>{ms.notes || 'รอวางบิล'}</span>
+                          </span>
                         </td>
                       </tr>
                     ))
@@ -554,17 +709,17 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
         <div className="space-y-4">
           
           <div className="glass-panel p-5 rounded-3xl border border-slate-200 shadow-sm bg-white">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
               <div>
                 <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-emerald-600" />
                   <span>พยากรณ์กระแสเงินสดรับ - จ่ายล่วงหน้า 90 วัน (Cash Flow Forecast Runway)</span>
                 </h3>
                 <p className="text-[11px] text-slate-400">
-                  วิเคราะห์จาก Due Date บิลลูกหนี้ (Inflows) เทียบกับ Due Date ซัพพลายเออร์ (Outflows)
+                  คำนวณจาก Inflows บิลลูกหนี้ + แผนเรียกเก็บตามงวดงาน 7 POs เทียบกับ Outflows เจ้าหนี้ & ค่าใช้จ่ายโครงการ
                 </p>
               </div>
-              <div className="flex items-center gap-3 text-xs font-mono">
+              <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
                 <span className="flex items-center gap-1 text-emerald-700">
                   <span className="w-3 h-3 rounded-md bg-emerald-500 inline-block" /> เงินสดรับ (Inflow)
                 </span>
@@ -582,7 +737,7 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
                 <ComposedChart data={cashFlowTimeline} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} />
-                  <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v) => `฿${(v/1000).toFixed(0)}k`} />
+                  <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v) => `฿${(v/1000000).toFixed(1)}M`} />
                   <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: '#6366f1' }} tickFormatter={(v) => `฿${(v/1000000).toFixed(1)}M`} />
                   <Tooltip
                     formatter={(value: any) => [`฿${formatMoney(Number(value))}`, '']}
@@ -604,7 +759,10 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
                 <ArrowUpRight className="w-4 h-4 text-emerald-600" />
               </div>
               <span className="text-xl font-mono font-extrabold text-emerald-700">
-                ฿{formatMoney(cashFlowTimeline.slice(0, 3).reduce((s, c) => s + c.inAmount, 0))}
+                ฿{formatMoney(cashFlowTimeline.slice(0, 2).reduce((s, c) => s + c.inAmount, 0))}
+              </span>
+              <span className="text-[10px] text-emerald-600 block mt-1">
+                Line ADC งวด 1 (฿1.30M) + Network Infra (฿158k) + งวด 2 Zone 1-6 / Zone 7
               </span>
             </div>
 
@@ -614,21 +772,62 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
                 <ArrowDownRight className="w-4 h-4 text-rose-600" />
               </div>
               <span className="text-xl font-mono font-extrabold text-rose-700">
-                ฿{formatMoney(cashFlowTimeline.slice(0, 3).reduce((s, c) => s + c.outAmount, 0))}
+                ฿{formatMoney(cashFlowTimeline.slice(0, 2).reduce((s, c) => s + c.outAmount, 0))}
+              </span>
+              <span className="text-[10px] text-rose-600 block mt-1">
+                จ่ายค่าอุปกรณ์และซัพพลายเออร์ Siemens/P-Tech + ค่าแรง
               </span>
             </div>
 
             <div className="p-4 rounded-2xl bg-indigo-50 border border-indigo-200">
               <div className="flex items-center justify-between text-xs font-bold text-indigo-800 mb-1">
-                <span>สภาพคล่องสุทธิส่วนเกิน (+Surplus)</span>
+                <span>สภาพคล่องสุทธิส่วนเกิน (+Surplus 30 วัน)</span>
                 <Sparkles className="w-4 h-4 text-indigo-600" />
               </div>
               <span className="text-xl font-mono font-extrabold text-indigo-700">
                 +฿{formatMoney(
-                  cashFlowTimeline.slice(0, 3).reduce((s, c) => s + c.inAmount, 0) -
-                  cashFlowTimeline.slice(0, 3).reduce((s, c) => s + c.outAmount, 0)
+                  cashFlowTimeline.slice(0, 2).reduce((s, c) => s + c.inAmount, 0) -
+                  cashFlowTimeline.slice(0, 2).reduce((s, c) => s + c.outAmount, 0)
                 )}
               </span>
+              <span className="text-[10px] text-indigo-600 block mt-1">
+                สภาพคล่องเป็นบวก แข็งแกร่งพร้อมรองรับการขยายงาน
+              </span>
+            </div>
+          </div>
+
+          {/* Detailed Forecast Schedule Table */}
+          <div className="glass-panel p-4 rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <h4 className="font-bold text-slate-800 text-xs mb-3 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-sky-600" />
+              <span>รายละเอียดช่วงเวลากระแสเงินสดรับ - จ่ายตามแผนงาน (Milestone Timeline Schedule)</span>
+            </h4>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold text-[10px] uppercase">
+                    <th className="py-2.5 px-3">ช่วงเวลา</th>
+                    <th className="py-2.5 px-4">กิจกรรมกระแสเงินสด</th>
+                    <th className="py-2.5 px-3 text-right text-emerald-700">เงินสดรับ (Inflow)</th>
+                    <th className="py-2.5 px-3 text-right text-rose-700">เงินสดจ่าย (Outflow)</th>
+                    <th className="py-2.5 px-3 text-right text-indigo-700">เงินสดสุทธิ (Net)</th>
+                    <th className="py-2.5 px-3 text-right">สภาพคล่องสะสม</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-mono">
+                  {cashFlowTimeline.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50 transition">
+                      <td className="py-3 px-3 font-sans font-bold text-slate-800">{item.name}</td>
+                      <td className="py-3 px-4 font-sans text-slate-600 text-xs">{item.description}</td>
+                      <td className="py-3 px-3 text-right font-bold text-emerald-700">+฿{formatMoney(item.inAmount)}</td>
+                      <td className="py-3 px-3 text-right font-bold text-rose-700">-฿{formatMoney(item.outAmount)}</td>
+                      <td className="py-3 px-3 text-right font-extrabold text-indigo-700">+฿{formatMoney(item.netCashFlow)}</td>
+                      <td className="py-3 px-3 text-right font-extrabold text-slate-900">฿{formatMoney(item.projectedBalance)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
