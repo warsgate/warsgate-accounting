@@ -46,6 +46,21 @@ interface ProjectGanttTrackerProps {
 
 const HIDDEN_PROJECTS_KEY = 'warsgate_hidden_timeline_projects';
 
+// ─── Canonical Master Confirmed PO Data ──────────────────────────────────────
+const CONFIRMED_PO_DATA: Record<string, { total: number; subtotal: number; poNo: string; dwgNo: string; name: string }> = {
+  'PRJ-527': { total: 2610620.24, subtotal: 2439832.00, poNo: '2607001', dwgNo: 'ADC-2608-001', name: 'Tracking ability Line ADC (บอร์ด PLC & Data Center)' },
+  'PRJ-107': { total: 3793792.00, subtotal: 3545600.00, poNo: 'PO252155', dwgNo: 'TSF1-LM1-2026', name: 'TSF1 Auto pack LM1 (Stacker, Open Bag & Insert Foam)' },
+  'PRJ-2505-004': { total: 4646999.71, subtotal: 4342990.38, poNo: '2505004', dwgNo: 'TRACE-5LINE-2025', name: 'Traceability 5 ไลน์ผลิต (Fujipart Thailand)' },
+  'PRJ-PNP-SOL': { total: 4646999.71, subtotal: 4342990.38, poNo: '2505004', dwgNo: 'TRACE-5LINE-2025', name: 'Traceability 5 ไลน์ผลิต (Fujipart Thailand)' },
+  'PRJ-2605-001': { total: 2580305.00, subtotal: 2411500.00, poNo: '2605001', dwgNo: 'FJP-Z16-2026', name: 'Zone 1-6 Automation & Structure Parts (Fujipart)' },
+  'PRJ-PNP-Z1-6': { total: 2580305.00, subtotal: 2411500.00, poNo: '2605001', dwgNo: 'FJP-Z16-2026', name: 'Zone 1-6 Automation & Structure Parts (Fujipart)' },
+  'PRJ-2605-002': { total: 1260246.00, subtotal: 1177800.00, poNo: '2605002', dwgNo: 'FJP-Z7-2026', name: 'Zone 7 Automation & Structure Parts (Fujipart)' },
+  'PRJ-PNP-Z7': { total: 1260246.00, subtotal: 1177800.00, poNo: '2605002', dwgNo: 'FJP-Z7-2026', name: 'Zone 7 Automation & Structure Parts (Fujipart)' },
+  'PRJ-2505-005': { total: 2325558.33, subtotal: 2173419.00, poNo: '2505005', dwgNo: 'SOL-SW-2025', name: 'Traceability Solenoid Line Software (Fujipart)' },
+  'PRJ-2609-003': { total: 158841.50, subtotal: 148450.00, poNo: '2609002', dwgNo: 'NET-2609-01', name: 'Network Infrastructure & Hardware Installation' },
+  'PRJ-PNP-NET26': { total: 158841.50, subtotal: 148450.00, poNo: '2609002', dwgNo: 'NET-2609-01', name: 'Network Infrastructure & Hardware Installation' },
+};
+
 export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
   documents = [],
   onOpenMilestoneBilling
@@ -120,6 +135,9 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
       const partPo = (bom.parts && bom.parts.find(p => p.poNumber)?.poNumber) || '';
       const cleanPartPo = partPo.replace(/^PO-?/i, '');
 
+      // Check confirmed canonical PO data first
+      const confirmedInfo = CONFIRMED_PO_DATA[pCode] || Object.values(CONFIRMED_PO_DATA).find(c => c.poNo === cleanPartPo || (bom.dwgNo && c.dwgNo === bom.dwgNo));
+
       // Find matching Accounting Document / Quotation with PO (prioritize QUOTATION to get full contract total)
       const isDocMatch = (d: AccountingDocument) => {
         const docPo = (d.referencePoNo || '').trim();
@@ -157,14 +175,28 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
 
       const custName = bom.customer || matchingDoc?.contact?.companyName || 'ลูกค้าโครงการ';
       const baseDate = matchingDoc?.issueDate || '2026-05-01';
-      const grandTotal = matchingDoc?.grandTotal || matchedPlan?.totalContractAmount || bom.targetBudget || bom.totalEstimatedCost || 850000;
-      const refPo = matchingDoc?.referencePoNo || matchedPlan?.referencePoNo || (cleanPartPo ? `PO-${cleanPartPo}` : 'PO-2607001');
+      
+      // Guaranteed full contract PO total amount
+      const grandTotal = confirmedInfo?.total ?? 
+        (matchingDoc?.type === 'QUOTATION' ? matchingDoc.grandTotal : null) ?? 
+        matchedPlan?.totalContractAmount ?? 
+        bom.targetBudget ?? 
+        bom.totalEstimatedCost ?? 
+        matchingDoc?.grandTotal ?? 
+        850000;
+        
+      const refPo = confirmedInfo?.poNo 
+        ? (confirmedInfo.poNo.startsWith('PO') ? confirmedInfo.poNo : `PO-${confirmedInfo.poNo}`)
+        : (matchingDoc?.referencePoNo || matchedPlan?.referencePoNo || (cleanPartPo ? `PO-${cleanPartPo}` : 'PO-2607001'));
+      
+      const displayDwg = confirmedInfo?.dwgNo || bom.dwgNo;
 
       // ─── Real BOM Master Plan Progress Calculation ───
       const parts = bom.parts || [];
       const totalParts = parts.length || bom.totalPartsCount || 0;
-      const orderedParts = parts.filter(p => p.status === 'Ordered' || (p.poNumber && p.poNumber.trim() !== '')).length;
       const receivedParts = parts.filter(p => p.status === 'Received' || p.status === 'Assembled' || p.status === 'Delivered').length;
+      const orderedOnlyParts = parts.filter(p => (p.status === 'Ordered' || (p.poNumber && p.poNumber.trim() !== '')) && p.status !== 'Received' && p.status !== 'Assembled' && p.status !== 'Delivered').length;
+      const totalProcuredParts = Math.min(totalParts, receivedParts + orderedOnlyParts);
       const isCompletedProject = bom.status === 'Completed' || bom.status === 'Delivered';
 
       // Phase 1: CAD Design & DWG Plan (100% when BOM exists)
@@ -173,27 +205,27 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
       // Phase 2: BOM Procurement (Based on Ordered / Received parts)
       const p2Progress = isCompletedProject 
         ? 100 
-        : (totalParts > 0 ? Math.min(100, Math.round(((orderedParts + receivedParts) / totalParts) * 100)) : 100);
+        : (totalParts > 0 ? Math.min(100, Math.round((totalProcuredParts / totalParts) * 100)) : 100);
 
       // Phase 3: Machining & Mechanical Assembly
       const p3Progress = isCompletedProject 
         ? 100 
-        : (totalParts > 0 ? (receivedParts > 0 ? Math.min(100, Math.round((receivedParts / totalParts) * 100)) : (orderedParts > 0 ? 70 : 25)) : 80);
+        : (totalParts > 0 ? (receivedParts > 0 ? Math.min(100, Math.round((receivedParts / totalParts) * 100)) : (totalProcuredParts > 0 ? 70 : 25)) : 80);
 
       // Phase 4: Electrical Wiring & PLC/HMI Programming
       const p4Progress = isCompletedProject 
         ? 100 
-        : (receivedParts > 0 ? 85 : (orderedParts > 0 ? 60 : 30));
+        : (receivedParts > 0 ? 85 : (totalProcuredParts > 0 ? 60 : 30));
 
       // Phase 5: Commissioning & Site Acceptance Test (SAT)
       const p5Progress = isCompletedProject 
         ? 100 
-        : (receivedParts >= totalParts && totalParts > 0 ? 90 : (orderedParts > 0 ? 40 : 15));
+        : (receivedParts >= totalParts && totalParts > 0 ? 90 : (totalProcuredParts > 0 ? 40 : 15));
 
       const dynamicPhases = [
         {
           id: `${bom.id}-ph1`,
-          name: `1. ออกแบบ 3D CAD & รหัสแบบ (${bom.dwgNo || 'Standard DWG'})`,
+          name: `1. ออกแบบ 3D CAD & รหัสแบบ (${displayDwg || 'Standard DWG'})`,
           startDate: baseDate,
           endDate: new Date(new Date(baseDate).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           progress: p1Progress,
@@ -204,7 +236,7 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
         },
         {
           id: `${bom.id}-ph2`,
-          name: `2. สั่งซื้อพาร์ท & อะไหล่ BOM Master Plan (สำเร็จ ${orderedParts + receivedParts}/${totalParts} รายการ)`,
+          name: `2. สั่งซื้อพาร์ท & อะไหล่ BOM Master Plan (สำเร็จ ${totalProcuredParts}/${totalParts} รายการ)`,
           startDate: new Date(new Date(baseDate).getTime() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           endDate: new Date(new Date(baseDate).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           progress: p2Progress,
@@ -255,10 +287,10 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
       list.push({
         id: bom.id,
         projectCode: pCode,
-        projectName: bom.name,
+        projectName: confirmedInfo?.name || bom.name,
         customerName: custName,
         referencePoNo: refPo,
-        dwgNo: bom.dwgNo,
+        dwgNo: displayDwg,
         issueDate: baseDate,
         totalAmount: grandTotal,
         progressPercent: overallProgress,
@@ -266,7 +298,7 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
         assignedEngineer: 'คุณจีระวัฒน์ (Lead PM)',
         bomLinked: true,
         bomPartsCount: totalParts,
-        bomOrderedCount: orderedParts,
+        bomOrderedCount: totalProcuredParts,
         bomReceivedCount: receivedParts,
         bomTargetBudget: bom.targetBudget || bom.totalEstimatedCost,
         phases: dynamicPhases
@@ -477,7 +509,7 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
                 <div className="flex justify-between text-[10px] text-slate-400 font-mono">
                   <span className="flex items-center gap-1">
                     <PackageCheck className="w-3 h-3 text-indigo-500" />
-                    <span>สั่งซื้อแล้ว: <strong className="text-indigo-700 font-bold">{(proj.bomOrderedCount || 0) + (proj.bomReceivedCount || 0)}/{proj.bomPartsCount || 0} รายการ</strong></span>
+                    <span>สั่งซื้อแล้ว: <strong className="text-indigo-700 font-bold">{Math.min(proj.bomPartsCount || 0, proj.bomOrderedCount || 0)}/{proj.bomPartsCount || 0} รายการ</strong></span>
                   </span>
                   <span>หัวหน้า: {proj.assignedEngineer.split(' ')[0]}</span>
                 </div>
