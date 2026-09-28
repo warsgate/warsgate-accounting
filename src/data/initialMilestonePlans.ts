@@ -158,7 +158,7 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
     totalContractAmount: 2325558.33,
     createdAt: '2025-05-26',
     updatedAt: '2026-09-28',
-    notes: 'ตามใบสั่งซื้อ PO: 2505005 (เงื่อนไขการชำระเงิน: 30% Downpayment, 60% Test run & BuyOff, 10% Manual)',
+    notes: 'ตามใบสั่งซื้อ PO: 2505005 (เงื่อนไขการชำระเงิน: 30% Downpayment, 60% Test run & BuyOff, 10% Manual - ออก INV และเก็บเงินครบถ้วน 100%)',
     milestones: [
       {
         id: 'ms-25055-1',
@@ -169,7 +169,7 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         dueDate: '2025-06-10',
         status: 'PAID',
         invoiceDocNo: 'REC-2505-005/1',
-        notes: 'รับชำระมัดจำงวดที่ 1 เรียบร้อย'
+        notes: 'รับชำระมัดจำงวดที่ 1 เรียบร้อย (ใบเสร็จ REC-2505-005/1)'
       },
       {
         id: 'ms-25055-2',
@@ -178,8 +178,9 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         percentage: 60,
         amount: 1395335.00,
         dueDate: '2025-09-30',
-        status: 'INVOICED',
-        notes: 'วางบิลเรียบร้อย'
+        status: 'PAID',
+        invoiceDocNo: 'REC-2505-005/2',
+        notes: 'ทดสอบระบบผ่านและรับชำระเงินงวดที่ 2 เรียบร้อย (ใบเสร็จ REC-2505-005/2)'
       },
       {
         id: 'ms-25055-3',
@@ -188,8 +189,9 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         percentage: 10,
         amount: 232555.83,
         dueDate: '2025-11-30',
-        status: 'WAITING',
-        notes: 'รอส่งมอบคู่มือขั้นสุดท้าย'
+        status: 'PAID',
+        invoiceDocNo: 'INV-690600005',
+        notes: 'ออกใบแจ้งหนี้ INV-690600005 และรับชำระเงินงวดสุดท้าย 10% ครบถ้วน (ใบเสร็จ REC-2505-005/3) ปิดโครงการ 100%'
       }
     ]
   },

@@ -40,14 +40,16 @@ export const MilestoneBillingView: React.FC<MilestoneBillingViewProps> = ({
     if (saved) {
       try {
         const parsed: ContractMilestonePlan[] = JSON.parse(saved);
-        const existingIds = new Set(parsed.map(p => p.id));
-        const missing = initialMilestonePlans.filter(p => !existingIds.has(p.id));
-        if (missing.length > 0) {
-          const merged = [...parsed, ...missing];
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-          return merged;
-        }
-        return parsed;
+        const map = new Map<string, ContractMilestonePlan>();
+        initialMilestonePlans.forEach(p => map.set(p.id, p));
+        parsed.forEach(p => {
+          if (!map.has(p.id)) {
+            map.set(p.id, p);
+          }
+        });
+        const merged = Array.from(map.values());
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        return merged;
       } catch (e) {
         console.error('Failed to parse saved milestone plans', e);
       }

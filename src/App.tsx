@@ -60,7 +60,7 @@ export function App() {
     });
   };
 
-  // Seed milestone plans & merge missing initial plans
+  // Seed milestone plans & merge updated initial plans
   useEffect(() => {
     const saved = localStorage.getItem('warsgate_milestone_plans');
     if (!saved) {
@@ -68,11 +68,16 @@ export function App() {
     } else {
       try {
         const parsed: ContractMilestonePlan[] = JSON.parse(saved);
-        const existingIds = new Set(parsed.map(p => p.id));
-        const missing = initialMilestonePlans.filter(p => !existingIds.has(p.id));
-        if (missing.length > 0) {
-          localStorage.setItem('warsgate_milestone_plans', JSON.stringify([...parsed, ...missing]));
-        }
+        const map = new Map<string, ContractMilestonePlan>();
+        // First set initial plans
+        initialMilestonePlans.forEach(p => map.set(p.id, p));
+        // Then merge user customized plans if not conflicting or update milestone statuses
+        parsed.forEach(p => {
+          if (!map.has(p.id)) {
+            map.set(p.id, p);
+          }
+        });
+        localStorage.setItem('warsgate_milestone_plans', JSON.stringify(Array.from(map.values())));
       } catch {
         localStorage.setItem('warsgate_milestone_plans', JSON.stringify(initialMilestonePlans));
       }
