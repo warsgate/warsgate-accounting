@@ -298,6 +298,72 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
+      {/* ── Executive Pro Analytics Quick Bar ───────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <button
+          onClick={() => setActiveTab('project-pnl')}
+          className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 border border-emerald-200 text-left group transition shadow-2xs active:scale-[0.99] flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-xs text-slate-800">กำไรขาดทุนรายโครงการ</span>
+                <span className="text-[9px] bg-emerald-200/80 text-emerald-900 font-bold px-1.5 py-0.2 rounded font-mono">PRO</span>
+              </div>
+              <span className="text-[11px] text-slate-500 mt-0.5 block">
+                Project Costing & Real-Time P&L ↗
+              </span>
+            </div>
+          </div>
+          <ArrowUpRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition" />
+        </button>
+
+        <button
+          onClick={() => setActiveTab('cashflow-aging')}
+          className="p-4 rounded-2xl bg-gradient-to-r from-sky-50 to-indigo-50 hover:from-sky-100 hover:to-indigo-100 border border-indigo-200 text-left group transition shadow-2xs active:scale-[0.99] flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-xs text-slate-800">อายุหนี้ & พยากรณ์เงินสด</span>
+                <span className="text-[9px] bg-indigo-200/80 text-indigo-900 font-bold px-1.5 py-0.2 rounded font-mono">90D</span>
+              </div>
+              <span className="text-[11px] text-slate-500 mt-0.5 block">
+                AR Aging & 90-Day Cash Runway ↗
+              </span>
+            </div>
+          </div>
+          <ArrowUpRight className="w-4 h-4 text-indigo-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition" />
+        </button>
+
+        <button
+          onClick={() => setActiveTab('customer-balances')}
+          className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border border-amber-200 text-left group transition shadow-2xs active:scale-[0.99] flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-xs text-slate-800">เจาะลึกยอดสัญญา PO</span>
+                <span className="text-[9px] bg-amber-200/80 text-amber-900 font-bold px-1.5 py-0.2 rounded font-mono">CRM</span>
+              </div>
+              <span className="text-[11px] text-slate-500 mt-0.5 block">
+                Customer POs & Uninvoiced ↗
+              </span>
+            </div>
+          </div>
+          <ArrowUpRight className="w-4 h-4 text-amber-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition" />
+        </button>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpiCards.map((card, i) => {

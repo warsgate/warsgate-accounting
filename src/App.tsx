@@ -15,6 +15,8 @@ import { CreateDocumentModal } from './components/CreateDocumentModal';
 import { CustomerBalancesView } from './components/CustomerAnalytics/CustomerBalancesView';
 import { BomPoGeneratorModal } from './components/Expense/BomPoGeneratorModal';
 import { ProjectCostMatrixModal } from './components/ProjectCostMatrixModal';
+import { ProjectPnLView } from './components/Analytics/ProjectPnLView';
+import { CashFlowAgingView } from './components/Analytics/CashFlowAgingView';
 
 import { 
   initialCompanyProfile, 
@@ -459,6 +461,31 @@ export function App() {
                   setEditingDoc(null);
                   setCreateDocType(type);
                 }}
+                openViewDocument={(doc) => setViewDoc(doc)}
+              />
+            )}
+
+            {activeTab === 'project-pnl' && (
+              <ProjectPnLView
+                documents={documents}
+                contacts={contacts}
+                company={company}
+                setActiveTab={setActiveTab}
+                openViewDocument={(doc) => setViewDoc(doc)}
+                openCreateModal={(type, defaultPoNo, defaultContact) => {
+                  setFromDoc(null);
+                  setEditingDoc(null);
+                  setCreateDocType(type);
+                }}
+              />
+            )}
+
+            {activeTab === 'cashflow-aging' && (
+              <CashFlowAgingView
+                documents={documents}
+                contacts={contacts}
+                company={company}
+                setActiveTab={setActiveTab}
                 openViewDocument={(doc) => setViewDoc(doc)}
               />
             )}

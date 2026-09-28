@@ -3,7 +3,7 @@ import {
   FileText, Plus, Search, RefreshCw, Printer, Settings,
   BarChart3, DollarSign, ShoppingCart, ShoppingBag, Users, Package,
   BookOpen, ShieldCheck, HelpCircle, Cpu, Download,
-  ExternalLink, ChevronRight, Check, Zap, Sparkles, Command
+  ExternalLink, ChevronRight, Check, Zap, Sparkles, Command, Clock
 } from "lucide-react";
 import { AccountingDocument } from "../types";
 import { exportSalesToExcel } from "../utils/excelExport";
@@ -177,6 +177,26 @@ export const MenuBar: React.FC<MenuBarProps> = ({
           active: activeTab === "expenses" || activeTab === "expense",
           action: () => { setActiveTab("expenses"); setOpenMenu(null); }
         },
+        { type: "divider" },
+        {
+          label: "📊 กำไรขาดทุนรายโครงการ (Project P&L)",
+          icon: Sparkles,
+          active: activeTab === "project-pnl",
+          action: () => { setActiveTab("project-pnl"); setOpenMenu(null); }
+        },
+        {
+          label: "⏳ อายุหนี้ & พยากรณ์เงินสด (Cash Flow & Aging)",
+          icon: Clock,
+          active: activeTab === "cashflow-aging",
+          action: () => { setActiveTab("cashflow-aging"); setOpenMenu(null); }
+        },
+        {
+          label: "เจาะลึกยอดลูกหนี้ & PO (Customer POs)",
+          icon: BarChart3,
+          active: activeTab === "customer-balances",
+          action: () => { setActiveTab("customer-balances"); setOpenMenu(null); }
+        },
+        { type: "divider" },
         {
           label: "รายชื่อลูกค้า & คู่ค้า (Contacts CRM)",
           icon: Users,
@@ -261,6 +281,11 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       key: "bom-bridge",
       label: "BOM Bridge",
       dropdown: [
+        {
+          label: "✨ งบกำไร-ขาดทุนรายโครงการ (Project P&L Dashboard)",
+          icon: Sparkles,
+          action: () => { setActiveTab("project-pnl"); setOpenMenu(null); }
+        },
         {
           label: "📊 วิเคราะห์ต้นทุนโครงการ BOM vs บัญชีจริง (Cost Matrix)",
           icon: BarChart3,

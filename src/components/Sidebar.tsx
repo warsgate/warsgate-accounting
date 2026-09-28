@@ -2,7 +2,7 @@ import React from "react";
 import { 
   LayoutDashboard, TrendingUp, TrendingDown, Users, Package,
   BookOpen, Calculator, Settings, ChevronRight, ChevronLeft, Zap, BarChart3,
-  PanelLeftClose, PanelLeftOpen, Cpu, ExternalLink
+  PanelLeftClose, PanelLeftOpen, Cpu, ExternalLink, Clock, Sparkles
 } from "lucide-react";
 import { AccountingDocument, Contact, ProductService } from "../types";
 
@@ -56,12 +56,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badgeColor: "bg-rose-50 text-rose-700 border-rose-200",
     },
     {
-      id: "contacts",
-      label: "ผู้ติดต่อ (Contacts)",
-      subtitle: "ลูกค้า / ซัพพลายเออร์",
-      icon: Users,
-      badge: `${contactsCount} ราย`,
-      badgeColor: "bg-amber-50 text-amber-700 border-amber-200",
+      id: "project-pnl",
+      label: "กำไรขาดทุนรายจ็อบ",
+      subtitle: "Project Costing & P&L",
+      icon: Sparkles,
+      badge: "PRO",
+      badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold",
+    },
+    {
+      id: "cashflow-aging",
+      label: "อายุหนี้ & เงินสด",
+      subtitle: "AR Aging & 90D Forecast",
+      icon: Clock,
+      badge: "90D",
+      badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
     },
     {
       id: "customer-balances",
@@ -70,6 +78,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: BarChart3,
       badge: "฿9.9M รอเปิด",
       badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    },
+    {
+      id: "contacts",
+      label: "ผู้ติดต่อ (Contacts)",
+      subtitle: "ลูกค้า / ซัพพลายเออร์",
+      icon: Users,
+      badge: `${contactsCount} ราย`,
+      badgeColor: "bg-amber-50 text-amber-700 border-amber-200",
     },
     {
       id: "inventory",
