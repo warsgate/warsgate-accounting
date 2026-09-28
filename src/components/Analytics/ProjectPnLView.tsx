@@ -176,8 +176,8 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
         const sortedQuotes = [...entry.quotations].sort((a, b) => (b.grandTotal || 0) - (a.grandTotal || 0));
         const primaryQuote = sortedQuotes[0];
         contractRevenue = primaryQuote.grandTotal || 0;
-        discountAmount = primaryQuote.specialDiscount || primaryQuote.totalDiscount || 0;
-        grossContractRevenue = primaryQuote.subtotal ? (primaryQuote.subtotal + (primaryQuote.taxAmount || 0)) : (contractRevenue + discountAmount);
+        discountAmount = primaryQuote.specialDiscount || (primaryQuote.discountTotal ? primaryQuote.discountTotal * 1.07 : 0);
+        grossContractRevenue = contractRevenue + discountAmount;
       } else {
         const invoicedTotal = entry.invoices.reduce((s, d) => s + (d.grandTotal || 0), 0);
         contractRevenue = invoicedTotal;
@@ -400,21 +400,21 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
         {/* Card 1: Total Project Revenue */}
         <div className="p-4 rounded-2xl bg-gradient-to-br from-white via-sky-50/40 to-blue-50/50 border border-sky-200/80 shadow-sm group hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">มูลค่าสัญญารวม (Total Contract)</span>
+            <span className="text-xs font-bold text-slate-600">มูลค่าสัญญาสุทธิ (Net Contract)</span>
             <div className="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold shadow-sm">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2">
             <span className="text-2xl font-extrabold font-mono text-sky-800 tracking-tight">
-              ฿{formatMoney(totalGrossRevenue)}
+              ฿{formatMoney(totalRevenue)}
             </span>
           </div>
           <div className="mt-2 pt-2 border-t border-sky-100/80 flex items-center justify-between text-[10px] text-slate-500">
             {totalDiscount > 0 ? (
               <>
-                <span>สุทธิหลังลด: <strong className="font-mono text-emerald-700 font-bold">฿{formatMoney(totalRevenue)}</strong></span>
-                <span className="text-amber-700 font-semibold font-mono">ส่วนลด -฿{formatMoney(totalDiscount)}</span>
+                <span>ก่อนส่วนลด: <strong className="font-mono text-slate-700 font-bold">฿{formatMoney(totalGrossRevenue)}</strong></span>
+                <span className="text-amber-700 font-semibold font-mono">ลด -฿{formatMoney(totalDiscount)}</span>
               </>
             ) : (
               <>
