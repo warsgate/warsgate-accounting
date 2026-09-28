@@ -207,7 +207,7 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
     totalContractAmount: 158841.50,
     createdAt: '2026-09-24',
     updatedAt: '2026-09-28',
-    notes: 'ตามใบสั่งซื้อ PO: 2609002 (ชำระเมื่อส่งมอบและติดตั้งครบตามใบสั่งซื้อ)',
+    notes: 'ตามใบสั่งซื้อ PO: 2609002 (ชำระเมื่อส่งมอบและติดตั้งครบตามใบสั่งซื้อ 100% รอวางบิล)',
     milestones: [
       {
         id: 'ms-26092-1',
@@ -216,8 +216,8 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         percentage: 100,
         amount: 158841.50,
         dueDate: '2026-10-24',
-        status: 'INVOICED',
-        notes: 'วางบิลตามใบสั่งซื้อ PO: 2609002'
+        status: 'WAITING',
+        notes: 'รอส่งมอบงานติดตั้งและรอวางบิล 100%'
       }
     ]
   },
@@ -234,7 +234,7 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
     totalContractAmount: 4646999.71,
     createdAt: '2025-05-07',
     updatedAt: '2026-09-28',
-    notes: 'เงื่อนไขการชำระเงินตามสัญญา 30% - 50% - 20%',
+    notes: 'เงื่อนไขการชำระเงินตามสัญญา 30% - 50% - 20% (วางบิลงวดที่ 2 แล้ว 50%)',
     milestones: [
       {
         id: 'ms-pnp-1',
@@ -253,9 +253,9 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         percentage: 50,
         amount: 2323499.86,
         dueDate: '2026-08-22',
-        status: 'WAITING',
+        status: 'INVOICED',
         invoiceDocNo: 'INV-690800001',
-        notes: 'อยู่ระหว่างทดสอบ Factory Acceptance Test รอวางบิลงวดที่ 2 (50%)'
+        notes: 'ออกใบแจ้งหนี้ INV-690800001 วางบิลงวดที่ 2 (50%) เรียบร้อย รอการชำระเงิน'
       },
       {
         id: 'ms-pnp-3',

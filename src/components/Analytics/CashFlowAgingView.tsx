@@ -232,12 +232,13 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
     const currentInflow = arAgingSummary.current;
 
     // 2. Upcoming milestones categorized by timeline
-    // Oct 2026 (~0-30 days): Zone 1-6 งวด 2 (฿1.29M), Zone 7 งวด 2 (฿0.63M)
-    // Nov 2026 (~31-60 days): Solenoid IMV งวด 2 50% (฿2.32M), TSF1 งวด 2 (฿1.14M), Line ADC งวด 2 (฿1.04M)
-    // Dec 2026 - Jan 2027 (~61-90 days): Final SAT milestones (Line ADC งวด 3 ฿261k, Zone 1-6 งวด 3 ฿516k, Zone 7 งวด 3 ฿252k, Solenoid IMV งวด 3 20% ฿929k, TSF1 งวด 3 ฿1.14M)
-    let p1Inflow = immediateInflow;
-    let p2Inflow = currentInflow + 1290152.50 + 630123.00; // Next 16-30 days
-    let p3Inflow = 2323499.86 + 1138137.60 + 1044248.10; // Next 31-60 days (Nov 2026)
+    // Period 1 (0-15 days): Active Invoices (Solenoid IMV งวด 2 ฿2.32M + Line ADC งวด 1 ฿1.30M)
+    // Period 2 (16-30 days): Network Infra (฿158k) + Zone 1-6 งวด 2 (฿1.29M) + Zone 7 งวด 2 (฿0.63M)
+    // Period 3 (31-60 days): TSF1 งวด 2 (฿1.14M) + Line ADC งวด 2 (฿1.04M)
+    // Period 4 (61-90 days): Final SAT milestones (Solenoid IMV งวด 3 20% ฿929k, TSF1 งวด 3 ฿1.14M, Line ADC ฿261k, Zone 1-6 ฿516k, Zone 7 ฿252k)
+    let p1Inflow = immediateInflow + currentInflow;
+    let p2Inflow = 158841.50 + 1290152.50 + 630123.00; // Next 16-30 days
+    let p3Inflow = 1138137.60 + 1044248.10; // Next 31-60 days (Nov 2026)
     let p4Inflow = 261062.02 + 516061.00 + 252049.20 + 929399.94 + 1138137.60; // Next 61-90 days
 
     // Outflow calculations
@@ -247,10 +248,10 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
     const p4Outflow = 300000; // Delivery & commissioning costs
 
     const periods = [
-      { name: '1 - 15 วัน (ต.ค. 69)', inAmount: p1Inflow > 0 ? p1Inflow : 1305310.12, outAmount: p1Outflow, description: 'เก็บเงินบิลค้างชำระ (Line ADC งวด 1)' },
-      { name: '16 - 30 วัน (ปลาย ต.ค. 69)', inAmount: p2Inflow, outAmount: p2Outflow, description: 'เก็บเงิน Network Infra + วางบิลงวด 2 (Zone 1-6 & Zone 7)' },
-      { name: '31 - 60 วัน (พ.ย. 69)', inAmount: p3Inflow, outAmount: p3Outflow, description: 'วางบิล & รับเงินงวด 2 (Solenoid IMV, TSF1, Line ADC)' },
-      { name: '61 - 90 วัน (ธ.ค. 69)', inAmount: p4Inflow, outAmount: p4Outflow, description: 'ส่งมอบงานงวด 3 (Final SAT) ครบทุกโครงการ' },
+      { name: '1 - 15 วัน (ต.ค. 69)', inAmount: p1Inflow > 0 ? p1Inflow : 3628809.97, outAmount: p1Outflow, description: 'เก็บเงินบิลวางบิลแล้ว (Solenoid IMV งวด 2 ฿2.32M + Line ADC งวด 1 ฿1.30M)' },
+      { name: '16 - 30 วัน (ปลาย ต.ค. 69)', inAmount: p2Inflow, outAmount: p2Outflow, description: 'วางบิล & รับเงิน Network Infra (฿158k) + งวด 2 Zone 1-6 & Zone 7' },
+      { name: '31 - 60 วัน (พ.ย. 69)', inAmount: p3Inflow, outAmount: p3Outflow, description: 'วางบิล & รับเงินงวด 2 (TSF1 Auto pack ฿1.14M + Line ADC ฿1.04M)' },
+      { name: '61 - 90 วัน (ธ.ค. 69)', inAmount: p4Inflow, outAmount: p4Outflow, description: 'ส่งมอบงานงวด 3 Final SAT (Solenoid IMV ฿929k, TSF1, Line ADC, Zone 1-7)' },
     ];
 
     let runningBalance = 1500000; // Baseline liquid cash reserve

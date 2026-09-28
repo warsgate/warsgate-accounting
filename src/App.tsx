@@ -127,12 +127,12 @@ export function App() {
         const obsoleteDocNos = new Set([
           'INV-2505-004', 'INV-2605-001', 'INV-2605-002/1', 
           'INV-2505-005/2', 'INV-2505-005/3', 'INV-2512-2155/1',
-          'INV-2512-2155/2', 'INV-2512-2155/3'
+          'INV-2512-2155/2', 'INV-2512-2155/3', 'INV-2609-002'
         ]);
 
         // Status reconciliation map for official documents
         const officialStatusMap: Record<string, DocumentStatus> = {
-          'INV-690800001': 'PAID',
+          'INV-690800001': 'PENDING', // Solenoid IMV งวดที่ 2 (50%) วางบิลแล้ว
           'INV-690600005': 'PAID',
           'INV-690600004': 'PAID',
           'INV-690600003': 'PAID',
@@ -141,8 +141,7 @@ export function App() {
           'INV-690400001': 'PAID',
           'IV-690100001': 'PAID',
           'INV-202607-001': 'PAID',
-          'INV-2608-001': 'PENDING',
-          'INV-2609-002': 'PENDING',
+          'INV-2608-001': 'PENDING', // Line ADC งวดที่ 1 (50%) วางบิลแล้ว
         };
 
         // Exclude any document that was explicitly deleted by the user or obsolete draft invoice
