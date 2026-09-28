@@ -16,6 +16,7 @@ interface NavbarProps {
   onToggleSidebar?: () => void;
   currentUser?: UserProfile;
   onSwitchUser?: (user: UserProfile) => void;
+  onOpenLineNotification?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -25,7 +26,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   isSidebarCollapsed = false,
   onToggleSidebar,
   currentUser = AVAILABLE_USER_PROFILES[0],
-  onSwitchUser
+  onSwitchUser,
+  onOpenLineNotification
 }) => {
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -98,6 +100,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="font-bold tracking-tight">Mechanical BOM</span>
             <ExternalLink className="w-3 h-3 text-indigo-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </a>
+
+          {/* LINE Alerts & Approvals Button */}
+          {onOpenLineNotification && (
+            <button
+              onClick={onOpenLineNotification}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-300 shadow-xs transition active:scale-95"
+              title="ตั้งค่าแจ้งเตือนและระบบอนุมัติเอกสารผ่าน LINE Official / Notify"
+            >
+              <Bell className="w-3.5 h-3.5 text-emerald-600 animate-bounce" />
+              <span className="hidden sm:inline">LINE Alert</span>
+            </button>
+          )}
 
           {/* Quick Add Button */}
           <div className="relative">

@@ -4,6 +4,7 @@ import { AccountingDocument, CompanyProfile } from '../types';
 import { formatMoney, formatNumber, formatThaiDate, arabicToThaiBahtText, getProjectName } from '../utils/formatters';
 import { WhtCertificateView } from './WhtCertificateView';
 import { downloadEtaxXml } from '../utils/etaxGenerator';
+import { getPromptPayQrUrl } from '../utils/promptpay';
 
 
 interface DocumentViewerModalProps {
@@ -435,11 +436,28 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                   </div>
                   
                   <div className="space-y-1.5 mt-2 pt-2 border-t border-slate-200/70 text-[9.5px] text-slate-600">
-                    {/* Bank payment info for Sales documents */}
+                    {/* Bank payment & PromptPay info for Sales documents */}
                     {['QUOTATION', 'INVOICE', 'TAX_INVOICE'].includes(doc.type) && (
-                      <div className="bg-white/80 p-1.5 rounded-lg border border-slate-200/60 font-mono text-[9px] text-slate-700">
-                        <span className="font-bold text-slate-900 block font-sans">ชำระเงินผ่านบัญชี:</span>
-                        <span>ธ.กสิกรไทย 089-2-54321-9 (บจก. วอร์สเกต)</span>
+                      <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between gap-3">
+                        <div className="font-mono text-[9px] text-slate-700 space-y-0.5 min-w-0">
+                          <span className="font-bold text-slate-900 block font-sans flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                            ช่องทางชำระเงิน (Payment Options):
+                          </span>
+                          <div className="text-slate-800">ธ.กสิกรไทย (KBANK) : <strong className="font-mono text-slate-950">089-2-54321-9</strong></div>
+                          <div className="text-slate-600">ชื่อบัญชี: บจก. วอร์สเกต ออโตเมชั่น</div>
+                          <div className="text-emerald-700 font-semibold pt-0.5">PromptPay Tax ID: {company.taxId || '0135565012345'}</div>
+                        </div>
+                        <div className="shrink-0 text-center bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+                          <img 
+                            src={getPromptPayQrUrl(company.taxId || '0135565012345', doc.netPayment || doc.grandTotal)} 
+                            alt="PromptPay QR"
+                            className="w-16 h-16 object-contain rounded"
+                          />
+                          <span className="text-[7.5px] font-bold text-slate-600 block mt-0.5 font-mono">
+                            สแกนจ่าย {formatMoney(doc.netPayment || doc.grandTotal)}
+                          </span>
+                        </div>
                       </div>
                     )}
                     <div>

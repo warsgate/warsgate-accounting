@@ -7,6 +7,7 @@ import { AccountingDocument, DocumentType, DocumentStatus, Contact, DocumentNumb
 import { formatMoney, getStatusBadge, formatThaiDate, getLatestYearMonthInfo, getProjectName } from '../../utils/formatters';
 import { BomPoGeneratorModal } from './BomPoGeneratorModal';
 import { ProjectCostMatrixModal } from '../ProjectCostMatrixModal';
+import { AiOcrExpenseModal } from './AiOcrExpenseModal';
 
 interface ExpenseViewProps {
   documents: AccountingDocument[];
@@ -42,6 +43,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   const [deleteTarget, setDeleteTarget] = useState<AccountingDocument | null>(null);
   const [showBomPoModal, setShowBomPoModal] = useState<boolean>(false);
   const [showCostMatrixModal, setShowCostMatrixModal] = useState<boolean>(false);
+  const [showAiOcrModal, setShowAiOcrModal] = useState<boolean>(false);
 
   const expenseDocs = useMemo(() => (documents || []).filter(d => d && EXPENSE_DOC_TYPES.includes(d.type)), [documents]);
 
@@ -196,6 +198,14 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setShowAiOcrModal(true)}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-indigo-200/80 flex items-center gap-1.5 transition-all hover:scale-[1.02] active:scale-95"
+            title="อัปโหลดรูปถ่ายสลิป/บิล หรือ PDF เพื่อสแกนดึงข้อมูลลงบัญชีอัตโนมัติด้วย AI Gemini Vision"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
+            <span>🤖 AI สแกนบิล/ใบเสร็จ</span>
+          </button>
           <button
             onClick={() => setShowCostMatrixModal(true)}
             className="px-3.5 py-2 rounded-xl bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all hover:scale-[1.02] active:scale-95"
@@ -699,6 +709,19 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
           onOpenPoGenerator={(projCode) => {
             setShowCostMatrixModal(false);
             setShowBomPoModal(true);
+          }}
+        />
+      )}
+
+      {showAiOcrModal && (
+        <AiOcrExpenseModal
+          isOpen={showAiOcrModal}
+          onClose={() => setShowAiOcrModal(false)}
+          contacts={contacts}
+          onSaveDocument={(newDoc) => {
+            if (onBatchCreateDocuments) {
+              onBatchCreateDocuments([newDoc as AccountingDocument]);
+            }
           }}
         />
       )}

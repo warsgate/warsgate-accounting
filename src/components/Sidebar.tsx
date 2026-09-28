@@ -2,7 +2,7 @@ import React from "react";
 import { 
   LayoutDashboard, TrendingUp, TrendingDown, Users, Package,
   BookOpen, Calculator, Settings, ChevronRight, ChevronLeft, Zap, BarChart3,
-  PanelLeftClose, PanelLeftOpen, Cpu, ExternalLink, Clock, Sparkles, Layers
+  PanelLeftClose, PanelLeftOpen, Cpu, ExternalLink, Clock, Sparkles, Layers, Calendar
 } from "lucide-react";
 import { AccountingDocument, Contact, ProductService } from "../types";
 
@@ -64,6 +64,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badgeColor: "bg-rose-50 text-rose-700 border-rose-200",
     },
 
+    {
+      id: "project-gantt",
+      label: "ไทม์ไลน์ส่งมอบงาน",
+      subtitle: "Gantt Delivery & FAT/SAT",
+      icon: Calendar,
+      badge: "Gantt",
+      badgeColor: "bg-purple-50 text-purple-700 border-purple-200 font-bold",
+    },
     {
       id: "project-pnl",
       label: "กำไรขาดทุนรายจ็อบ",

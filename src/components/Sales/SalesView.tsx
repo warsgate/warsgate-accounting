@@ -5,28 +5,33 @@ import {
   TrendingUp, Zap, Sparkles, Building2, Layers, DollarSign, Activity,
   FileSpreadsheet, ChevronDown
 } from 'lucide-react';
-import { AccountingDocument, DocumentType, DocumentStatus } from '../../types';
+import { AccountingDocument, DocumentType, DocumentStatus, Contact } from '../../types';
 import { formatMoney, getStatusBadge, formatThaiDate, getLatestYearMonthInfo, getProjectName } from '../../utils/formatters';
 import { exportSalesToExcel } from '../../utils/excelExport';
+import { CostEstimatorModal } from './CostEstimatorModal';
 
 interface SalesViewProps {
   documents: AccountingDocument[];
+  contacts?: Contact[];
   openCreateModal: (type: DocumentType) => void;
   openEditDocument: (doc: AccountingDocument) => void;
   openViewDocument: (doc: AccountingDocument) => void;
   onIssueReceipt?: (doc: AccountingDocument) => void;
   onUpdateStatus: (docId: string, status: DocumentStatus) => void;
   onDeleteDocument: (docId: string) => void;
+  onBatchCreateDocuments?: (newDocs: AccountingDocument[]) => void;
 }
 
 export const SalesView: React.FC<SalesViewProps> = ({
   documents,
+  contacts = [],
   openCreateModal,
   openEditDocument,
   openViewDocument,
   onIssueReceipt,
   onUpdateStatus,
-  onDeleteDocument
+  onDeleteDocument,
+  onBatchCreateDocuments
 }) => {
   const [activeTypeTab, setActiveTypeTab] = useState<string>('QUOTATION');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -36,6 +41,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [deleteTarget, setDeleteTarget] = useState<AccountingDocument | null>(null);
   const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
+  const [showCostEstimatorModal, setShowCostEstimatorModal] = useState<boolean>(false);
 
   // Sales-only document categories
   const salesTypes: DocumentType[] = ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'DELIVERY_ORDER', 'RECEIPT'];
@@ -203,6 +209,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setShowCostEstimatorModal(true)}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-rose-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-bold shadow-md shadow-rose-200 flex items-center gap-1.5 transition-all hover:scale-[1.02] active:scale-95"
+            title="คำนวณและประเมินต้นทุนโปรเจกต์เครื่องจักรอัตโนมัติ (BOM + CNC + Wiring + PLC + SAT) ก่อนออกใบเสนอราคา"
+          >
+            <TrendingUp className="w-3.5 h-3.5 text-yellow-200 animate-pulse" />
+            <span>⚙️ ประเมินต้นทุน & กำไร</span>
+          </button>
           <button
             onClick={() => openCreateModal('QUOTATION')}
             className="px-3.5 py-2 rounded-xl bg-white hover:bg-emerald-50 hover:border-emerald-200 text-emerald-700 text-xs font-bold border border-slate-200 shadow-sm flex items-center gap-1.5 transition active:scale-95"
@@ -675,6 +689,31 @@ export const SalesView: React.FC<SalesViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+      {showCostEstimatorModal && (
+        <CostEstimatorModal
+          isOpen={showCostEstimatorModal}
+          onClose={() => setShowCostEstimatorModal(false)}
+          contacts={contacts}
+          onGenerateQuotation={(quotationData) => {
+            if (onBatchCreateDocuments) {
+              const newDoc: AccountingDocument = {
+                ...quotationData,
+                id: `qt-${Date.now()}`,
+                documentNo: `QT-${new Date().getFullYear() + 543}${(new Date().getMonth() + 1).toString().padStart(2, '0')}-${Math.floor(100 + Math.random() * 900)}`,
+                issueDate: new Date().toISOString().split('T')[0],
+                dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                discountTotal: 0,
+                vatRate: 7,
+                withholdingTaxTotal: Math.round(quotationData.subtotal * 0.03),
+                netPayment: Math.round(quotationData.grandTotal - (quotationData.subtotal * 0.03)),
+                status: 'APPROVED',
+                createdByName: 'Engineering Cost Estimator'
+              };
+              onBatchCreateDocuments([newDoc]);
+            }
+          }}
+        />
       )}
 
     </div>

@@ -18,6 +18,8 @@ import { ProjectCostMatrixModal } from './components/ProjectCostMatrixModal';
 import { ProjectPnLView } from './components/Analytics/ProjectPnLView';
 import { CashFlowAgingView } from './components/Analytics/CashFlowAgingView';
 import { MilestoneBillingView } from './components/MilestoneBilling/MilestoneBillingView';
+import { LineNotificationModal } from './components/Settings/LineNotificationModal';
+import { ProjectGanttTracker } from './components/Analytics/ProjectGanttTracker';
 
 import { 
   initialCompanyProfile, 
@@ -214,6 +216,7 @@ export function App() {
   const [bomPoQuotationTarget, setBomPoQuotationTarget] = useState<AccountingDocument | null>(null);
   const [showGlobalCostMatrix, setShowGlobalCostMatrix] = useState<boolean>(false);
   const [showGlobalBomPoGenerator, setShowGlobalBomPoGenerator] = useState<boolean>(false);
+  const [showLineNotificationModal, setShowLineNotificationModal] = useState<boolean>(false);
 
   const handleIssueReceiptFromInvoice = (invoiceDoc: AccountingDocument) => {
     setFromDoc(invoiceDoc);
@@ -400,6 +403,7 @@ export function App() {
         onToggleSidebar={toggleSidebar}
         currentUser={currentUser}
         onSwitchUser={handleSwitchUser}
+        onOpenLineNotification={() => setShowLineNotificationModal(true)}
       />
 
       {/* Main Workspace Layout */}
@@ -437,6 +441,7 @@ export function App() {
             {activeTab === 'sales' && (
               <SalesView
                 documents={documents}
+                contacts={contacts}
                 openCreateModal={(type) => {
                   setFromDoc(null);
                   setEditingDoc(null);
@@ -450,6 +455,14 @@ export function App() {
                 onIssueReceipt={handleIssueReceiptFromInvoice}
                 onUpdateStatus={handleUpdateDocumentStatus}
                 onDeleteDocument={handleDeleteDocument}
+                onBatchCreateDocuments={handleBatchSaveDocuments}
+              />
+            )}
+
+            {activeTab === 'project-gantt' && (
+              <ProjectGanttTracker
+                documents={documents}
+                onOpenMilestoneBilling={() => setActiveTab('milestone-billing')}
               />
             )}
 
@@ -638,6 +651,21 @@ export function App() {
             setCreateDocType(null);
             setEditingDoc(null);
             setFromDoc(null);
+          }}
+        />
+      )}
+
+      {/* LINE Official / Notify & Approvals Modal */}
+      {showLineNotificationModal && (
+        <LineNotificationModal
+          isOpen={showLineNotificationModal}
+          onClose={() => setShowLineNotificationModal(false)}
+          documents={documents}
+          onApproveDocument={(docId) => {
+            handleUpdateDocumentStatus(docId, 'APPROVED');
+          }}
+          onRejectDocument={(docId) => {
+            handleUpdateDocumentStatus(docId, 'CANCELLED');
           }}
         />
       )}
