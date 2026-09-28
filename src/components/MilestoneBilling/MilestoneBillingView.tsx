@@ -43,7 +43,7 @@ export const MilestoneBillingView: React.FC<MilestoneBillingViewProps> = ({
         const map = new Map<string, ContractMilestonePlan>();
         initialMilestonePlans.forEach(p => map.set(p.id, p));
         parsed.forEach(p => {
-          if (!map.has(p.id)) {
+          if (p.id !== 'plan-kuroda-vision' && !map.has(p.id)) {
             map.set(p.id, p);
           }
         });

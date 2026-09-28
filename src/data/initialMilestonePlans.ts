@@ -319,43 +319,5 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         notes: 'รับประกัน 1 ปี กำหนดส่งมอบเครื่องจักรปลายปี 2569'
       }
     ]
-  },
-
-  // ─── PO: KURODA-PO-089 (Kuroda Techno Tooling Machine) ─────────────────────
-  {
-    id: 'plan-kuroda-vision',
-    contractTitle: 'ชุดระบบกล้องตรวจสอบชิ้นงาน AI Vision Machine B60',
-    quotationDocNo: 'QT-2605-KUR',
-    referencePoNo: 'KURODA-PO-089',
-    projectCode: 'PRJ-KUR-B60',
-    projectName: 'Machine Vision Controller & Camera Inspection',
-    customerContact: initialContacts[1], // Kuroda
-    totalContractAmount: 1074658.78,
-    createdAt: '2026-05-12',
-    updatedAt: '2026-09-28',
-    notes: 'แบ่งชำระ 2 งวด 50% - 50%',
-    milestones: [
-      {
-        id: 'ms-kur-1',
-        milestoneNo: 1,
-        title: 'งวดที่ 1: เงินมัดจำและสั่งซื้ออุปกรณ์ Vision Hardware (50%)',
-        percentage: 50,
-        amount: 537329.39,
-        dueDate: '2026-05-25',
-        status: 'PAID',
-        invoiceDocNo: 'INV-2605-001',
-        notes: 'รับชำระเงินมัดจำแล้ว'
-      },
-      {
-        id: 'ms-kur-2',
-        milestoneNo: 2,
-        title: 'งวดที่ 2: ติดตั้งหน้างาน สอบเทียบความแม่นยำ AI & ส่งมอบ (50%)',
-        percentage: 50,
-        amount: 537329.39,
-        dueDate: '2026-10-15',
-        status: 'WAITING',
-        notes: 'รอกำหนดการติดตั้งหน้างาน'
-      }
-    ]
   }
 ];

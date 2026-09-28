@@ -71,9 +71,9 @@ export function App() {
         const map = new Map<string, ContractMilestonePlan>();
         // First set initial plans
         initialMilestonePlans.forEach(p => map.set(p.id, p));
-        // Then merge user customized plans if not conflicting or update milestone statuses
+        // Then merge user customized plans (exclude deleted plan-kuroda-vision)
         parsed.forEach(p => {
-          if (!map.has(p.id)) {
+          if (p.id !== 'plan-kuroda-vision' && !map.has(p.id)) {
             map.set(p.id, p);
           }
         });

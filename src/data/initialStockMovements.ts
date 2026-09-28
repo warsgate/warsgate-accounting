@@ -35,7 +35,7 @@ export const initialStockMovements: StockMovement[] = [
     locationFrom: 'HQ_KHLONG_LUANG',
     locationTo: 'SITE_KURODA',
     referenceDocNo: 'DO-2609-001',
-    referenceProject: 'PRJ-KUR-B60',
+    referenceProject: 'Vision Inspection Project',
     performedBy: 'ธนกฤต วิศวกรรม',
     notes: 'ส่งมอบเครื่องควบคุมวิชั่นไปยังไซต์งานคูโรดา โรจนะ'
   },
