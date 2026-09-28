@@ -23,9 +23,9 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         percentage: 50,
         amount: 1305310.12,
         dueDate: '2026-07-30',
-        status: 'PAID',
+        status: 'INVOICED',
         invoiceDocNo: 'INV-2608-001',
-        notes: 'ชำระมัดจำและออกใบเสร็จเรียบร้อย'
+        notes: 'ออกใบแจ้งหนี้ INV-2608-001 วางบิลงวดที่ 1 เรียบร้อย รอการชำระเงิน'
       },
       {
         id: 'ms-2607-2',
@@ -34,9 +34,8 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         percentage: 40,
         amount: 1044248.10,
         dueDate: '2026-09-15',
-        status: 'INVOICED',
-        invoiceDocNo: 'INV-2609-001',
-        notes: 'วางบิลเรียบร้อย รอชำระตามเครดิต 30 วัน'
+        status: 'WAITING',
+        notes: 'อยู่ระหว่างดำเนินการทดสอบ FAT รอวางบิลงวดที่ 2'
       },
       {
         id: 'ms-2607-3',
@@ -82,8 +81,8 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         percentage: 50,
         amount: 1290152.50,
         dueDate: '2026-08-30',
-        status: 'INVOICED',
-        notes: 'วางบิลงวดที่ 2 แล้ว'
+        status: 'WAITING',
+        notes: 'อยู่ระหว่างประกอบชิ้นงาน Zone 1-6 รอวางบิลงวดที่ 2'
       },
       {
         id: 'ms-26051-3',
@@ -121,7 +120,7 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         dueDate: '2026-05-25',
         status: 'PAID',
         invoiceDocNo: 'REC-2605-002/1',
-        notes: 'รับชำระเงินมัดจำแล้วเมื่อ 25 พ.ค. 2569'
+        notes: 'รับชำระเงินมัดจำแล้วเมื่อ 25 พ.ค. 2569 (ใบเสร็จ REC-2605-002/1)'
       },
       {
         id: 'ms-26052-2',
@@ -130,8 +129,8 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         percentage: 50,
         amount: 630123.00,
         dueDate: '2026-08-30',
-        status: 'INVOICED',
-        notes: 'วางบิลงวดที่ 2 แล้ว'
+        status: 'WAITING',
+        notes: 'อยู่ระหว่างประกอบชิ้นงาน Zone 7 รอวางบิลงวดที่ 2'
       },
       {
         id: 'ms-26052-3',
@@ -223,14 +222,14 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
     ]
   },
 
-  // ─── PO: 2505004 (Traceability Solenoid Line 5 สถานี) ──────────────────────
+  // ─── PO: 2505004 (Traceability Solenoid Line IMV & 5 Stations) ─────────────
   {
     id: 'plan-pnp-solenoid',
-    contractTitle: 'โครงการระบบตรวจสอบย้อนกลับ Solenoid Line (5 สถานี)',
+    contractTitle: 'โครงการซอฟต์แวร์ Traceability Solenoid Line IMV & 5 Stations',
     quotationDocNo: 'QT-2505-004',
     referencePoNo: '2505004',
     projectCode: 'PRJ-PNP-SOL',
-    projectName: 'Traceability Solenoid Line Complete System',
+    projectName: 'Traceability Solenoid Line IMV Complete System',
     customerContact: initialContacts[0], // PNP
     totalContractAmount: 4646999.71,
     createdAt: '2025-05-07',
@@ -246,7 +245,7 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         dueDate: '2025-05-20',
         status: 'PAID',
         invoiceDocNo: 'INV-690800001',
-        notes: 'ชำระเรียบร้อยแล้วเมื่อ 2025-05-25'
+        notes: 'รับชำระเงินมัดจำงวดที่ 1 เรียบร้อย'
       },
       {
         id: 'ms-pnp-2',
@@ -255,9 +254,8 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         percentage: 40,
         amount: 1858799.88,
         dueDate: '2025-08-30',
-        status: 'INVOICED',
-        invoiceDocNo: 'INV-690600005',
-        notes: 'ออกใบแจ้งหนี้แล้ว รอการชำระเงินตามรอบเครดิต 30 วัน'
+        status: 'WAITING',
+        notes: 'อยู่ระหว่างทดสอบ Factory Acceptance Test รอวางบิลงวดที่ 2'
       },
       {
         id: 'ms-pnp-3',
@@ -304,9 +302,8 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         percentage: 30,
         amount: 1138137.60,
         dueDate: '2026-06-15',
-        status: 'INVOICED',
-        invoiceDocNo: 'IV-690600002',
-        notes: 'ทดสอบ Process Work ผ่าน วางบิลงวดที่ 2'
+        status: 'WAITING',
+        notes: 'อยู่ระหว่างประกอบและทดสอบ Process Work รอวางบิลงวดที่ 2'
       },
       {
         id: 'ms-tsf-3',

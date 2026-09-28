@@ -56,8 +56,8 @@ const HIDDEN_PROJECTS_KEY = 'warsgate_hidden_timeline_projects';
 const CONFIRMED_PO_DATA: Record<string, { total: number; subtotal: number; poNo: string; dwgNo: string; name: string }> = {
   'PRJ-527': { total: 2610620.24, subtotal: 2439832.00, poNo: '2607001', dwgNo: 'ADC-2608-001', name: 'Tracking ability Line ADC (บอร์ด PLC & Data Center)' },
   'PRJ-107': { total: 3793792.00, subtotal: 3545600.00, poNo: 'PO252155', dwgNo: 'TSF1-LM1-2026', name: 'TSF1 Auto pack LM1 (Stacker, Open Bag & Insert Foam)' },
-  'PRJ-2505-004': { total: 4646999.71, subtotal: 4342990.38, poNo: '2505004', dwgNo: 'TRACE-5LINE-2025', name: 'Traceability 5 ไลน์ผลิต (Fujipart Thailand)' },
-  'PRJ-PNP-SOL': { total: 4646999.71, subtotal: 4342990.38, poNo: '2505004', dwgNo: 'TRACE-5LINE-2025', name: 'Traceability 5 ไลน์ผลิต (Fujipart Thailand)' },
+  'PRJ-2505-004': { total: 4646999.71, subtotal: 4342990.38, poNo: '2505004', dwgNo: 'TRACE-5LINE-2025', name: 'Traceability Solenoid Line IMV (Fujipart Thailand)' },
+  'PRJ-PNP-SOL': { total: 4646999.71, subtotal: 4342990.38, poNo: '2505004', dwgNo: 'TRACE-5LINE-2025', name: 'Traceability Solenoid Line IMV (Fujipart Thailand)' },
   'PRJ-2605-001': { total: 2580305.00, subtotal: 2411500.00, poNo: '2605001', dwgNo: 'FJP-Z16-2026', name: 'Zone 1-6 Automation & Structure Parts (Fujipart)' },
   'PRJ-PNP-Z1-6': { total: 2580305.00, subtotal: 2411500.00, poNo: '2605001', dwgNo: 'FJP-Z16-2026', name: 'Zone 1-6 Automation & Structure Parts (Fujipart)' },
   'PRJ-2605-002': { total: 1260246.00, subtotal: 1177800.00, poNo: '2605002', dwgNo: 'FJP-Z7-2026', name: 'Zone 7 Automation & Structure Parts (Fujipart)' },
