@@ -120,8 +120,8 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
       const partPo = (bom.parts && bom.parts.find(p => p.poNumber)?.poNumber) || '';
       const cleanPartPo = partPo.replace(/^PO-?/i, '');
 
-      // Find matching Accounting Document / Quotation with PO
-      const matchingDoc = documents.find(d => {
+      // Find matching Accounting Document / Quotation with PO (prioritize QUOTATION to get full contract total)
+      const isDocMatch = (d: AccountingDocument) => {
         const docPo = (d.referencePoNo || '').trim();
         const cleanDocPo = docPo.replace(/^PO-?/i, '');
         if (cleanDocPo && (cleanDocPo === cleanPartPo || cleanDocPo === pCode.replace('PRJ-', '') || cleanDocPo === bom.dwgNo)) return true;
@@ -136,7 +136,9 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
         if (bom.name && d.projectNote && bom.name.toLowerCase().includes(d.projectNote.toLowerCase())) return true;
         if (d.items && d.items.some(i => i.name.toLowerCase().includes(bom.name.toLowerCase()))) return true;
         return false;
-      });
+      };
+
+      const matchingDoc = documents.find(d => d.type === 'QUOTATION' && isDocMatch(d)) || documents.find(isDocMatch);
 
       // Find matching Milestone Plan
       const matchedPlan = milestonePlans.find(p => 
@@ -145,7 +147,12 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
         (cleanPartPo && p.referencePoNo?.replace(/^PO-?/i, '') === cleanPartPo) ||
         (matchingDoc?.referencePoNo && p.referencePoNo === matchingDoc.referencePoNo) ||
         (pCode === 'PRJ-527' && p.referencePoNo === '2607001') ||
-        (pCode === 'PRJ-107' && p.referencePoNo === 'PO252155')
+        (pCode === 'PRJ-107' && p.referencePoNo === 'PO252155') ||
+        (pCode === 'PRJ-2505-005' && p.referencePoNo === '2505005') ||
+        (pCode === 'PRJ-2605-001' && p.referencePoNo === '2605001') ||
+        (pCode === 'PRJ-2605-002' && p.referencePoNo === '2605002') ||
+        (pCode === 'PRJ-2609-003' && p.referencePoNo === '2609002') ||
+        (pCode === 'PRJ-2505-004' && p.referencePoNo === '2505004')
       );
 
       const custName = bom.customer || matchingDoc?.contact?.companyName || 'ลูกค้าโครงการ';

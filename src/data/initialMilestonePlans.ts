@@ -152,7 +152,7 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
     contractTitle: 'โครงการซอฟต์แวร์ Traceability Solenoid Line Software & Expansion',
     quotationDocNo: 'QT-2505-005',
     referencePoNo: '2505005',
-    projectCode: 'PRJ-PNP-SOL-SW',
+    projectCode: 'PRJ-2505-005',
     projectName: 'Traceability Solenoid Line Software & Expansion',
     customerContact: initialContacts[0],
     totalContractAmount: 2325558.33,

@@ -832,10 +832,10 @@ export const FALLBACK_BOM_PROJECTS: BomProject[] = [
     customer: 'บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด',
     customerId: '001',
     dwgNo: 'SOL-SW-2025',
-    targetBudget: 2173419,
+    targetBudget: 2325558.33,
     status: 'Completed',
     totalPartsCount: 2,
-    totalEstimatedCost: 1850000,
+    totalEstimatedCost: 2173419,
     suppliers: ['Warsgate Software'],
     parts: [
       {
