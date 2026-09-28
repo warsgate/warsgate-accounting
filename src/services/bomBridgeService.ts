@@ -12,14 +12,14 @@ export const FALLBACK_BOM_PROJECTS: BomProject[] = [
   {
     id: 'proj-527',
     code: 'PRJ-527',
-    name: 'Tracking ability Line ADC',
-    customer: 'บริษัท ชินเอทสึ โพลีเมอร์ (ประเทศไทย) จำกัด',
+    name: 'Tracking ability Line ADC (PLC Control Board & Data Center)',
+    customer: 'บริษัท พีเอ็นพี เทคโนโลยี เกรท จำกัด',
     customerId: '001',
     dwgNo: 'ADC-2608-001',
-    targetBudget: 850000,
+    targetBudget: 2610620.24,
     status: 'Active',
     totalPartsCount: 16,
-    totalEstimatedCost: 846340,
+    totalEstimatedCost: 2439832,
     suppliers: ['OMRON', 'SMC', 'Misumi', 'Warsgate'],
     parts: [
       {
@@ -131,7 +131,7 @@ export const FALLBACK_BOM_PROJECTS: BomProject[] = [
     customer: 'บริษัท คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) จํากัด',
     customerId: '002',
     dwgNo: 'WGL-MVC-2026',
-    targetBudget: 1100000,
+    targetBudget: 1074658.78,
     status: 'Active',
     totalPartsCount: 13,
     totalEstimatedCost: 1004354,

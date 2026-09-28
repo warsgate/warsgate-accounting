@@ -116,24 +116,42 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
       const pCode = bom.code;
       processedCodes.add(pCode);
 
+      // Extract parts PO number if available
+      const partPo = (bom.parts && bom.parts.find(p => p.poNumber)?.poNumber) || '';
+      const cleanPartPo = partPo.replace(/^PO-?/i, '');
+
       // Find matching Accounting Document / Quotation with PO
-      const matchingDoc = documents.find(d => 
-        (d.referencePoNo && (d.referencePoNo === bom.code.replace('PRJ-', '') || d.referencePoNo === bom.dwgNo || bom.name.toLowerCase().includes((d.projectNote || '').toLowerCase()))) ||
-        (d.documentNo && d.documentNo.includes(bom.code.replace('PRJ-', ''))) ||
-        (d.items && d.items.some(i => i.name.toLowerCase().includes(bom.name.toLowerCase())))
-      );
+      const matchingDoc = documents.find(d => {
+        const docPo = (d.referencePoNo || '').trim();
+        const cleanDocPo = docPo.replace(/^PO-?/i, '');
+        if (cleanDocPo && (cleanDocPo === cleanPartPo || cleanDocPo === pCode.replace('PRJ-', '') || cleanDocPo === bom.dwgNo)) return true;
+        if (d.referencePoNo && (d.referencePoNo === '2607001' && pCode === 'PRJ-527')) return true;
+        if (d.referencePoNo && (d.referencePoNo === 'PO252155' && pCode === 'PRJ-107')) return true;
+        if (d.referencePoNo && (d.referencePoNo === '2605001' && pCode === 'PRJ-2605-001')) return true;
+        if (d.referencePoNo && (d.referencePoNo === '2605002' && pCode === 'PRJ-2605-002')) return true;
+        if (d.referencePoNo && (d.referencePoNo === '2505005' && pCode === 'PRJ-2505-005')) return true;
+        if (d.referencePoNo && (d.referencePoNo === '2609002' && pCode === 'PRJ-2609-003')) return true;
+        if (d.referencePoNo && (d.referencePoNo === '2505004' && (pCode === 'PRJ-PNP-SOL' || pCode === 'PRJ-2505-004'))) return true;
+        if (d.documentNo && d.documentNo.includes(pCode.replace('PRJ-', ''))) return true;
+        if (bom.name && d.projectNote && bom.name.toLowerCase().includes(d.projectNote.toLowerCase())) return true;
+        if (d.items && d.items.some(i => i.name.toLowerCase().includes(bom.name.toLowerCase()))) return true;
+        return false;
+      });
 
       // Find matching Milestone Plan
       const matchedPlan = milestonePlans.find(p => 
         p.projectCode === bom.code || 
         p.contractTitle.toLowerCase().includes(bom.name.toLowerCase()) ||
-        (matchingDoc?.referencePoNo && p.referencePoNo === matchingDoc.referencePoNo)
+        (cleanPartPo && p.referencePoNo?.replace(/^PO-?/i, '') === cleanPartPo) ||
+        (matchingDoc?.referencePoNo && p.referencePoNo === matchingDoc.referencePoNo) ||
+        (pCode === 'PRJ-527' && p.referencePoNo === '2607001') ||
+        (pCode === 'PRJ-107' && p.referencePoNo === 'PO252155')
       );
 
       const custName = bom.customer || matchingDoc?.contact?.companyName || 'ลูกค้าโครงการ';
       const baseDate = matchingDoc?.issueDate || '2026-05-01';
-      const grandTotal = matchingDoc?.grandTotal || bom.targetBudget || bom.totalEstimatedCost || 850000;
-      const refPo = matchingDoc?.referencePoNo || (bom.parts && bom.parts.find(p => p.poNumber)?.poNumber) || 'PO-2607001';
+      const grandTotal = matchingDoc?.grandTotal || matchedPlan?.totalContractAmount || bom.targetBudget || bom.totalEstimatedCost || 850000;
+      const refPo = matchingDoc?.referencePoNo || matchedPlan?.referencePoNo || (cleanPartPo ? `PO-${cleanPartPo}` : 'PO-2607001');
 
       // ─── Real BOM Master Plan Progress Calculation ───
       const parts = bom.parts || [];
@@ -422,9 +440,9 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
 
               {/* Progress Bar & Financials */}
               <div className="space-y-2 pt-2 border-t border-slate-100">
-                <div className="flex justify-between text-xs font-mono">
-                  <span className="text-slate-500 font-sans">มูลค่าโครงการ BOM:</span>
-                  <span className="font-bold text-slate-900">{formatMoney(proj.totalAmount)} บาท</span>
+                <div className="flex justify-between items-center text-xs font-mono">
+                  <span className="text-slate-600 font-sans font-semibold">มูลค่าตามใบสั่งซื้อ (PO Total):</span>
+                  <span className="font-bold text-slate-900 text-sm">{formatMoney(proj.totalAmount)} บาท</span>
                 </div>
 
                 <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
