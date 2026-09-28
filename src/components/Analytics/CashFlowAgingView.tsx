@@ -233,12 +233,12 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
 
     // 2. Upcoming milestones categorized by timeline
     // Oct 2026 (~0-30 days): Zone 1-6 งวด 2 (฿1.29M), Zone 7 งวด 2 (฿0.63M)
-    // Nov 2026 (~31-60 days): Solenoid IMV งวด 2 (฿1.86M), TSF1 งวด 2 (฿1.14M), Line ADC งวด 2 (฿1.04M)
-    // Dec 2026 - Jan 2027 (~61-90 days): Final SAT milestones (Line ADC งวด 3 ฿261k, Zone 1-6 งวด 3 ฿516k, Zone 7 งวด 3 ฿252k, Solenoid IMV งวด 3 ฿465k, TSF1 งวด 3 ฿1.14M)
+    // Nov 2026 (~31-60 days): Solenoid IMV งวด 2 50% (฿2.32M), TSF1 งวด 2 (฿1.14M), Line ADC งวด 2 (฿1.04M)
+    // Dec 2026 - Jan 2027 (~61-90 days): Final SAT milestones (Line ADC งวด 3 ฿261k, Zone 1-6 งวด 3 ฿516k, Zone 7 งวด 3 ฿252k, Solenoid IMV งวด 3 20% ฿929k, TSF1 งวด 3 ฿1.14M)
     let p1Inflow = immediateInflow;
     let p2Inflow = currentInflow + 1290152.50 + 630123.00; // Next 16-30 days
-    let p3Inflow = 1858799.88 + 1138137.60 + 1044248.10; // Next 31-60 days (Nov 2026)
-    let p4Inflow = 261062.02 + 516061.00 + 252049.20 + 464699.98 + 1138137.60; // Next 61-90 days
+    let p3Inflow = 2323499.86 + 1138137.60 + 1044248.10; // Next 31-60 days (Nov 2026)
+    let p4Inflow = 261062.02 + 516061.00 + 252049.20 + 929399.94 + 1138137.60; // Next 61-90 days
 
     // Outflow calculations
     const p1Outflow = apAgingSummary.days1_30 + apAgingSummary.days31_60 + apAgingSummary.days90Plus + (apAgingSummary.current > 0 ? apAgingSummary.current : 150870);

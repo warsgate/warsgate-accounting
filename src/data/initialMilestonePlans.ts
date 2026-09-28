@@ -234,38 +234,38 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
     totalContractAmount: 4646999.71,
     createdAt: '2025-05-07',
     updatedAt: '2026-09-28',
-    notes: 'เงื่อนไขการชำระเงินตามสัญญา 50% - 40% - 10%',
+    notes: 'เงื่อนไขการชำระเงินตามสัญญา 30% - 50% - 20%',
     milestones: [
       {
         id: 'ms-pnp-1',
         milestoneNo: 1,
-        title: 'งวดที่ 1: เงินมัดจำลงนามสัญญาและสั่งซื้ออุปกรณ์หลัก (50%)',
-        percentage: 50,
-        amount: 2323499.85,
+        title: 'งวดที่ 1: เงินมัดจำลงนามสัญญาและเริ่มดำเนินงาน (30%)',
+        percentage: 30,
+        amount: 1394099.91,
         dueDate: '2025-05-20',
         status: 'PAID',
-        invoiceDocNo: 'INV-690800001',
-        notes: 'รับชำระเงินมัดจำงวดที่ 1 เรียบร้อย'
+        notes: 'รับชำระเงินมัดจำงวดที่ 1 (30%) เรียบร้อย'
       },
       {
         id: 'ms-pnp-2',
         milestoneNo: 2,
-        title: 'งวดที่ 2: ติดตั้งซอฟต์แวร์และทดสอบระบบ Factory Acceptance Test (40%)',
-        percentage: 40,
-        amount: 1858799.88,
-        dueDate: '2025-08-30',
+        title: 'งวดที่ 2: ติดตั้งซอฟต์แวร์และทดสอบระบบ Factory Acceptance Test (50%)',
+        percentage: 50,
+        amount: 2323499.86,
+        dueDate: '2026-08-22',
         status: 'WAITING',
-        notes: 'อยู่ระหว่างทดสอบ Factory Acceptance Test รอวางบิลงวดที่ 2'
+        invoiceDocNo: 'INV-690800001',
+        notes: 'อยู่ระหว่างทดสอบ Factory Acceptance Test รอวางบิลงวดที่ 2 (50%)'
       },
       {
         id: 'ms-pnp-3',
         milestoneNo: 3,
-        title: 'งวดที่ 3: ส่งมอบงานขั้นสุดท้าย Site Acceptance Test & Training (10%)',
-        percentage: 10,
-        amount: 464699.98,
-        dueDate: '2025-10-31',
+        title: 'งวดที่ 3: ส่งมอบงานขั้นสุดท้าย Site Acceptance Test & Training (20%)',
+        percentage: 20,
+        amount: 929399.94,
+        dueDate: '2026-10-31',
         status: 'WAITING',
-        notes: 'รอส่งมอบงาน Final Site Acceptance'
+        notes: 'รอส่งมอบงาน Final Site Acceptance (20%)'
       }
     ]
   },
