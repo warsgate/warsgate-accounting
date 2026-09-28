@@ -1397,7 +1397,7 @@ export const initialDocuments: AccountingDocument[] = [
     issueDate: '2026-01-07',
     dueDate: '2026-01-14',
     referencePoNo: 'PO252155',
-    contact: initialContacts[1],
+    contact: initialContacts[2], // บริษัท ไทย เซกิซุย โฟม จำกัด
     items: [
       {
         id: 'item-iv-690100001-1',
@@ -1832,7 +1832,7 @@ export const initialDocuments: AccountingDocument[] = [
     dueDate: '2026-01-23',
     referencePoNo: 'PO252155',
     referenceDocNo: 'CAP250095/',
-    contact: initialContacts[1], // บริษัท ไทย เซกิซุย โฟม จำกัด
+    contact: initialContacts[2], // บริษัท ไทย เซกิซุย โฟม จำกัด
     items: [
       {
         id: 'item-tsf-1',

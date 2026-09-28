@@ -270,51 +270,51 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
     ]
   },
 
-  // ─── PO: TSF-PO-2601 (Thai Sekisui Foam) ───────────────────────────────────
+  // ─── PO: PO252155 (Thai Sekisui Foam Co., Ltd.) ───────────────────────────
   {
     id: 'plan-tsf-autopack',
-    contractTitle: 'เครื่องจักร TSF1 Auto pack LM1 (Stacker & Bag Insert)',
-    quotationDocNo: 'QT-2601-TSF',
-    referencePoNo: 'TSF-PO-2601',
-    projectCode: 'PRJ-TSF-LM1',
-    projectName: 'Auto Pack LM1 Foam Packaging Machine',
+    contractTitle: 'โครงการเครื่องจักร TSF1 Auto pack LM1 (Thai Sekisui Foam)',
+    quotationDocNo: 'QT-2512-2155',
+    referencePoNo: 'PO252155',
+    projectCode: 'PRJ-107',
+    projectName: 'TSF1 Auto pack LM1 (Stacker, Open Bag & Insert Foam)',
     customerContact: initialContacts[2], // Thai Sekisui Foam
-    totalContractAmount: 2442800.00,
-    createdAt: '2026-01-15',
+    totalContractAmount: 3793792.00,
+    createdAt: '2025-12-24',
     updatedAt: '2026-09-28',
-    notes: 'สัญญาว่าจ้างผลิตเครื่องจักรอัตโนมัติ แบ่งจ่าย 30% - 50% - 20%',
+    notes: 'ตามใบสั่งซื้อ PO: PO252155 (Ref: CAP250095/ เงื่อนไขชำระเงิน: 40% Down [฿1,517,516.80], 30% After Process Work [฿1,138,137.60], 30% After Complete Work [฿1,138,137.60])',
     milestones: [
       {
         id: 'ms-tsf-1',
         milestoneNo: 1,
-        title: 'งวดที่ 1: เงินมัดจำเริ่มงานออกแบบและสั่งผลิตชิ้นส่วน (30%)',
-        percentage: 30,
-        amount: 732840.00,
-        dueDate: '2026-01-30',
+        title: 'งวดที่ 1: เงินมัดจำลงนามสัญญาและสั่งซื้ออุปกรณ์หลัก (40% Downpayment)',
+        percentage: 40,
+        amount: 1517516.80,
+        dueDate: '2026-01-14',
         status: 'PAID',
-        invoiceDocNo: 'INV-2601-TSF1',
-        notes: 'รับชำระมัดจำเรียบร้อย'
+        invoiceDocNo: 'IV-690100001',
+        notes: 'รับชำระเงินมัดจำ 40% เรียบร้อยตามใบแจ้งหนี้ IV-690100001'
       },
       {
         id: 'ms-tsf-2',
         milestoneNo: 2,
-        title: 'งวดที่ 2: ประกอบเครื่องจักร ติดตั้งระบบไฟฟ้า & FAT (50%)',
-        percentage: 50,
-        amount: 1221400.00,
+        title: 'งวดที่ 2: ประกอบชิ้นส่วน ติดตั้งระบบไฟฟ้า & FAT (30% After Process Work)',
+        percentage: 30,
+        amount: 1138137.60,
         dueDate: '2026-06-15',
         status: 'INVOICED',
-        invoiceDocNo: 'INV-2603-TSF2',
-        notes: 'ทดสอบ FAT ผ่าน วางบิลเรียบร้อย'
+        invoiceDocNo: 'IV-690600002',
+        notes: 'ทดสอบ Process Work ผ่าน วางบิลงวดที่ 2'
       },
       {
         id: 'ms-tsf-3',
         milestoneNo: 3,
-        title: 'งวดที่ 3: ส่งมอบเครื่องจักรหน้างานและตรวจรับ SAT (20%)',
-        percentage: 20,
-        amount: 488560.00,
+        title: 'งวดที่ 3: ส่งมอบเครื่องจักรหน้างานและตรวจรับ SAT (30% After Complete Work)',
+        percentage: 30,
+        amount: 1138137.60,
         dueDate: '2026-11-15',
         status: 'WAITING',
-        notes: 'กำหนดส่งมอบเครื่องจักรปลายปี 2569'
+        notes: 'รับประกัน 1 ปี กำหนดส่งมอบเครื่องจักรปลายปี 2569'
       }
     ]
   },
