@@ -4,7 +4,8 @@ import {
   Layers, ArrowRight, ShieldCheck, FileText, ChevronRight, User, Plus,
   Sparkles, Filter, Building2, Check, TrendingUp, ChevronDown, ChevronUp, DollarSign,
   Cpu, ExternalLink, RefreshCw, Trash2, RotateCcw, EyeOff, PackageCheck, AlertTriangle,
-  Kanban, BarChart3, Wrench, FileCode, CheckSquare, Truck, BookOpen, Settings
+  Kanban, BarChart3, Wrench, FileCode, CheckSquare, Truck, BookOpen, Settings,
+  LayoutGrid, Eye, Info, Target, ArrowLeft
 } from "lucide-react";
 import { AccountingDocument, ContractMilestonePlan, BomProject } from "../../types";
 import { formatThaiDate, formatMoney, getProjectName } from "../../utils/formatters";
@@ -220,7 +221,9 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
   const [bomProjects, setBomProjects] = useState<BomProject[]>(FALLBACK_BOM_PROJECTS);
   const [isSyncingBom, setIsSyncingBom] = useState<boolean>(false);
   const [bomOnline, setBomOnline] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<"GANTT" | "PIPELINE" | "CARDS">("GANTT");
+  const [viewMode, setViewMode] = useState<"SINGLE" | "MATRIX" | "PIPELINE" | "CARDS" | "ALL_TABLES">("SINGLE");
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [showStageDefinitions, setShowStageDefinitions] = useState<boolean>(false);
   const [selectedStageFilter, setSelectedStageFilter] = useState<string>("ALL");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("ALL");
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>("PRJ-527");
@@ -487,111 +490,165 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
     return true;
   });
 
+  const totalProjectsCount = projects.length;
+  const completedCount = projects.filter(p => p.status === "COMPLETED").length;
+  const inProgressCount = projects.filter(p => p.status === "IN_PROGRESS").length;
+  const totalContractSum = projects.reduce((s, p) => s + p.totalAmount, 0);
+
+  // Active project for SINGLE view
+  const currentSelectedProject = filteredProjects.find(p => p.id === selectedProjectId) || filteredProjects[0];
+
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-4 pb-12">
       
-      {/* ── Page Header ──────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 md:p-8 text-white shadow-xl border border-indigo-900/40">
-        <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* ── Compact Page Header ────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-4 sm:p-5 text-white shadow-xl border border-indigo-900/40">
+        <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold mb-3 border border-indigo-500/30">
-              <Sparkles className="w-3.5 h-3.5" />
-              BOM MASTER PLAN DELIVERY TRACKER (9 PROCESS STAGES)
+            <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10.5px] font-bold border border-indigo-500/30">
+                <Sparkles className="w-3 h-3" />
+                BOM MASTER PLAN (9 STAGES)
+              </span>
+              <span className="text-[10.5px] font-mono text-slate-300 bg-white/10 px-2 py-0.5 rounded-full border border-white/10">
+                {totalProjectsCount} โครงการ
+              </span>
+              <span className="text-[10.5px] font-mono text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                🏁 ส่งมอบแล้ว {completedCount}
+              </span>
+              <span className="text-[10.5px] font-mono text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30">
+                ⚡ ดำเนินการ {inProgressCount}
+              </span>
+              <span className="text-[10.5px] font-mono text-sky-200 bg-sky-500/15 px-2 py-0.5 rounded-full border border-sky-500/30">
+                💰 สัญญารวม ฿{formatMoney(totalContractSum)}
+              </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">
               ไทม์ไลน์โครงการ & ส่งมอบงานตาม Master Plan
             </h1>
-            <p className="text-sm text-slate-300 mt-1 max-w-2xl">
-              แผนงานก่อสร้างและประกอบเครื่องจักรอัตโนมัติตามมาตรฐาน 9 ขั้นตอน (WBS 1.0 - 9.0) จาก WARSGATE BOM Pro เชื่อมโยงงวดงานและใบแจ้งหนี้
+            <p className="text-xs text-slate-300 mt-0.5">
+              แผนงานก่อสร้างและประกอบเครื่องจักรอัตโนมัติ 9 ขั้นตอน (WBS 1.0 - 9.0) จาก WARSGATE BOM Pro เชื่อมโยงงวดงานและใบแจ้งหนี้
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setShowStageDefinitions(!showStageDefinitions)}
+              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 flex items-center gap-1.5 transition active:scale-95"
+            >
+              <Info className="w-3.5 h-3.5 text-indigo-300" />
+              <span>{showStageDefinitions ? "ซ่อนนิยาม 9 ขั้นตอน" : "ดูนิยาม 9 ขั้นตอน"}</span>
+              {showStageDefinitions ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+
             <a
               href="https://warsgate-bom.onrender.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition active:scale-95"
+              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/30 transition active:scale-95"
             >
-              <Cpu className="w-4 h-4" />
-              <span>เปิดระบบ Warsgate BOM Pro</span>
-              <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+              <Cpu className="w-3.5 h-3.5" />
+              <span>WARSGATE BOM Pro</span>
+              <ExternalLink className="w-3 h-3 opacity-70" />
             </a>
 
             {onOpenMilestoneBilling && (
               <button
                 onClick={onOpenMilestoneBilling}
-                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 flex items-center gap-2 transition active:scale-95"
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-white/20 flex items-center gap-1.5 transition active:scale-95"
               >
-                <Calendar className="w-4 h-4 text-indigo-300" />
-                <span>ระบบวางบิลตามงวดงาน</span>
+                <Calendar className="w-3.5 h-3.5 text-amber-300" />
+                <span>วางบิลงวดงาน</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* 9 Stages Mini Visual Flow */}
-        <div className="mt-6 pt-5 border-t border-indigo-800/40">
-          <div className="text-[11px] text-indigo-200 font-bold mb-2 flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5" />
-            <span>มาตรฐาน 9 ขั้นตอนวิศวกรรมสร้างเครื่องจักร (WARSGATE Master Plan Process):</span>
-          </div>
+        {/* Collapsible 9 Stages Mini Visual Flow */}
+        {showStageDefinitions && (
+          <div className="mt-3.5 pt-3.5 border-t border-indigo-800/40">
+            <div className="text-[11px] text-indigo-200 font-bold mb-2 flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5" />
+              <span>มาตรฐาน 9 ขั้นตอนวิศวกรรมสร้างเครื่องจักร (WARSGATE Master Plan Process):</span>
+            </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1.5 text-[10px] font-bold">
-            {MASTER_PLAN_STAGES.map(st => (
-              <div 
-                key={st.id}
-                className="p-2 rounded-xl bg-white/5 border border-white/10 text-center hover:bg-white/15 transition cursor-pointer"
-                onClick={() => setSelectedStageFilter(selectedStageFilter === st.id ? "ALL" : st.id)}
-              >
-                <span className="block text-indigo-300 font-mono text-[9px]">{st.wbs}</span>
-                <span className="block truncate text-white mt-0.5" title={st.title}>{st.title.split(" ")[1] || st.title}</span>
-                {st.linkedMilestoneKey && (
-                  <span className="inline-block mt-1 px-1 py-0.2 rounded bg-indigo-500/40 text-[8.5px] text-indigo-200">
-                    วางบิล
-                  </span>
-                )}
-              </div>
-            ))}
+            <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1.5 text-[10px] font-bold">
+              {MASTER_PLAN_STAGES.map(st => (
+                <div 
+                  key={st.id}
+                  className="p-1.5 rounded-xl bg-white/5 border border-white/10 text-center hover:bg-white/15 transition cursor-pointer"
+                  onClick={() => setSelectedStageFilter(selectedStageFilter === st.id ? "ALL" : st.id)}
+                >
+                  <span className="block text-indigo-300 font-mono text-[9px]">{st.wbs}</span>
+                  <span className="block truncate text-white mt-0.5" title={st.title}>{st.title.split(" ")[1] || st.title}</span>
+                  {st.linkedMilestoneKey && (
+                    <span className="inline-block mt-0.5 px-1 py-0.2 rounded bg-indigo-500/40 text-[8px] text-indigo-200">
+                      วางบิล
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ── Toolbar: Views & Filters ─────────────────────────────────────────── */}
-      <div className="glass-panel p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-sm border border-slate-200 bg-white">
+      <div className="glass-panel p-2.5 sm:p-3 rounded-2xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 shadow-sm border border-slate-200 bg-white">
         
         {/* View Switcher */}
-        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs">
+        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs overflow-x-auto">
           <button
-            onClick={() => setViewMode("GANTT")}
-            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
-              viewMode === "GANTT" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
+            onClick={() => setViewMode("SINGLE")}
+            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 shrink-0 ${
+              viewMode === "SINGLE" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <Calendar className="w-3.5 h-3.5" />
-            <span>ผัง Gantt Timeline</span>
+            <Target className="w-3.5 h-3.5" />
+            <span>🎯 รายโครงการ (Single Focus)</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode("MATRIX")}
+            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 shrink-0 ${
+              viewMode === "MATRIX" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span>📊 ภาพรวม 9 ขั้นตอน (Master Matrix)</span>
           </button>
 
           <button
             onClick={() => setViewMode("PIPELINE")}
-            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 shrink-0 ${
               viewMode === "PIPELINE" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <Kanban className="w-3.5 h-3.5" />
-            <span>Pipeline 9 Stages</span>
+            <span>📋 Pipeline</span>
           </button>
 
           <button
             onClick={() => setViewMode("CARDS")}
-            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 shrink-0 ${
               viewMode === "CARDS" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>การ์ด WBS รายโครงการ</span>
+            <span>📑 การ์ด</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode("ALL_TABLES")}
+            className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 shrink-0 ${
+              viewMode === "ALL_TABLES" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>📜 ตารางทั้งหมด</span>
           </button>
         </div>
 
@@ -620,14 +677,565 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
 
       </div>
 
-      {/* ── VIEW 1: GANTT TIMELINE TABLE ─────────────────────────────────────── */}
-      {viewMode === "GANTT" && (
-        <div className="space-y-6">
-          {filteredProjects.map(proj => (
-            <div key={proj.id} className="glass-panel rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition">
+      {/* ── VIEW 1: SINGLE PROJECT FOCUS (ZERO-SCROLL VIEW) ────────────────────── */}
+      {viewMode === "SINGLE" && (
+        <div className="space-y-3">
+          
+          {/* Project Tabs Strip */}
+          <div className="p-2 bg-white rounded-2xl border border-slate-200 shadow-xs">
+            <div className="flex items-center justify-between mb-1.5 px-2">
+              <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                <Target className="w-3 h-3 text-indigo-600" />
+                คลิกเลือกโครงการเพื่อดูแผนงาน (ดูจบในหน้าเดียว ไม่ต้องเลื่อน):
+              </span>
+              <span className="text-[10.5px] font-mono text-slate-400">
+                {filteredProjects.length} โครงการ
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+              {filteredProjects.map(proj => {
+                const isSelected = (currentSelectedProject?.id === proj.id);
+                return (
+                  <button
+                    key={proj.id}
+                    onClick={() => setSelectedProjectId(proj.id)}
+                    className={`px-3 py-2 rounded-xl text-left transition shrink-0 flex items-center gap-2 border ${
+                      isSelected
+                        ? "bg-indigo-600 text-white border-indigo-700 shadow-md ring-2 ring-indigo-300/40"
+                        : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                    }`}
+                  >
+                    <span className={`font-mono font-extrabold text-[11px] px-1.5 py-0.5 rounded ${
+                      isSelected ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-700"
+                    }`}>
+                      {proj.projectCode}
+                    </span>
+                    <div className="min-w-0 max-w-[150px] sm:max-w-[200px]">
+                      <span className="block text-xs font-bold truncate">
+                        {proj.projectName}
+                      </span>
+                      <span className={`block text-[9.5px] truncate font-mono ${
+                        isSelected ? "text-indigo-100" : "text-slate-400"
+                      }`}>
+                        PO: {proj.referencePoNo}
+                      </span>
+                    </div>
+                    <span className={`font-mono font-extrabold text-[10px] px-1.5 py-0.5 rounded-full ${
+                      isSelected 
+                        ? (proj.progressPercent === 100 ? "bg-emerald-400 text-slate-900" : "bg-white/20 text-white")
+                        : (proj.progressPercent === 100 ? "bg-emerald-100 text-emerald-800" : "bg-indigo-50 text-indigo-700")
+                    }`}>
+                      {proj.progressPercent}%
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Active Project Full Detail Card */}
+          {currentSelectedProject ? (
+            <div className="glass-panel rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
               
               {/* Project Card Header */}
-              <div className="p-5 bg-slate-50/60 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="p-4 bg-slate-50/70 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono font-extrabold text-xs px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      {currentSelectedProject.projectCode}
+                    </span>
+                    <span className="text-xs text-slate-600 font-mono">
+                      PO: <strong className="text-slate-900">{currentSelectedProject.referencePoNo}</strong>
+                    </span>
+                    <span className="text-xs text-slate-400 font-mono">
+                      DWG: {currentSelectedProject.dwgNo}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      currentSelectedProject.status === "COMPLETED" ? "bg-emerald-100 text-emerald-800" : "bg-indigo-100 text-indigo-800"
+                    }`}>
+                      {currentSelectedProject.status === "COMPLETED" ? "ส่งมอบเสร็จสิ้น 100%" : "กำลังดำเนินการ"}
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-extrabold text-slate-900 mt-1">
+                    {currentSelectedProject.projectName}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {currentSelectedProject.customerName} • วิศวกร: {currentSelectedProject.assignedEngineer}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4 text-right">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-medium">มูลค่าสัญญา PO</span>
+                    <span className="font-mono font-black text-sm text-slate-900">
+                      ฿{formatMoney(currentSelectedProject.totalAmount)}
+                    </span>
+                  </div>
+                  <div className="pl-3 border-l border-slate-200">
+                    <span className="text-[10px] text-indigo-600 block font-bold">ความคืบหน้ารวม</span>
+                    <span className="font-mono font-black text-lg text-indigo-700">
+                      {currentSelectedProject.progressPercent}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Horizontal 9-Step Visual Stepper */}
+              <div className="p-3 bg-slate-50/40 border-b border-slate-100">
+                <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1.5">
+                  {currentSelectedProject.masterTasks.map((t, idx) => {
+                    const stage = MASTER_PLAN_STAGES[idx] || MASTER_PLAN_STAGES[0];
+                    const Icon = stage.icon;
+                    const isDone = t.progressPct === 100;
+                    const isInProgress = t.progressPct > 0 && t.progressPct < 100;
+                    
+                    return (
+                      <div 
+                        key={t.id} 
+                        className={`p-2 rounded-xl border text-center transition flex flex-col items-center justify-between ${
+                          isDone 
+                            ? "bg-emerald-50/90 border-emerald-200/80 text-emerald-900" 
+                            : isInProgress 
+                            ? "bg-indigo-50 border-indigo-300 text-indigo-900 ring-2 ring-indigo-400/20 shadow-xs" 
+                            : "bg-white border-slate-200 text-slate-500"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full text-[9px] font-mono font-bold mb-1">
+                          <span>{stage.wbs}</span>
+                          <span className={isDone ? "text-emerald-700" : isInProgress ? "text-indigo-700" : "text-slate-400"}>
+                            {t.progressPct}%
+                          </span>
+                        </div>
+                        <div className={`p-1 rounded-lg my-0.5 ${
+                          isDone 
+                            ? "bg-emerald-100 text-emerald-700" 
+                            : isInProgress 
+                            ? "bg-indigo-100 text-indigo-700" 
+                            : "bg-slate-100 text-slate-400"
+                        }`}>
+                          <Icon className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-[10px] font-bold block truncate w-full mt-0.5" title={stage.title}>
+                          {stage.title.split(" ")[1] || stage.title}
+                        </span>
+                        {t.milestoneStatus && (
+                          <span className={`inline-block mt-1 px-1 py-0.2 rounded text-[8px] font-bold ${
+                            t.milestoneStatus === "PAID" 
+                              ? "bg-emerald-100 text-emerald-800" 
+                              : t.milestoneStatus === "INVOICED" 
+                              ? "bg-amber-100 text-amber-800" 
+                              : "bg-slate-100 text-slate-600"
+                          }`}>
+                            {t.billingPercent}% บิล
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 9 Stages Gantt Table (Compact Format) */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs min-w-[760px]">
+                  <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                    <tr>
+                      <th className="py-2 px-3 w-12 text-center">WBS</th>
+                      <th className="py-2 px-3">STAGE / TASK NAME (9 ขั้นตอนมาตรฐาน)</th>
+                      <th className="py-2 px-3">ผู้รับผิดชอบ (RESPONSIBLE)</th>
+                      <th className="py-2 px-3 text-center">กำหนดการ (PLAN DATES)</th>
+                      <th className="py-2 px-3 text-center w-28">PROGRESS</th>
+                      <th className="py-2 px-3 text-center w-36">สถานะงวดวางบิล</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {currentSelectedProject.masterTasks.map((task, tIdx) => {
+                      const stageDef = MASTER_PLAN_STAGES[tIdx] || MASTER_PLAN_STAGES[0];
+                      const Icon = stageDef.icon;
+
+                      let milestoneBadge = (
+                        <span className="text-slate-400 font-mono text-[11px]">-</span>
+                      );
+
+                      if (task.milestoneStatus) {
+                        if (task.milestoneStatus === "PAID") {
+                          milestoneBadge = (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" /> ชำระแล้ว ({task.billingPercent}%)
+                            </span>
+                          );
+                        } else if (task.milestoneStatus === "INVOICED") {
+                          milestoneBadge = (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              <Clock className="w-2.5 h-2.5 text-amber-600" /> เปิดบิลแล้ว ({task.billingPercent}%)
+                            </span>
+                          );
+                        } else {
+                          milestoneBadge = (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                              <Clock className="w-2.5 h-2.5" /> รอส่งมอบ ({task.billingPercent}%)
+                            </span>
+                          );
+                        }
+                      }
+
+                      return (
+                        <tr key={task.id} className="hover:bg-slate-50 transition">
+                          <td className="py-2 px-3 text-center font-mono font-bold text-slate-500">
+                            {task.wbs}
+                          </td>
+                          <td className="py-2 px-3">
+                            <div className="flex items-center gap-2">
+                              <div className={`p-1.5 rounded-lg ${stageDef.bgBadge}`}>
+                                <Icon className="w-3.5 h-3.5" />
+                              </div>
+                              <div>
+                                <span className="font-bold text-slate-800 block text-xs">{task.stageName}</span>
+                                <span className="text-[10px] text-slate-500 block">{task.title}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-2 px-3 text-slate-600 text-[11px]">
+                            {task.responsible}
+                          </td>
+                          <td className="py-2 px-3 text-center font-mono text-[11px] text-slate-500">
+                            {formatThaiDate(task.planStartDate)} ➔ {formatThaiDate(task.planEndDate)}
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                                <div 
+                                  className={`h-full transition-all ${
+                                    task.progressPct === 100 ? "bg-emerald-500" : "bg-indigo-600"
+                                  }`}
+                                  style={{ width: `${task.progressPct}%` }}
+                                />
+                              </div>
+                              <span className="font-mono font-bold text-[10.5px] w-8 text-right text-slate-700">
+                                {task.progressPct}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            {milestoneBadge}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          ) : (
+            <div className="p-8 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">
+              ไม่พบโครงการตามตัวกรองที่เลือก
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* ── VIEW 2: MASTER MATRIX TABLE (ALL PROJECTS AT A GLANCE) ─────────────── */}
+      {viewMode === "MATRIX" && (
+        <div className="glass-panel rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+          <div className="p-3.5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                <LayoutGrid className="w-3.5 h-3.5 text-indigo-600" />
+                ตารางสรุปสถานะ 9 ขั้นตอนวิศวกรรมครบทุกโครงการ (WBS 1.0 - 9.0)
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                ดูความคืบหน้าของทุกโครงการในหน้าเดียว คลิกที่แถวโครงการเพื่อดูรายละเอียดเจาะลึก
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-[10px] font-bold">
+              <span className="inline-flex items-center gap-1 text-emerald-700">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> 100% เสร็จ
+              </span>
+              <span className="inline-flex items-center gap-1 text-indigo-700">
+                <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block" /> กำลังดำเนินการ
+              </span>
+              <span className="inline-flex items-center gap-1 text-slate-400">
+                <span className="w-2 h-2 rounded-full bg-slate-300 inline-block" /> รอเริ่ม
+              </span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[900px]">
+              <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 text-[11px]">
+                <tr>
+                  <th className="py-2.5 px-3 w-40">รหัส / โครงการ</th>
+                  <th className="py-2.5 px-3 w-44">ลูกค้า & PO</th>
+                  <th className="py-2.5 px-3 text-right w-28">มูลค่าสัญญา PO</th>
+                  <th className="py-2.5 px-3 text-center">ผังความคืบหน้า 9 ขั้นตอน (WBS 1.0 - 9.0)</th>
+                  <th className="py-2.5 px-3 text-center w-28">PROGRESS</th>
+                  <th className="py-2.5 px-3 text-center w-24">วันส่งมอบ</th>
+                  <th className="py-2.5 px-3 text-center w-24">การจัดการ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredProjects.map(proj => (
+                  <tr 
+                    key={proj.id} 
+                    className="hover:bg-indigo-50/50 transition cursor-pointer group"
+                    onClick={() => {
+                      setSelectedProjectId(proj.id);
+                      setViewMode("SINGLE");
+                    }}
+                  >
+                    <td className="py-2.5 px-3">
+                      <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 block w-fit mb-0.5">
+                        {proj.projectCode}
+                      </span>
+                      <span className="font-bold text-slate-900 block truncate max-w-[160px]" title={proj.projectName}>
+                        {proj.projectName}
+                      </span>
+                    </td>
+
+                    <td className="py-2.5 px-3">
+                      <span className="text-slate-800 font-medium block truncate max-w-[170px]" title={proj.customerName}>
+                        {proj.customerName}
+                      </span>
+                      <span className="font-mono text-[10px] text-slate-500 block">
+                        PO: <strong className="text-slate-700">{proj.referencePoNo}</strong>
+                      </span>
+                    </td>
+
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800">
+                      ฿{formatMoney(proj.totalAmount)}
+                    </td>
+
+                    {/* 9 Process Stages Mini Stepper */}
+                    <td className="py-2.5 px-3 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {proj.masterTasks.map((t, idx) => {
+                          const isDone = t.progressPct === 100;
+                          const isInProgress = t.progressPct > 0 && t.progressPct < 100;
+                          const stage = MASTER_PLAN_STAGES[idx];
+
+                          return (
+                            <div 
+                              key={t.id}
+                              className={`w-7 h-7 rounded-lg border text-[9px] font-mono font-bold flex flex-col items-center justify-center transition ${
+                                isDone 
+                                  ? "bg-emerald-500 text-white border-emerald-600 shadow-2xs" 
+                                  : isInProgress 
+                                  ? "bg-indigo-600 text-white border-indigo-700 shadow-2xs ring-2 ring-indigo-300/40" 
+                                  : "bg-slate-100 text-slate-400 border-slate-200"
+                              }`}
+                              title={`${stage.wbs} ${stage.title}: ${t.progressPct}% (${t.title})`}
+                            >
+                              <span>{stage.wbs.split(".")[0]}</span>
+                              <span className="text-[7.5px] leading-none opacity-90">
+                                {isDone ? "✓" : isInProgress ? `${t.progressPct}%` : "-"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </td>
+
+                    <td className="py-2.5 px-3 text-center">
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                          <div 
+                            className={`h-full transition-all ${
+                              proj.progressPercent === 100 ? "bg-emerald-500" : "bg-indigo-600"
+                            }`}
+                            style={{ width: `${proj.progressPercent}%` }}
+                          />
+                        </div>
+                        <span className="font-mono font-bold text-[10.5px] w-8 text-right text-slate-700">
+                          {proj.progressPercent}%
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="py-2.5 px-3 text-center font-mono text-[10px] text-slate-500">
+                      {formatThaiDate(proj.targetEndDate)}
+                    </td>
+
+                    <td className="py-2.5 px-3 text-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedProjectId(proj.id);
+                          setViewMode("SINGLE");
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200 text-[10.5px] font-bold transition flex items-center justify-center gap-1 mx-auto"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>ดูผัง</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── VIEW 3: PIPELINE 9 STAGES ────────────────────────────────────────── */}
+      {viewMode === "PIPELINE" && (
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-3 min-w-[1400px]">
+            {MASTER_PLAN_STAGES.map(stage => {
+              const Icon = stage.icon;
+              const matchingTasks = filteredProjects.flatMap(p => 
+                p.masterTasks
+                  .filter(t => t.stageName === stage.title)
+                  .map(t => ({ project: p, task: t }))
+              );
+
+              return (
+                <div key={stage.id} className="flex-1 min-w-[220px] max-w-[260px] bg-slate-50 rounded-2xl border border-slate-200 p-3 space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                    <div className="flex items-center gap-2">
+                      <div className={`p-1.5 rounded-lg ${stage.bgBadge}`}>
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <span className="font-mono font-bold text-[10px] text-slate-400 block">{stage.wbs}</span>
+                        <span className="font-bold text-xs text-slate-800 block truncate">{stage.title.split(" ")[1] || stage.title}</span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                      {matchingTasks.length}
+                    </span>
+                  </div>
+
+                  {/* Pipeline Task Cards */}
+                  <div className="space-y-2">
+                    {matchingTasks.map(({ project, task }) => (
+                      <div 
+                        key={task.id} 
+                        onClick={() => {
+                          setSelectedProjectId(project.id);
+                          setViewMode("SINGLE");
+                        }}
+                        className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2 hover:border-indigo-300 transition cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            {project.projectCode}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold text-indigo-600">
+                            {task.progressPct}%
+                          </span>
+                        </div>
+
+                        <div className="font-bold text-xs text-slate-900 leading-snug line-clamp-2">
+                          {project.projectName}
+                        </div>
+
+                        <div className="text-[10px] text-slate-400 font-mono flex items-center justify-between pt-1 border-t border-slate-100">
+                          <span>PO: {project.referencePoNo}</span>
+                          <span>{formatThaiDate(task.planEndDate)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── VIEW 4: CARDS VIEW ──────────────────────────────────────────────── */}
+      {viewMode === "CARDS" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredProjects.map(proj => {
+            const isExpanded = expandedProjectId === proj.id;
+
+            return (
+              <div key={proj.id} className="glass-panel rounded-2xl border border-slate-200 bg-white p-4 space-y-3 shadow-sm hover:shadow-md transition">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-extrabold text-xs px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        {proj.projectCode}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">PO: {proj.referencePoNo}</span>
+                    </div>
+                    <h3 className="font-bold text-sm text-slate-900 mt-1">{proj.projectName}</h3>
+                    <p className="text-xs text-slate-500">{proj.customerName}</p>
+                  </div>
+
+                  <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-lg ${
+                    proj.progressPercent === 100 ? "bg-emerald-100 text-emerald-800" : "bg-indigo-100 text-indigo-800"
+                  }`}>
+                    {proj.progressPercent}%
+                  </span>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                  <div 
+                    className={`h-full transition-all ${proj.progressPercent === 100 ? "bg-emerald-500" : "bg-indigo-600"}`}
+                    style={{ width: `${proj.progressPercent}%` }}
+                  />
+                </div>
+
+                <div className="flex justify-between items-center text-xs font-mono pt-1 border-t border-slate-100">
+                  <span className="text-slate-500">มูลค่าสัญญา:</span>
+                  <span className="font-bold text-slate-900">฿{formatMoney(proj.totalAmount)}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedProjectId(proj.id);
+                      setViewMode("SINGLE");
+                    }}
+                    className="flex-1 py-1.5 px-2 rounded-xl bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 font-bold text-xs transition border border-indigo-200 flex items-center justify-center gap-1"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>เปิดดูผังโครงการ</span>
+                  </button>
+
+                  <button
+                    onClick={() => setExpandedProjectId(isExpanded ? null : proj.id)}
+                    className="py-1.5 px-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-xs transition border border-slate-200"
+                    title="ขยายดู 9 ขั้นตอน"
+                  >
+                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {isExpanded && (
+                  <div className="space-y-1.5 pt-2 text-xs border-t border-slate-100">
+                    {proj.masterTasks.map(t => (
+                      <div key={t.id} className="p-2 rounded-lg bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+                        <div className="min-w-0">
+                          <span className="font-mono font-bold text-indigo-700 block text-[9.5px]">{t.wbs} {t.stageName}</span>
+                          <span className="text-[10.5px] text-slate-800 font-medium block truncate">{t.title}</span>
+                        </div>
+                        <span className="font-mono font-bold text-xs text-slate-700 shrink-0 pl-2">{t.progressPct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── VIEW 5: ALL TABLES (EXPANDED ALL PROJECTS) ─────────────────────────── */}
+      {viewMode === "ALL_TABLES" && (
+        <div className="space-y-5">
+          {filteredProjects.map(proj => (
+            <div key={proj.id} className="glass-panel rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition">
+              
+              {/* Project Card Header */}
+              <div className="p-4 bg-slate-50/70 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-extrabold text-xs px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -646,7 +1254,7 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
                     </span>
                   </div>
 
-                  <h3 className="text-base font-extrabold text-slate-900 mt-1.5">{proj.projectName}</h3>
+                  <h3 className="text-base font-extrabold text-slate-900 mt-1">{proj.projectName}</h3>
                   <p className="text-xs text-slate-500">{proj.customerName} • วิศวกรผู้รับผิดชอบ: {proj.assignedEngineer}</p>
                 </div>
 
@@ -667,12 +1275,12 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
                 <table className="w-full text-left text-xs min-w-[780px]">
                   <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
                     <tr>
-                      <th className="py-2.5 px-3 w-14 text-center">WBS</th>
-                      <th className="py-2.5 px-3">STAGE / TASK NAME (9 ขั้นตอนมาตรฐาน)</th>
-                      <th className="py-2.5 px-3">ผู้รับผิดชอบ (RESPONSIBLE)</th>
-                      <th className="py-2.5 px-3 text-center">กำหนดการ (PLAN DATES)</th>
-                      <th className="py-2.5 px-3 text-center w-28">PROGRESS</th>
-                      <th className="py-2.5 px-3 text-center w-36">สถานะงวดวางบิล</th>
+                      <th className="py-2 px-3 w-12 text-center">WBS</th>
+                      <th className="py-2 px-3">STAGE / TASK NAME (9 ขั้นตอนมาตรฐาน)</th>
+                      <th className="py-2 px-3">ผู้รับผิดชอบ (RESPONSIBLE)</th>
+                      <th className="py-2 px-3 text-center">กำหนดการ (PLAN DATES)</th>
+                      <th className="py-2 px-3 text-center w-28">PROGRESS</th>
+                      <th className="py-2 px-3 text-center w-36">สถานะงวดวางบิล</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -708,10 +1316,10 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
 
                       return (
                         <tr key={task.id} className="hover:bg-slate-50 transition">
-                          <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-500">
+                          <td className="py-2 px-3 text-center font-mono font-bold text-slate-500">
                             {task.wbs}
                           </td>
-                          <td className="py-2.5 px-3">
+                          <td className="py-2 px-3">
                             <div className="flex items-center gap-2">
                               <div className={`p-1.5 rounded-lg ${stageDef.bgBadge}`}>
                                 <Icon className="w-3.5 h-3.5" />
@@ -722,13 +1330,13 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
                               </div>
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 text-slate-600 text-[11px]">
+                          <td className="py-2 px-3 text-slate-600 text-[11px]">
                             {task.responsible}
                           </td>
-                          <td className="py-2.5 px-3 text-center font-mono text-[11px] text-slate-500">
+                          <td className="py-2 px-3 text-center font-mono text-[11px] text-slate-500">
                             {formatThaiDate(task.planStartDate)} ➔ {formatThaiDate(task.planEndDate)}
                           </td>
-                          <td className="py-2.5 px-3 text-center">
+                          <td className="py-2 px-3 text-center">
                             <div className="flex items-center gap-2">
                               <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
                                 <div 
@@ -743,7 +1351,7 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
                               </span>
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 text-center">
+                          <td className="py-2 px-3 text-center">
                             {milestoneBadge}
                           </td>
                         </tr>
@@ -755,135 +1363,6 @@ export const ProjectGanttTracker: React.FC<ProjectGanttTrackerProps> = ({
 
             </div>
           ))}
-        </div>
-      )}
-
-      {/* ── VIEW 2: PIPELINE 9 STAGES ────────────────────────────────────────── */}
-      {viewMode === "PIPELINE" && (
-        <div className="overflow-x-auto pb-4">
-          <div className="flex gap-3 min-w-[1400px]">
-            {MASTER_PLAN_STAGES.map(stage => {
-              const Icon = stage.icon;
-              const matchingTasks = filteredProjects.flatMap(p => 
-                p.masterTasks
-                  .filter(t => t.stageName === stage.title)
-                  .map(t => ({ project: p, task: t }))
-              );
-
-              return (
-                <div key={stage.id} className="flex-1 min-w-[220px] max-w-[260px] bg-slate-50 rounded-2xl border border-slate-200 p-3 space-y-3">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                    <div className="flex items-center gap-2">
-                      <div className={`p-1.5 rounded-lg ${stage.bgBadge}`}>
-                        <Icon className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <span className="font-mono font-bold text-[10px] text-slate-400 block">{stage.wbs}</span>
-                        <span className="font-bold text-xs text-slate-800 block truncate">{stage.title.split(" ")[1] || stage.title}</span>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700">
-                      {matchingTasks.length}
-                    </span>
-                  </div>
-
-                  {/* Pipeline Task Cards */}
-                  <div className="space-y-2">
-                    {matchingTasks.map(({ project, task }) => (
-                      <div key={task.id} className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2 hover:border-indigo-300 transition">
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
-                            {project.projectCode}
-                          </span>
-                          <span className="text-[10px] font-mono font-bold text-indigo-600">
-                            {task.progressPct}%
-                          </span>
-                        </div>
-
-                        <div className="font-bold text-xs text-slate-900 leading-snug line-clamp-2">
-                          {project.projectName}
-                        </div>
-
-                        <div className="text-[10px] text-slate-400 font-mono flex items-center justify-between pt-1 border-t border-slate-100">
-                          <span>PO: {project.referencePoNo}</span>
-                          <span>{formatThaiDate(task.planEndDate)}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── VIEW 3: CARDS VIEW ──────────────────────────────────────────────── */}
-      {viewMode === "CARDS" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredProjects.map(proj => {
-            const isExpanded = expandedProjectId === proj.id;
-
-            return (
-              <div key={proj.id} className="glass-panel rounded-3xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm hover:shadow-md transition">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono font-extrabold text-xs px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
-                        {proj.projectCode}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-mono">PO: {proj.referencePoNo}</span>
-                    </div>
-                    <h3 className="font-bold text-sm text-slate-900 mt-1">{proj.projectName}</h3>
-                    <p className="text-xs text-slate-500">{proj.customerName}</p>
-                  </div>
-
-                  <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-lg ${
-                    proj.progressPercent === 100 ? "bg-emerald-100 text-emerald-800" : "bg-indigo-100 text-indigo-800"
-                  }`}>
-                    {proj.progressPercent}%
-                  </span>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                  <div 
-                    className={`h-full transition-all ${proj.progressPercent === 100 ? "bg-emerald-500" : "bg-indigo-600"}`}
-                    style={{ width: `${proj.progressPercent}%` }}
-                  />
-                </div>
-
-                <div className="flex justify-between items-center text-xs font-mono pt-1 border-t border-slate-100">
-                  <span className="text-slate-500">มูลค่าสัญญา:</span>
-                  <span className="font-bold text-slate-900">฿{formatMoney(proj.totalAmount)}</span>
-                </div>
-
-                {/* Expand Accordion */}
-                <button
-                  onClick={() => setExpandedProjectId(isExpanded ? null : proj.id)}
-                  className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-700 font-bold text-xs flex items-center justify-between transition border border-slate-200"
-                >
-                  <span>9 ขั้นตอน Master Plan</span>
-                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </button>
-
-                {isExpanded && (
-                  <div className="space-y-2 pt-2 text-xs">
-                    {proj.masterTasks.map(t => (
-                      <div key={t.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
-                        <div className="min-w-0">
-                          <span className="font-mono font-bold text-indigo-700 block text-[10px]">{t.wbs} {t.stageName}</span>
-                          <span className="text-[11px] text-slate-800 font-medium block truncate">{t.title}</span>
-                        </div>
-                        <span className="font-mono font-bold text-xs text-slate-700 shrink-0 pl-2">{t.progressPct}%</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
         </div>
       )}
 
