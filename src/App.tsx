@@ -257,11 +257,27 @@ export function App() {
       try {
         const parsed: Contact[] = JSON.parse(saved);
         const filteredParsed = parsed.filter(c => !deletedIds.has(c.id));
-        const existingIds = new Set(filteredParsed.map(c => c.id));
+        const initialContactMap = new Map(initialContacts.map(c => [c.id, c]));
+        
+        // Reconcile initial system contacts with accurate balanceDue
+        const reconciled = filteredParsed.map(c => {
+          const init = initialContactMap.get(c.id);
+          if (init) {
+            return {
+              ...c,
+              balanceDue: init.balanceDue,
+              creditDays: init.creditDays ?? c.creditDays,
+              totalTransactions: Math.max(c.totalTransactions || 0, init.totalTransactions || 0),
+            };
+          }
+          return c;
+        });
+
+        const existingIds = new Set(reconciled.map(c => c.id));
         
         // Only load initial contacts that are NOT in existing AND NOT in deleted list
         const missing = initialContacts.filter(c => !existingIds.has(c.id) && !deletedIds.has(c.id));
-        const merged = [...filteredParsed, ...missing];
+        const merged = [...reconciled, ...missing];
         localStorage.setItem('warsgate_contacts', JSON.stringify(merged));
         return merged;
       } catch {

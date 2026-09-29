@@ -51,7 +51,7 @@ export const initialContacts: Contact[] = [
     type: 'CUSTOMER',
     creditDays: 30,
     totalTransactions: 7,
-    balanceDue: 1154530.00,
+    balanceDue: 3628809.97, // ยอดลูกหนี้รอเก็บเงินจริง (INV-690800001: 2,323,499.85 + INV-2608-001: 1,305,310.12)
   },
   {
     id: 'cont-kuroda-1',
@@ -66,7 +66,7 @@ export const initialContacts: Contact[] = [
     type: 'CUSTOMER',
     creditDays: 30,
     totalTransactions: 2,
-    balanceDue: 1074658.78,
+    balanceDue: 0.00, // มีเพียงใบเสนอราคา QT-2609-004 & QT-2609-005 ยังไม่มีการเปิดใบแจ้งหนี้ค้างชำระ
   },
   {
     id: 'cont-tsf-1',
@@ -81,7 +81,7 @@ export const initialContacts: Contact[] = [
     type: 'CUSTOMER',
     creditDays: 30,
     totalTransactions: 4,
-    balanceDue: 3793792.00,
+    balanceDue: 0.00, // ใบแจ้งหนี้ IV-690100001 ชำระครบถ้วนแล้ว (งวดที่ 2 & 3 ยังไม่ถึงกำหนดเปิดบิล)
   },
   {
     id: 'cont-4',
@@ -96,7 +96,7 @@ export const initialContacts: Contact[] = [
     type: 'SUPPLIER',
     creditDays: 30,
     totalTransactions: 19,
-    balanceDue: 94000.00,
+    balanceDue: 0.00,
   },
   {
     id: 'cont-ptech-1',

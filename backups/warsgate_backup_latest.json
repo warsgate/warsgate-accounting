@@ -130,7 +130,7 @@
       "type": "CUSTOMER",
       "creditDays": 30,
       "totalTransactions": 7,
-      "balanceDue": 1154530
+      "balanceDue": 3628809.97
     },
     {
       "id": "cont-kuroda-1",
@@ -145,7 +145,7 @@
       "type": "CUSTOMER",
       "creditDays": 30,
       "totalTransactions": 2,
-      "balanceDue": 1074658.78
+      "balanceDue": 0
     },
     {
       "id": "cont-tsf-1",
@@ -160,7 +160,7 @@
       "type": "CUSTOMER",
       "creditDays": 30,
       "totalTransactions": 4,
-      "balanceDue": 3793792
+      "balanceDue": 0
     },
     {
       "id": "cont-4",
@@ -175,7 +175,7 @@
       "type": "SUPPLIER",
       "creditDays": 30,
       "totalTransactions": 19,
-      "balanceDue": 94000
+      "balanceDue": 0
     },
     {
       "id": "cont-ptech-1",

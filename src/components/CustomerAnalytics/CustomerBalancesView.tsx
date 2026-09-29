@@ -53,10 +53,18 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
     d => d.type === "QUOTATION" && d.referencePoNo && d.status !== "CANCELLED"
   );
 
-  // 2. Gather all Invoices
-  const allInvoices = (documents || []).filter(
-    d => (d.type === "INVOICE" || d.type === "TAX_INVOICE") && d.status !== "CANCELLED"
-  );
+  // 2. Gather all Invoices (exclude duplicate TAX_INVOICE copies that reference an existing INVOICE)
+  const allInvoices = (documents || []).filter(d => {
+    if (d.status === "CANCELLED") return false;
+    if (d.type === "INVOICE") return true;
+    if (d.type === "TAX_INVOICE") {
+      const hasCorrespondingInvoice = (documents || []).some(
+        other => other.type === "INVOICE" && other.documentNo === d.referenceDocNo
+      );
+      return !hasCorrespondingInvoice;
+    }
+    return false;
+  });
 
   // 3. Customer analysis data aggregation
   const customerList = (contacts || []).filter(c => c && (c.type === "CUSTOMER" || c.type === "BOTH"));

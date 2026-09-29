@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Users, Plus, Search, Phone, Mail, FileText,
   Loader2, CheckCircle2, XCircle, ShieldCheck,
-  Pencil, Trash2, Building2, MapPin, AlertTriangle
+  Pencil, Trash2, Building2, MapPin, AlertTriangle, Clock
 } from 'lucide-react';
 import { Contact, AccountingDocument } from '../../types';
 import { formatMoney } from '../../utils/formatters';
@@ -56,7 +56,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
   contacts, documents = [], onAddContact, onUpdateContact, onDeleteContact
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'ALL' | 'CUSTOMER' | 'SUPPLIER'>('ALL');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'CUSTOMER' | 'SUPPLIER' | 'PENDING_AR'>('ALL');
 
   // Modal states
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
@@ -80,32 +80,51 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
       (d.contact?.companyName && contact.companyName && d.contact.companyName.trim().toLowerCase() === contact.companyName.trim().toLowerCase())
     );
 
-    if (contactDocs.length === 0) return contact.balanceDue || 0;
-
     if (contact.type === 'CUSTOMER' || contact.type === 'BOTH') {
-      const unpaidInvoices = contactDocs.filter(d => 
-        (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') && 
-        d.status !== 'PAID' && d.status !== 'CANCELLED'
+      // Find all customer sales invoices (excluding duplicate TAX_INVOICE copies that reference an existing INVOICE)
+      const salesInvoices = contactDocs.filter(d => {
+        if (d.type === 'INVOICE') return true;
+        if (d.type === 'TAX_INVOICE') {
+          // If this tax invoice is linked to an existing invoice in contactDocs, don't count it twice
+          const hasCorrespondingInvoice = contactDocs.some(
+            other => other.type === 'INVOICE' && other.documentNo === d.referenceDocNo
+          );
+          return !hasCorrespondingInvoice;
+        }
+        return false;
+      });
+
+      // Filter unpaid invoices (PENDING, OVERDUE, or not PAID / CANCELLED / DRAFT)
+      const unpaidInvoices = salesInvoices.filter(d => 
+        d.status !== 'PAID' && d.status !== 'CANCELLED' && d.status !== 'DRAFT'
       );
+
       if (unpaidInvoices.length > 0) {
         return unpaidInvoices.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
       }
-      // If there are invoices and all are paid:
-      const anyInvoices = contactDocs.filter(d => d.type === 'INVOICE' || d.type === 'TAX_INVOICE');
-      if (anyInvoices.length > 0) return 0;
+
+      // If customer has sales invoices and all are paid, balance due is 0
+      if (salesInvoices.length > 0) return 0;
+
+      // If customer has other docs (e.g. Quotations, POs) but no invoices issued yet, balance due is 0
+      if (contactDocs.length > 0) return 0;
+
       return contact.balanceDue || 0;
     } else if (contact.type === 'SUPPLIER') {
-      const unpaidPurchaseInvoices = contactDocs.filter(d => 
-        d.type === 'PURCHASE_INVOICE' && 
-        d.status !== 'PAID' && d.status !== 'CANCELLED'
+      const purchaseInvoices = contactDocs.filter(d => d.type === 'PURCHASE_INVOICE');
+      const unpaidPurchaseInvoices = purchaseInvoices.filter(d => 
+        d.status !== 'PAID' && d.status !== 'CANCELLED' && d.status !== 'DRAFT'
       );
+
       if (unpaidPurchaseInvoices.length > 0) {
         return unpaidPurchaseInvoices.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
       }
-      const anyPI = contactDocs.filter(d => d.type === 'PURCHASE_INVOICE');
-      if (anyPI.length > 0) return 0;
+
+      if (purchaseInvoices.length > 0) return 0;
+      if (contactDocs.length > 0) return 0;
       return contact.balanceDue || 0;
     }
+
     return contact.balanceDue || 0;
   };
 
@@ -123,7 +142,9 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
 
   // ── Filters ────────────────────────────────────────────────────────────────
   const filteredContacts = contacts.filter(c => {
-    if (typeFilter !== 'ALL' && c.type !== typeFilter) return false;
+    if (typeFilter === 'CUSTOMER' && c.type !== 'CUSTOMER' && c.type !== 'BOTH') return false;
+    if (typeFilter === 'SUPPLIER' && c.type !== 'SUPPLIER' && c.type !== 'BOTH') return false;
+    if (typeFilter === 'PENDING_AR' && getContactBalanceDue(c) <= 0) return false;
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       return (
@@ -235,6 +256,14 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
   const totalSupplierCount = contacts.filter(c => c.type === 'SUPPLIER' || c.type === 'BOTH').length;
   const totalVerifiedVat = contacts.filter(c => c.taxId && c.taxId.length >= 13).length;
 
+  // Real-time Pending AR (ลูกหนี้รอเก็บเงิน)
+  const totalPendingAR = contacts
+    .filter(c => c.type === 'CUSTOMER' || c.type === 'BOTH')
+    .reduce((sum, c) => sum + getContactBalanceDue(c), 0);
+  const pendingCustomerCount = contacts
+    .filter(c => (c.type === 'CUSTOMER' || c.type === 'BOTH') && getContactBalanceDue(c) > 0)
+    .length;
+
   return (
     <div className="space-y-5 pb-12">
 
@@ -301,26 +330,25 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
           </div>
           <div className="mt-2 pt-2 border-t border-sky-100/80 flex items-center justify-between text-[10px] text-slate-500">
             <span>กลุ่มหลัก:</span>
-            <strong className="text-sky-800">PNP Tech, Sekisui, etc.</strong>
+            <strong className="text-sky-800">PNP Tech, Kuroda, Sekisui</strong>
           </div>
         </div>
 
-        {/* Card 3: Industrial Suppliers */}
+        {/* Card 3: Pending AR (ยอดลูกหนี้รอเก็บเงิน) */}
         <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-white via-amber-50/40 to-orange-50/60 border border-amber-200/80 shadow-sm hover:shadow-md transition-all group">
           <div className="absolute top-0 right-0 w-20 h-20 bg-amber-400/10 rounded-full blur-xl pointer-events-none group-hover:bg-amber-400/20 transition-all" />
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">ซัพพลายเออร์ (Suppliers)</span>
+            <span className="text-xs font-bold text-amber-800">ยอดลูกหนี้รอเก็บเงิน (AR)</span>
             <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold shadow-sm">
-              <Building2 className="w-4 h-4" />
+              <Clock className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold font-mono text-amber-700">{totalSupplierCount}</span>
-            <span className="text-[11px] font-semibold text-slate-400">ผู้จัดจำหน่าย</span>
+            <span className="text-2xl font-extrabold font-mono text-amber-600">฿{formatMoney(totalPendingAR)}</span>
           </div>
-          <div className="mt-2 pt-2 border-t border-amber-100/80 flex items-center justify-between text-[10px] text-slate-500">
-            <span>เครดิตเทอม:</span>
-            <strong className="text-amber-800">เฉลี่ย 30-45 วัน</strong>
+          <div className="mt-2 pt-2 border-t border-amber-100/80 flex items-center justify-between text-[10px]">
+            <span className="text-slate-500">สถานะรอวางบิล/รับชำระ:</span>
+            <strong className="text-amber-800">{pendingCustomerCount} บริษัทค้างชำระ</strong>
           </div>
         </div>
 
@@ -391,6 +419,18 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
             >
               <Building2 className="w-3.5 h-3.5" />
               <span>ลูกค้า ({totalCustomerCount})</span>
+            </button>
+
+            <button
+              onClick={() => setTypeFilter('PENDING_AR')}
+              className={`px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                typeFilter === 'PENDING_AR'
+                  ? 'bg-amber-600 text-white shadow-sm shadow-amber-200'
+                  : 'text-amber-700 hover:text-amber-900 hover:bg-amber-50'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>มียอดรอเก็บเงิน ({pendingCustomerCount})</span>
             </button>
 
             <button
