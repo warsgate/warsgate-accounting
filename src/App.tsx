@@ -151,8 +151,9 @@ export function App() {
         const obsoleteDocNos = new Set([
           'INV-2505-004', 'INV-2605-001', 'INV-2605-002/1', 
           'INV-2505-005/2', 'INV-2505-005/3', 'INV-2512-2155/1',
-          'INV-2512-2155/2', 'INV-2512-2155/3', 'INV-2609-002',
-          'QT-2609-002', 'QT-202607-002', 'INV-202607-001', 'PO-202607-001'
+          'INV-2512-2155/2', 'INV-2512-2155/3', 'INV-2512-2155',
+          'INV-2601-TSF', 'INV-2601-TSF1', 'INV-2603-TSF2',
+          'INV-2609-002', 'QT-2609-002', 'QT-202607-002', 'INV-202607-001', 'PO-202607-001'
         ]);
         const obsoleteDocIds = new Set([
           'doc-kuroda-qt-2609002', 'doc-qt-001', 'doc-inv-001', 'doc-po-001'
@@ -168,6 +169,7 @@ export function App() {
           'INV-690600001': 'PAID',
           'INV-690400001': 'PAID',
           'IV-690100001': 'PAID',
+          'INV-690100001': 'PAID',
           'INV-2608-001': 'PENDING', // Line ADC งวดที่ 1 (50%) วางบิลแล้ว
         };
 
@@ -261,10 +263,15 @@ export function App() {
         
         // Reconcile initial system contacts with accurate balanceDue
         const reconciled = filteredParsed.map(c => {
-          const init = initialContactMap.get(c.id);
+          const init = initialContactMap.get(c.id) ||
+            initialContacts.find(ic => 
+              (ic.taxId && c.taxId && ic.taxId.replace(/[-\s]/g, '') === c.taxId.replace(/[-\s]/g, '')) ||
+              (ic.companyName && c.companyName && ic.companyName.trim().toLowerCase() === c.companyName.trim().toLowerCase())
+            );
           if (init) {
             return {
               ...c,
+              id: init.id,
               balanceDue: init.balanceDue,
               creditDays: init.creditDays ?? c.creditDays,
               totalTransactions: Math.max(c.totalTransactions || 0, init.totalTransactions || 0),
@@ -648,6 +655,7 @@ export function App() {
               <ContactsView
                 contacts={contacts}
                 documents={documents}
+                milestonePlans={milestonePlans}
                 onAddContact={handleAddContact}
                 onUpdateContact={handleUpdateContact}
                 onDeleteContact={handleDeleteContact}

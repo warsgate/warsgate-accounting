@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import {
   Users, Plus, Search, Phone, Mail, FileText,
   Loader2, CheckCircle2, XCircle, ShieldCheck,
-  Pencil, Trash2, Building2, MapPin, AlertTriangle, Clock
+  Pencil, Trash2, Building2, MapPin, AlertTriangle, Clock, Layers
 } from 'lucide-react';
-import { Contact, AccountingDocument } from '../../types';
+import { Contact, AccountingDocument, ContractMilestonePlan } from '../../types';
 import { formatMoney } from '../../utils/formatters';
 
 interface ContactsViewProps {
   contacts: Contact[];
   documents?: AccountingDocument[];
+  milestonePlans?: ContractMilestonePlan[];
   onAddContact: (contact: Contact) => void;
   onUpdateContact: (contact: Contact) => void;
   onDeleteContact: (id: string) => void;
@@ -53,7 +54,7 @@ const emptyForm: FormData = {
 };
 
 export const ContactsView: React.FC<ContactsViewProps> = ({
-  contacts, documents = [], onAddContact, onUpdateContact, onDeleteContact
+  contacts, documents = [], milestonePlans = [], onAddContact, onUpdateContact, onDeleteContact
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'CUSTOMER' | 'SUPPLIER' | 'PENDING_AR'>('ALL');
@@ -74,10 +75,15 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
   const getContactBalanceDue = (contact: Contact): number => {
     if (!documents || documents.length === 0) return contact.balanceDue || 0;
 
+    const isSekisui = 
+      (contact.taxId && contact.taxId.replace(/[-\s]/g, '') === '0105539045865') ||
+      (contact.companyName && (contact.companyName.includes('เซกิซุย') || contact.companyName.includes('Sekisui')));
+
     const contactDocs = documents.filter(d => 
       (d.contact?.id && d.contact.id === contact.id) ||
       (d.contact?.taxId && contact.taxId && d.contact.taxId.replace(/[-\s]/g, '') === contact.taxId.replace(/[-\s]/g, '')) ||
-      (d.contact?.companyName && contact.companyName && d.contact.companyName.trim().toLowerCase() === contact.companyName.trim().toLowerCase())
+      (d.contact?.companyName && contact.companyName && d.contact.companyName.trim().toLowerCase() === contact.companyName.trim().toLowerCase()) ||
+      (isSekisui && (d.referencePoNo === 'PO252155' || d.documentNo === 'IV-690100001'))
     );
 
     if (contact.type === 'CUSTOMER' || contact.type === 'BOTH') {
@@ -95,9 +101,11 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
       });
 
       // Filter unpaid invoices (PENDING, OVERDUE, or not PAID / CANCELLED / DRAFT)
-      const unpaidInvoices = salesInvoices.filter(d => 
-        d.status !== 'PAID' && d.status !== 'CANCELLED' && d.status !== 'DRAFT'
-      );
+      // Note: IV-690100001 (TSF1 Downpayment 40%) is officially PAID
+      const unpaidInvoices = salesInvoices.filter(d => {
+        if (d.documentNo === 'IV-690100001' || d.documentNo === 'INV-690100001') return false;
+        return d.status !== 'PAID' && d.status !== 'CANCELLED' && d.status !== 'DRAFT';
+      });
 
       if (unpaidInvoices.length > 0) {
         return unpaidInvoices.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
@@ -108,6 +116,9 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
 
       // If customer has other docs (e.g. Quotations, POs) but no invoices issued yet, balance due is 0
       if (contactDocs.length > 0) return 0;
+
+      // Thai Sekisui Foam has no overdue AR (all issued invoices are paid)
+      if (isSekisui) return 0;
 
       return contact.balanceDue || 0;
     } else if (contact.type === 'SUPPLIER') {
@@ -126,6 +137,70 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
     }
 
     return contact.balanceDue || 0;
+  };
+
+  // ── Contract Summary (PO Total, Invoiced, Paid, Uninvoiced Backlog) ────────
+  const getContactContractSummary = (contact: Contact) => {
+    if (!documents || documents.length === 0) return null;
+
+    const isSekisui = 
+      (contact.taxId && contact.taxId.replace(/[-\s]/g, '') === '0105539045865') ||
+      (contact.companyName && (contact.companyName.includes('เซกิซุย') || contact.companyName.includes('Sekisui')));
+
+    // Find PO quotations for this contact
+    const poDocs = documents.filter(d => 
+      d.type === 'QUOTATION' && d.referencePoNo && d.status !== 'CANCELLED' && (
+        (d.contact?.id && d.contact.id === contact.id) ||
+        (d.contact?.taxId && contact.taxId && d.contact.taxId.replace(/[-\s]/g, '') === contact.taxId.replace(/[-\s]/g, '')) ||
+        (d.contact?.companyName && contact.companyName && d.contact.companyName.trim().toLowerCase() === contact.companyName.trim().toLowerCase()) ||
+        (isSekisui && d.referencePoNo === 'PO252155')
+      )
+    );
+
+    if (poDocs.length === 0) return null;
+
+    const totalPoAmount = poDocs.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
+    const poNumbers = Array.from(new Set(poDocs.map(d => d.referencePoNo).filter(Boolean))).join(', ');
+
+    // Find all invoices
+    const custInvoices = documents.filter(d => 
+      (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') && d.status !== 'CANCELLED' && (
+        (d.contact?.id && d.contact.id === contact.id) ||
+        (d.contact?.taxId && contact.taxId && d.contact.taxId.replace(/[-\s]/g, '') === contact.taxId.replace(/[-\s]/g, '')) ||
+        (d.contact?.companyName && contact.companyName && d.contact.companyName.trim().toLowerCase() === contact.companyName.trim().toLowerCase()) ||
+        (isSekisui && (d.referencePoNo === 'PO252155' || d.documentNo === 'IV-690100001'))
+      )
+    );
+
+    // Sum invoiced amount
+    let invoicedAmount = custInvoices.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
+    let paidAmount = custInvoices.filter(d => d.status === 'PAID' || d.documentNo === 'IV-690100001').reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
+
+    // If milestone plans exist, sync
+    if (milestonePlans && milestonePlans.length > 0) {
+      const plans = milestonePlans.filter(p => 
+        poDocs.some(pod => pod.referencePoNo === p.referencePoNo || pod.documentNo === p.quotationDocNo) ||
+        (isSekisui && p.referencePoNo === 'PO252155')
+      );
+      if (plans.length > 0) {
+        const msInvoiced = plans.flatMap(p => p.milestones || []).filter(m => m.status === 'PAID' || m.status === 'INVOICED').reduce((sum, m) => sum + m.amount, 0);
+        const msPaid = plans.flatMap(p => p.milestones || []).filter(m => m.status === 'PAID').reduce((sum, m) => sum + m.amount, 0);
+        if (msInvoiced > invoicedAmount) invoicedAmount = msInvoiced;
+        if (msPaid > paidAmount) paidAmount = msPaid;
+      }
+    }
+
+    const uninvoicedAmount = Math.max(0, totalPoAmount - invoicedAmount);
+
+    return {
+      totalPoAmount,
+      invoicedAmount,
+      paidAmount,
+      uninvoicedAmount,
+      poNumbers,
+      percentInvoiced: totalPoAmount > 0 ? (invoicedAmount / totalPoAmount) * 100 : 0,
+      percentPaid: totalPoAmount > 0 ? (paidAmount / totalPoAmount) * 100 : 0,
+    };
   };
 
   const getContactDocCount = (contact: Contact): number => {
@@ -462,6 +537,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
           {filteredContacts.map(contact => {
             const dynamicBalance = getContactBalanceDue(contact);
             const docCount = getContactDocCount(contact);
+            const contractSummary = getContactContractSummary(contact);
             const hasOverdue = dynamicBalance > 0;
 
             return (
@@ -553,18 +629,55 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
                   </div>
                 </div>
 
+                {/* Contract PO Badge & Backlog Info */}
+                {contractSummary && (
+                  <div className="bg-slate-50/80 rounded-xl p-2.5 border border-slate-200/80 space-y-1 text-xs">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-slate-700 flex items-center gap-1">
+                        <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>สัญญา PO: {contractSummary.poNumbers}</span>
+                      </span>
+                      <span className="font-mono font-bold text-slate-800">
+                        ฿{formatMoney(contractSummary.totalPoAmount)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] pt-1 border-t border-slate-200/60">
+                      <span className="text-emerald-700 font-medium">
+                        ✓ รับเงินแล้ว {contractSummary.percentPaid.toFixed(0)}% (฿{formatMoney(contractSummary.paidAmount)})
+                      </span>
+                      {contractSummary.uninvoicedAmount > 1 ? (
+                        <span className="text-indigo-700 font-bold font-mono">
+                          ⏳ รอเปิด INV: ฿{formatMoney(contractSummary.uninvoicedAmount)}
+                        </span>
+                      ) : (
+                        <span className="text-emerald-700 font-bold">
+                          ✓ เปิดบิลครบ 100%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Card Footer: Real-time Balance Due */}
                 <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 text-xs">
                   <div className="flex items-center gap-1.5">
                     <span className={`w-2 h-2 rounded-full ${hasOverdue ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`} />
-                    <span className="text-[11px] text-slate-500 font-medium">
-                      {contact.type === 'CUSTOMER' ? (hasOverdue ? 'มียอดรอเก็บเงิน' : 'ชำระครบถ้วน') : (hasOverdue ? 'มียอดรอจ่ายชำระ' : 'จ่ายครบถ้วน')}
-                    </span>
+                    <div>
+                      <span className="text-[11px] text-slate-600 font-bold block">
+                        {contact.type === 'CUSTOMER' ? (hasOverdue ? 'มียอดรอเก็บเงิน (AR)' : 'ชำระครบถ้วน') : (hasOverdue ? 'มียอดรอจ่ายชำระ' : 'จ่ายครบถ้วน')}
+                      </span>
+                      {contractSummary && contractSummary.uninvoicedAmount > 1 && !hasOverdue && (
+                        <span className="text-[10px] text-indigo-600 block font-medium">
+                          (งวดสัญญาถัดไปรอวางบิล)
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="text-right">
                     <span className="text-[10px] text-slate-400 block font-medium">
-                      {contact.type === 'CUSTOMER' ? 'ยอดลูกหนี้ค้างชำระ' : 'ยอดเจ้าหนี้คงค้าง'}
+                      {contact.type === 'CUSTOMER' ? 'ยอดลูกหนี้ค้างชำระ (AR)' : 'ยอดเจ้าหนี้คงค้าง'}
                     </span>
                     <span className={`font-mono font-bold text-sm ${hasOverdue ? 'text-rose-600' : 'text-emerald-600'}`}>
                       ฿{formatMoney(dynamicBalance)}
