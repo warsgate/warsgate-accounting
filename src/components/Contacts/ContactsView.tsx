@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import {
   Users, Plus, Search, Phone, Mail, FileText,
   Loader2, CheckCircle2, XCircle, ShieldCheck,
-  Pencil, Trash2, Building2, MapPin, AlertTriangle, Clock, Layers
+  Pencil, Trash2, Building2, MapPin, AlertTriangle, Clock, Layers,
+  LayoutGrid, Target, Sparkles, Eye, ArrowUpRight, ChevronRight
 } from 'lucide-react';
 import { Contact, AccountingDocument, ContractMilestonePlan } from '../../types';
 import { formatMoney } from '../../utils/formatters';
@@ -58,6 +59,8 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'CUSTOMER' | 'SUPPLIER' | 'PENDING_AR'>('ALL');
+  const [viewMode, setViewMode] = useState<'MATRIX' | 'SPLIT' | 'CARDS'>('MATRIX');
+  const [selectedContactId, setSelectedContactId] = useState<string>('');
 
   // Modal states
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
@@ -339,356 +342,814 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
     .filter(c => (c.type === 'CUSTOMER' || c.type === 'BOTH') && getContactBalanceDue(c) > 0)
     .length;
 
+  const getContactDocuments = (contact: Contact) => {
+    if (!documents || documents.length === 0) return [];
+    const isSekisui = 
+      (contact.taxId && contact.taxId.replace(/[-\s]/g, '') === '0105539045865') ||
+      (contact.companyName && (contact.companyName.includes('เซกิซุย') || contact.companyName.includes('Sekisui')));
+
+    return documents.filter(d => 
+      (d.contact?.id && d.contact.id === contact.id) ||
+      (d.contact?.taxId && contact.taxId && d.contact.taxId.replace(/[-\s]/g, '') === contact.taxId.replace(/[-\s]/g, '')) ||
+      (d.contact?.companyName && contact.companyName && d.contact.companyName.trim().toLowerCase() === contact.companyName.trim().toLowerCase()) ||
+      (isSekisui && (d.referencePoNo === 'PO252155' || d.documentNo === 'IV-690100001'))
+    );
+  };
+
+  const activeContact = filteredContacts.find(c => c.id === selectedContactId) || filteredContacts[0] || null;
+
   return (
-    <div className="space-y-5 pb-12">
+    <div className="space-y-3.5 pb-10">
 
-      {/* ── Futuristic Header ───────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2.5 tracking-tight">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-200">
-              <Users className="w-4.5 h-4.5" />
+      {/* ── Futuristic Compact Header with Inline KPI Strip ───────────────────── */}
+      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 px-4 sm:px-5 py-3.5 text-white shadow-lg border border-sky-900/40">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-[10px] font-bold border border-sky-500/30">
+              <Sparkles className="w-3 h-3 text-sky-400" />
+              CONTACTS & CRM EXECUTIVE MATRIX
             </div>
-            <span className="bg-gradient-to-r from-slate-900 via-sky-950 to-blue-900 bg-clip-text text-transparent">
-              สมุดผู้ติดต่ออัจฉริยะ (Contacts & CRM Matrix)
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight mt-1 flex items-center gap-2">
+              <Users className="w-5 h-5 text-sky-400 inline shrink-0" />
+              <span>สมุดผู้ติดต่ออัจฉริยะ (Contacts & CRM Matrix)</span>
+            </h1>
+            <p className="text-xs text-slate-300 mt-0.5">
+              ฐานข้อมูลลูกค้าองค์กร, ซัพพลายเออร์, เลขผู้เสียภาษี ภ.พ.20 (RD API Sync) และยอดคงค้างสัญญา/ลูกหนี้แบบเรียลไทม์
+            </p>
+          </div>
+
+          <button
+            onClick={openAdd}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-sky-900/40 transition active:scale-95 shrink-0 self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ เพิ่มผู้ติดต่อใหม่</span>
+          </button>
+        </div>
+
+        {/* 4 Compact Inline KPI Chips (1 Row) */}
+        <div className="mt-3 pt-2.5 border-t border-sky-800/40 grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+          <div className="bg-white/5 backdrop-blur-md rounded-xl p-2.5 border border-white/10 flex items-center justify-between">
+            <div>
+              <span className="text-slate-400 text-[10px] font-medium block">ผู้ติดต่อทั้งหมด</span>
+              <span className="font-extrabold font-mono text-sm text-white">{contacts.length} บริษัท</span>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/10 text-sky-200 font-bold">Active 100%</span>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-md rounded-xl p-2.5 border border-white/10 flex items-center justify-between">
+            <div>
+              <span className="text-slate-400 text-[10px] font-medium block">ลูกค้าองค์กร / ซัพพลายเออร์</span>
+              <span className="font-extrabold font-mono text-sm text-sky-300">
+                {totalCustomerCount} <span className="text-xs font-normal text-slate-400">ลูกค้า</span> / {totalSupplierCount} <span className="text-xs font-normal text-slate-400">ซัพฯ</span>
+              </span>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 font-mono">B2B</span>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-md rounded-xl p-2.5 border border-white/10 flex items-center justify-between">
+            <div>
+              <span className="text-slate-400 text-[10px] font-medium block">ยืนยันภาษี ภ.พ.20 (RD)</span>
+              <span className="font-extrabold font-mono text-sm text-emerald-300">
+                {totalVerifiedVat} <span className="text-xs font-normal text-slate-400">/ {contacts.length} ราย</span>
+              </span>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-bold flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+              e-Tax
             </span>
-          </h1>
-          <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5 font-medium">
-            <span>ฐานข้อมูลลูกค้าองค์กร, ซัพพลายเออร์โรงงาน และระบบตรวจสอบ ภ.พ.20 อัตโนมัติ</span>
-            <span className="w-1 h-1 rounded-full bg-slate-300 inline-block" />
-            <span className="text-sky-600 font-bold">RD API Sync</span>
-          </p>
-        </div>
+          </div>
 
-        <button
-          onClick={openAdd}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:to-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-sky-200/80 transition-all hover:scale-[1.02] active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ เพิ่มผู้ติดต่อใหม่</span>
-        </button>
-      </div>
-
-      {/* ── Futuristic High-Tech 4 KPI Cards ────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        
-        {/* Card 1: Total Contacts */}
-        <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-white via-slate-50/40 to-slate-100/60 border border-slate-200/90 shadow-sm hover:shadow-md transition-all group">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">ผู้ติดต่อทั้งหมดในระบบ</span>
-            <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-bold shadow-sm">
-              <Users className="w-4 h-4" />
+          <div className="bg-amber-500/20 backdrop-blur-md rounded-xl p-2.5 border border-amber-400/30 flex items-center justify-between">
+            <div>
+              <span className="text-amber-200 text-[10px] font-bold block">💰 ลูกหนี้รอเก็บเงิน (AR)</span>
+              <span className="font-black font-mono text-sm text-amber-300">฿{formatMoney(totalPendingAR)}</span>
             </div>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold font-mono text-slate-800">{contacts.length}</span>
-            <span className="text-[11px] font-semibold text-slate-400">องค์กร & บริษัท</span>
-          </div>
-          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
-            <span>สถานะระบบ:</span>
-            <strong className="text-slate-700">ฐานข้อมูล Active 100%</strong>
-          </div>
-        </div>
-
-        {/* Card 2: Enterprise Customers */}
-        <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-white via-sky-50/40 to-blue-50/60 border border-sky-200/80 shadow-sm hover:shadow-md transition-all group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-sky-400/10 rounded-full blur-xl pointer-events-none group-hover:bg-sky-400/20 transition-all" />
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">ลูกค้าองค์กร (Customers)</span>
-            <div className="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold shadow-sm">
-              <Building2 className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold font-mono text-sky-700">{totalCustomerCount}</span>
-            <span className="text-[11px] font-semibold text-slate-400">บริษัทคู่ค้า</span>
-          </div>
-          <div className="mt-2 pt-2 border-t border-sky-100/80 flex items-center justify-between text-[10px] text-slate-500">
-            <span>กลุ่มหลัก:</span>
-            <strong className="text-sky-800">PNP Tech, Kuroda, Sekisui</strong>
-          </div>
-        </div>
-
-        {/* Card 3: Pending AR (ยอดลูกหนี้รอเก็บเงิน) */}
-        <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-white via-amber-50/40 to-orange-50/60 border border-amber-200/80 shadow-sm hover:shadow-md transition-all group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-amber-400/10 rounded-full blur-xl pointer-events-none group-hover:bg-amber-400/20 transition-all" />
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-amber-800">ยอดลูกหนี้รอเก็บเงิน (AR)</span>
-            <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold shadow-sm">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold font-mono text-amber-600">฿{formatMoney(totalPendingAR)}</span>
-          </div>
-          <div className="mt-2 pt-2 border-t border-amber-100/80 flex items-center justify-between text-[10px]">
-            <span className="text-slate-500">สถานะรอวางบิล/รับชำระ:</span>
-            <strong className="text-amber-800">{pendingCustomerCount} บริษัทค้างชำระ</strong>
-          </div>
-        </div>
-
-        {/* Card 4: RD Tax Verification Status */}
-        <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-white via-emerald-50/40 to-teal-50/60 border border-emerald-200/80 shadow-sm hover:shadow-md transition-all group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-400/10 rounded-full blur-xl pointer-events-none group-hover:bg-emerald-400/20 transition-all" />
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">การยืนยันภาษีสรรพากร (RD)</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold shadow-sm">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold font-mono text-emerald-700">{totalVerifiedVat}</span>
-            <span className="text-[11px] font-semibold text-slate-400">/ {contacts.length} มี Tax ID</span>
-          </div>
-          <div className="mt-2 pt-2 border-t border-emerald-100/80 flex items-center justify-between text-[10px]">
-            <span className="text-slate-500">ความถูกต้อง ภ.พ.20:</span>
-            <span className="font-bold text-emerald-700 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-              <span>พร้อมออก e-Tax</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/30 text-amber-100 font-mono font-bold">
+              {pendingCustomerCount} บริษัท
             </span>
           </div>
         </div>
-
       </div>
 
       {/* ── Ultra-Modern Single-Line Cyber-Toolbar ───────────────────────────── */}
-      <div className="glass-panel p-2.5 sm:p-3 rounded-2xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 shadow-sm border border-slate-200/90 bg-white/90">
+      <div className="glass-panel p-2 sm:p-2.5 rounded-2xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2 shadow-sm border border-slate-200/90 bg-white/95">
         
-        {/* Left: Cyber Search Input */}
-        <div className="relative flex-1 min-w-[260px] max-w-xl">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-sky-500" />
+        {/* Left: View Mode Segmented Switcher */}
+        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
+          <button
+            onClick={() => setViewMode("MATRIX")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              viewMode === "MATRIX"
+                ? "bg-sky-600 text-white shadow-sm shadow-sky-200"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span>ตาราง CRM Matrix (จบหน้าเดียว)</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode("SPLIT")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              viewMode === "SPLIT"
+                ? "bg-sky-600 text-white shadow-sm shadow-sky-200"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Target className="w-3.5 h-3.5" />
+            <span>เจาะลึกรายผู้ติดต่อ (Split Focus)</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode("CARDS")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              viewMode === "CARDS"
+                ? "bg-sky-600 text-white shadow-sm shadow-sky-200"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>การ์ดกะทัดรัด</span>
+          </button>
+        </div>
+
+        {/* Center: Cyber Search Input */}
+        <div className="relative min-w-[200px] flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sky-500" />
           <input
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            placeholder="ค้นหาชื่อบริษัท, ผู้ติดต่อ, เลขประจำตัวผู้เสียภาษี 13 หลัก..."
-            className="w-full bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200/90 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-400/20 transition shadow-inner"
+            placeholder="ค้นหาชื่อบริษัท, ผู้ติดต่อ, เลข 13 หลัก, เบอร์โทร..."
+            className="w-full bg-slate-50 hover:bg-slate-50/80 focus:bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-400 transition"
           />
         </div>
 
         {/* Right: Futuristic Pill Category Switcher */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          
-          <div className="flex items-center gap-1 p-1 bg-slate-100/90 rounded-xl border border-slate-200 text-xs shadow-inner">
-            <button
-              onClick={() => setTypeFilter('ALL')}
-              className={`px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
-                typeFilter === 'ALL'
-                  ? 'bg-sky-600 text-white shadow-sm shadow-sky-200'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-              }`}
-            >
-              <span>ทั้งหมด</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${typeFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
-                {contacts.length}
-              </span>
-            </button>
+        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs shrink-0 overflow-x-auto">
+          <button
+            onClick={() => setTypeFilter('ALL')}
+            className={`px-2.5 py-1 rounded-lg font-bold transition text-xs flex items-center gap-1 ${
+              typeFilter === 'ALL'
+                ? 'bg-sky-600 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span>ทั้งหมด</span>
+            <span className={`text-[10px] px-1 py-0.2 rounded-full font-mono ${typeFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>
+              {contacts.length}
+            </span>
+          </button>
 
-            <button
-              onClick={() => setTypeFilter('CUSTOMER')}
-              className={`px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
-                typeFilter === 'CUSTOMER'
-                  ? 'bg-sky-600 text-white shadow-sm shadow-sky-200'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>ลูกค้า ({totalCustomerCount})</span>
-            </button>
+          <button
+            onClick={() => setTypeFilter('CUSTOMER')}
+            className={`px-2.5 py-1 rounded-lg font-bold transition text-xs flex items-center gap-1 ${
+              typeFilter === 'CUSTOMER'
+                ? 'bg-sky-600 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span>ลูกค้า ({totalCustomerCount})</span>
+          </button>
 
-            <button
-              onClick={() => setTypeFilter('PENDING_AR')}
-              className={`px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
-                typeFilter === 'PENDING_AR'
-                  ? 'bg-amber-600 text-white shadow-sm shadow-amber-200'
-                  : 'text-amber-700 hover:text-amber-900 hover:bg-amber-50'
-              }`}
-            >
-              <Clock className="w-3.5 h-3.5" />
-              <span>มียอดรอเก็บเงิน ({pendingCustomerCount})</span>
-            </button>
+          <button
+            onClick={() => setTypeFilter('PENDING_AR')}
+            className={`px-2.5 py-1 rounded-lg font-bold transition text-xs flex items-center gap-1 ${
+              typeFilter === 'PENDING_AR'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'text-amber-700 hover:text-amber-900'
+            }`}
+          >
+            <Clock className="w-3 h-3" />
+            <span>มียอดรอเก็บ ({pendingCustomerCount})</span>
+          </button>
 
-            <button
-              onClick={() => setTypeFilter('SUPPLIER')}
-              className={`px-3.5 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
-                typeFilter === 'SUPPLIER'
-                  ? 'bg-sky-600 text-white shadow-sm shadow-sky-200'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>ซัพพลายเออร์ ({totalSupplierCount})</span>
-            </button>
-          </div>
-
+          <button
+            onClick={() => setTypeFilter('SUPPLIER')}
+            className={`px-2.5 py-1 rounded-lg font-bold transition text-xs flex items-center gap-1 ${
+              typeFilter === 'SUPPLIER'
+                ? 'bg-sky-600 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span>ซัพฯ ({totalSupplierCount})</span>
+          </button>
         </div>
 
       </div>
 
-      {/* ── Futuristic Contact Cards Grid ───────────────────────────────────── */}
+      {/* ── Empty State ───────────────────────────────────────────────────────── */}
       {filteredContacts.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 glass-panel rounded-2xl">
-          <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">ไม่พบรายการผู้ติดต่อตามคำค้นหา</p>
-          <p className="text-xs mt-1">ลองเปลี่ยนคำค้นหา หรือกดปุ่มเพิ่มผู้ติดต่อใหม่</p>
+        <div className="text-center py-16 text-slate-400 glass-panel rounded-2xl border border-slate-200 bg-white">
+          <Users className="w-12 h-12 mx-auto mb-3 opacity-30 text-sky-600" />
+          <p className="font-semibold text-slate-700">ไม่พบรายการผู้ติดต่อตามคำค้นหา</p>
+          <p className="text-xs text-slate-400 mt-1">ลองเปลี่ยนคำค้นหา หรือกดปุ่มเพิ่มผู้ติดต่อใหม่</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredContacts.map(contact => {
-            const dynamicBalance = getContactBalanceDue(contact);
-            const docCount = getContactDocCount(contact);
-            const contractSummary = getContactContractSummary(contact);
-            const hasOverdue = dynamicBalance > 0;
+        <>
+          {/* ══ 1. CRM MATRIX TABLE VIEW (จบหน้าเดียว) ═════════════════════════ */}
+          {viewMode === "MATRIX" && (
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/90 border-b border-slate-200 text-slate-600 font-bold text-[11px] uppercase tracking-wider">
+                      <th className="py-2.5 px-3">บริษัท / นิติบุคคล</th>
+                      <th className="py-2.5 px-3">ประเภท & เครดิต</th>
+                      <th className="py-2.5 px-3">เลขผู้เสียภาษี ภ.พ.20</th>
+                      <th className="py-2.5 px-3 text-right">สัญญา PO ผูกไว้</th>
+                      <th className="py-2.5 px-3">ความคืบหน้าเปิดบิล & รับเงิน</th>
+                      <th className="py-2.5 px-3 text-right">ลูกหนี้รอเก็บเงิน (AR)</th>
+                      <th className="py-2.5 px-3">ข้อมูลติดต่อ</th>
+                      <th className="py-2.5 px-3 text-center">จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredContacts.map(contact => {
+                      const dynamicBalance = getContactBalanceDue(contact);
+                      const docCount = getContactDocCount(contact);
+                      const contractSummary = getContactContractSummary(contact);
+                      const hasOverdue = dynamicBalance > 0;
+                      const isSelected = contact.id === (activeContact?.id || '');
 
-            return (
-              <div key={contact.id} className="glass-card glass-card-hover p-5 rounded-2xl space-y-3.5 group relative border border-slate-200/90 shadow-sm hover:shadow-md transition-all">
+                      return (
+                        <tr
+                          key={contact.id}
+                          onClick={() => setSelectedContactId(contact.id)}
+                          className={`hover:bg-sky-50/40 transition-colors cursor-pointer ${
+                            isSelected ? 'bg-sky-50/70 border-l-4 border-sky-600' : ''
+                          }`}
+                        >
+                          {/* Company Name & Avatar */}
+                          <td className="py-2 px-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 shadow-sm ${
+                                contact.type === 'CUSTOMER'
+                                  ? 'bg-gradient-to-tr from-sky-500 to-blue-600 text-white'
+                                  : 'bg-gradient-to-tr from-amber-500 to-orange-600 text-white'
+                              }`}>
+                                {contact.companyName.charAt(0)}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-extrabold text-slate-900 text-xs truncate max-w-[210px]" title={contact.companyName}>
+                                  {contact.companyName}
+                                </div>
+                                <div className="text-[11px] text-slate-400 truncate max-w-[190px]">
+                                  {contact.name || 'ฝ่ายจัดซื้อ / บัญชี'}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
 
-                {/* Action buttons — hover reveal */}
-                <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => openEdit(contact)}
-                    className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50 transition shadow-sm"
-                    title="แก้ไข"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget(contact)}
-                    className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition shadow-sm"
-                    title="ลบ"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                          {/* Type & Credit */}
+                          <td className="py-2 px-3 whitespace-nowrap">
+                            <div className="flex flex-col gap-0.5 items-start">
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                                contact.type === 'CUSTOMER'
+                                  ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                              }`}>
+                                {contact.type === 'CUSTOMER' ? '🧑‍💼 ลูกค้า' : '🏭 ซัพพลายเออร์'}
+                              </span>
+                              <span className="text-[10px] text-slate-500 font-mono">
+                                เครดิต {contact.creditDays || 30} วัน ({docCount} ใบ)
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Tax ID & Branch */}
+                          <td className="py-2 px-3 whitespace-nowrap">
+                            <div className="font-mono font-bold text-slate-800 text-[11px] flex items-center gap-1">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>{contact.taxId || '-'}</span>
+                            </div>
+                            <div className="text-[10px] text-slate-400">
+                              {contact.branchCode === '00000' ? 'สำนักงานใหญ่' : `สาขา ${contact.branchCode}`}
+                            </div>
+                          </td>
+
+                          {/* Contract PO */}
+                          <td className="py-2 px-3 text-right whitespace-nowrap">
+                            {contractSummary && contractSummary.totalPoAmount > 0 ? (
+                              <div>
+                                <span className="font-mono font-bold text-slate-900 text-xs block">
+                                  ฿{formatMoney(contractSummary.totalPoAmount)}
+                                </span>
+                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 font-mono font-bold border border-indigo-200 inline-block">
+                                  {contractSummary.poNumbers}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 text-[11px]">-</span>
+                            )}
+                          </td>
+
+                          {/* Progress / Backlog */}
+                          <td className="py-2 px-3 min-w-[150px]">
+                            {contractSummary && contractSummary.totalPoAmount > 0 ? (
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span className="text-emerald-700 font-medium">
+                                    รับเงิน {contractSummary.percentPaid.toFixed(0)}%
+                                  </span>
+                                  {contractSummary.uninvoicedAmount > 1 ? (
+                                    <span className="text-indigo-600 font-bold font-mono">
+                                      รอ INV ฿{formatMoney(contractSummary.uninvoicedAmount)}
+                                    </span>
+                                  ) : (
+                                    <span className="text-emerald-600 font-bold">ครบ 100%</span>
+                                  )}
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden flex">
+                                  <div
+                                    className="bg-emerald-500 h-1.5 transition-all"
+                                    style={{ width: `${Math.min(100, contractSummary.percentPaid)}%` }}
+                                    title={`รับเงินแล้ว ${contractSummary.percentPaid.toFixed(1)}%`}
+                                  />
+                                  <div
+                                    className="bg-sky-400 h-1.5 transition-all"
+                                    style={{ width: `${Math.min(100, Math.max(0, contractSummary.percentInvoiced - contractSummary.percentPaid))}%` }}
+                                    title={`รอเก็บเงิน ${(contractSummary.percentInvoiced - contractSummary.percentPaid).toFixed(1)}%`}
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-[11px] text-slate-400">ตามเอกสารปกติ</span>
+                            )}
+                          </td>
+
+                          {/* Pending AR */}
+                          <td className="py-2 px-3 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <span className={`w-2 h-2 rounded-full ${hasOverdue ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`} />
+                              <span className={`font-mono font-black text-xs ${hasOverdue ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                ฿{formatMoney(dynamicBalance)}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-400 block">
+                              {hasOverdue ? 'ค้างชำระ' : 'ไม่มีค้าง'}
+                            </span>
+                          </td>
+
+                          {/* Contact Info */}
+                          <td className="py-2 px-3 whitespace-nowrap">
+                            <div className="text-[11px] text-slate-600 flex items-center gap-1 font-mono">
+                              <Phone className="w-3 h-3 text-slate-400" />
+                              <span>{contact.phone || '-'}</span>
+                            </div>
+                            {contact.email && (
+                              <div className="text-[10px] text-slate-400 flex items-center gap-1 truncate max-w-[130px]" title={contact.email}>
+                                <Mail className="w-2.5 h-2.5 text-slate-400 shrink-0" />
+                                <span className="truncate">{contact.email}</span>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-2 px-3 text-center whitespace-nowrap">
+                            <div className="inline-flex items-center gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedContactId(contact.id);
+                                  setViewMode('SPLIT');
+                                }}
+                                className="p-1 rounded-lg hover:bg-sky-100 text-sky-700 transition"
+                                title="เจาะลึกโปรไฟล์"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEdit(contact);
+                                }}
+                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-sky-600 transition"
+                                title="แก้ไข"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteTarget(contact);
+                                }}
+                                className="p-1 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
+                                title="ลบ"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ══ 2. SPLIT FOCUS VIEW (เจาะลึกรายผู้ติดต่อ) ════════════════════════ */}
+          {viewMode === "SPLIT" && activeContact && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-[480px]">
+              
+              {/* Left Column: Quick Contact Selector */}
+              <div className="lg:col-span-4 rounded-2xl border border-slate-200 bg-white p-2.5 space-y-2 shadow-sm flex flex-col h-[520px]">
+                <div className="flex items-center justify-between px-2 pt-1 pb-1.5 border-b border-slate-100">
+                  <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-sky-600" />
+                    <span>รายชื่อผู้ติดต่อ ({filteredContacts.length})</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400">คลิกเพื่อเลือก</span>
                 </div>
 
-                {/* Card Header & Avatar */}
-                <div className="flex items-start gap-3 pr-16">
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 shadow-sm ${
-                    contact.type === 'CUSTOMER'
-                      ? 'bg-gradient-to-tr from-sky-500 to-blue-600 text-white'
-                      : 'bg-gradient-to-tr from-amber-500 to-orange-600 text-white'
-                  }`}>
-                    {contact.companyName.charAt(0)}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
-                        contact.type === 'CUSTOMER'
-                          ? 'bg-sky-50 text-sky-700 border-sky-200'
-                          : 'bg-amber-50 text-amber-700 border-amber-200'
-                      }`}>
-                        {contact.type === 'CUSTOMER' ? '🧑‍💼 ลูกค้า' : '🏭 ซัพพลายเออร์'}
-                      </span>
-                      {contact.creditDays && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono">
-                          {contact.creditDays} วัน
-                        </span>
-                      )}
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-50 text-slate-500 border border-slate-200 font-mono">
-                        {docCount} เอกสาร
-                      </span>
-                    </div>
-                    <h3 className="text-sm font-extrabold text-slate-900 mt-1 truncate">{contact.companyName}</h3>
-                    <span className="text-[11px] text-slate-500 font-medium">{contact.name || 'ฝ่ายจัดซื้อ / บัญชี'}</span>
-                  </div>
-                </div>
+                <div className="space-y-1.5 overflow-y-auto pr-1 flex-1">
+                  {filteredContacts.map(c => {
+                    const bal = getContactBalanceDue(c);
+                    const isSel = c.id === activeContact.id;
+                    const hasBal = bal > 0;
 
-                {/* Card Body & Details */}
-                <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <div className="flex items-center gap-1.5 text-slate-600">
-                      <FileText className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                      <span className="font-mono font-bold text-slate-800">{contact.taxId}</span>
-                    </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-medium">
-                      {contact.branchCode === '00000' ? 'สำนักงานใหญ่' : `สาขา ${contact.branchCode}`}
-                    </span>
-                  </div>
+                    return (
+                      <div
+                        key={c.id}
+                        onClick={() => setSelectedContactId(c.id)}
+                        className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                          isSel
+                            ? 'bg-sky-50/80 border-sky-400 shadow-sm ring-1 ring-sky-300'
+                            : 'bg-white hover:bg-slate-50 border-slate-200/80'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className={`font-bold truncate text-xs ${isSel ? 'text-sky-950 font-black' : 'text-slate-800'}`}>
+                            {c.companyName}
+                          </span>
+                          <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold shrink-0 ${
+                            c.type === 'CUSTOMER' ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {c.type === 'CUSTOMER' ? 'ลูกค้า' : 'ซัพฯ'}
+                          </span>
+                        </div>
 
-                  {contact.address && (
-                    <div className="flex items-start gap-2 text-[11px] text-slate-500">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                      <span className="line-clamp-2 leading-tight">{contact.address}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between pt-0.5 text-[11px]">
-                    {contact.phone ? (
-                      <div className="flex items-center gap-1 text-slate-600 font-medium">
-                        <Phone className="w-3 h-3 text-slate-400" />
-                        <span>{contact.phone}</span>
+                        <div className="flex items-center justify-between mt-1 text-[11px]">
+                          <span className="text-slate-400 font-mono text-[10px]">{c.taxId || 'ไม่มี Tax ID'}</span>
+                          <span className={`font-mono font-bold text-[11px] ${hasBal ? 'text-rose-600' : 'text-emerald-600'}`}>
+                            {hasBal ? `฿${formatMoney(bal)}` : '✓ ชำระครบ'}
+                          </span>
+                        </div>
                       </div>
-                    ) : <span />}
+                    );
+                  })}
+                </div>
+              </div>
 
-                    {contact.email && (
-                      <div className="flex items-center gap-1 text-slate-600 font-medium">
-                        <Mail className="w-3 h-3 text-slate-400" />
-                        <span className="truncate max-w-[130px]">{contact.email}</span>
+              {/* Right Column: Active Contact Detailed Dossier */}
+              <div className="lg:col-span-8 rounded-2xl border border-slate-200 bg-white p-4 space-y-3.5 shadow-sm h-[520px] overflow-y-auto">
+                {(() => {
+                  const dynamicBalance = getContactBalanceDue(activeContact);
+                  const contractSummary = getContactContractSummary(activeContact);
+                  const contactDocs = getContactDocuments(activeContact);
+                  const hasOverdue = dynamicBalance > 0;
+
+                  return (
+                    <div className="space-y-3.5">
+                      {/* Dossier Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-extrabold text-base shadow-sm ${
+                            activeContact.type === 'CUSTOMER'
+                              ? 'bg-gradient-to-tr from-sky-500 to-blue-600 text-white'
+                              : 'bg-gradient-to-tr from-amber-500 to-orange-600 text-white'
+                          }`}>
+                            {activeContact.companyName.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h2 className="text-base font-extrabold text-slate-900 tracking-tight">
+                                {activeContact.companyName}
+                              </h2>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                                activeContact.type === 'CUSTOMER'
+                                  ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                              }`}>
+                                {activeContact.type === 'CUSTOMER' ? '🧑‍💼 ลูกค้าองค์กร' : '🏭 ซัพพลายเออร์'}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-500">
+                              <span>ผู้ติดต่อ: <strong className="text-slate-700">{activeContact.name || '-'}</strong></span>
+                              <span>•</span>
+                              <span>สาขา: <strong className="text-slate-700">{activeContact.branchCode === '00000' ? 'สำนักงานใหญ่' : activeContact.branchCode}</strong></span>
+                              <span>•</span>
+                              <span className="font-mono text-slate-700">Tax ID: {activeContact.taxId}</span>
+                              <span className="inline-flex items-center gap-0.5 text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                ภ.พ.20
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                          <button
+                            onClick={() => openEdit(activeContact)}
+                            className="px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-sky-300 hover:bg-sky-50 text-slate-600 hover:text-sky-700 text-xs font-semibold flex items-center gap-1 transition"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            <span>แก้ไข</span>
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(activeContact)}
+                            className="px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-rose-300 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs font-semibold flex items-center gap-1 transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>ลบ</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 4 Mini Stats Cards */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-[10px] text-slate-500 font-medium block">มูลค่าสัญญา PO</span>
+                          <span className="font-mono font-extrabold text-sm text-slate-900">
+                            ฿{formatMoney(contractSummary?.totalPoAmount || 0)}
+                          </span>
+                          <span className="text-[10px] text-indigo-600 block mt-0.5 font-mono">
+                            {contractSummary?.poNumbers || '-'}
+                          </span>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-[10px] text-slate-500 font-medium block">เปิดบิลแล้ว (INV)</span>
+                          <span className="font-mono font-extrabold text-sm text-sky-700">
+                            ฿{formatMoney(contractSummary?.invoicedAmount || 0)}
+                          </span>
+                          <span className="text-[10px] text-sky-600 block mt-0.5 font-bold">
+                            {contractSummary?.percentInvoiced.toFixed(0)}% ของสัญญา
+                          </span>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-[10px] text-slate-500 font-medium block">งวดสัญญารอเปิดบิล</span>
+                          <span className="font-mono font-extrabold text-sm text-indigo-700">
+                            ฿{formatMoney(contractSummary?.uninvoicedAmount || 0)}
+                          </span>
+                          <span className="text-[10px] text-indigo-600 block mt-0.5 font-medium">
+                            {contractSummary && contractSummary.uninvoicedAmount > 1 ? 'รอวางบิลงวดถัดไป' : 'เปิดครบแล้ว'}
+                          </span>
+                        </div>
+
+                        <div className={`p-2.5 rounded-xl border ${hasOverdue ? 'bg-rose-50/60 border-rose-200' : 'bg-emerald-50/60 border-emerald-200'}`}>
+                          <span className={`text-[10px] font-bold block ${hasOverdue ? 'text-rose-700' : 'text-emerald-700'}`}>
+                            ลูกหนี้รอเก็บเงิน (AR)
+                          </span>
+                          <span className={`font-mono font-black text-sm ${hasOverdue ? 'text-rose-700' : 'text-emerald-700'}`}>
+                            ฿{formatMoney(dynamicBalance)}
+                          </span>
+                          <span className={`text-[10px] block mt-0.5 font-semibold ${hasOverdue ? 'text-rose-600' : 'text-emerald-600'}`}>
+                            {hasOverdue ? '⚠️ ค้างชำระ' : '✓ ไม่มีค้าง'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Contact & Address Details */}
+                      <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-200/70 space-y-1.5 text-xs">
+                        <div className="font-bold text-slate-700 text-xs flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-sky-600" />
+                          <span>ที่อยู่จดทะเบียน & ข้อมูลติดต่อ</span>
+                        </div>
+                        <p className="text-slate-600 text-[11px] leading-relaxed">
+                          {activeContact.address || 'ไม่มีข้อมูลที่อยู่'}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-4 pt-1 text-[11px] text-slate-600 border-t border-slate-200/50">
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-slate-400" />
+                            <strong>{activeContact.phone || '-'}</strong>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Mail className="w-3 h-3 text-slate-400" />
+                            <strong>{activeContact.email || '-'}</strong>
+                          </span>
+                          <span>
+                            เครดิตเทอม: <strong>{activeContact.creditDays || 30} วัน</strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Linked Documents Table */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5 text-sky-600" />
+                            <span>เอกสารที่เกี่ยวข้อง ({contactDocs.length} รายการ)</span>
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">เรียงตามวันที่</span>
+                        </div>
+
+                        {contactDocs.length === 0 ? (
+                          <div className="text-center py-6 text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl">
+                            ไม่มีเอกสารบันทึกในระบบสำหรับผู้ติดต่อนี้
+                          </div>
+                        ) : (
+                          <div className="border border-slate-200 rounded-xl overflow-hidden">
+                            <table className="w-full text-left text-xs border-collapse">
+                              <thead className="bg-slate-50 text-slate-500 text-[10px] font-bold uppercase">
+                                <tr>
+                                  <th className="py-1.5 px-2.5">เลขที่เอกสาร</th>
+                                  <th className="py-1.5 px-2.5">ประเภท</th>
+                                  <th className="py-1.5 px-2.5">วันที่</th>
+                                  <th className="py-1.5 px-2.5">อ้างอิง PO</th>
+                                  <th className="py-1.5 px-2.5 text-right">ยอดรวม (฿)</th>
+                                  <th className="py-1.5 px-2.5 text-center">สถานะ</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 text-[11px]">
+                                {contactDocs.map(doc => (
+                                  <tr key={doc.id} className="hover:bg-slate-50/80">
+                                    <td className="py-1.5 px-2.5 font-mono font-bold text-sky-700">{doc.documentNo}</td>
+                                    <td className="py-1.5 px-2.5 text-slate-600">{doc.type}</td>
+                                    <td className="py-1.5 px-2.5 text-slate-500 font-mono">{doc.issueDate}</td>
+                                    <td className="py-1.5 px-2.5 font-mono text-slate-600">{doc.referencePoNo || '-'}</td>
+                                    <td className="py-1.5 px-2.5 text-right font-mono font-bold text-slate-900">
+                                      ฿{formatMoney(doc.totalAmount)}
+                                    </td>
+                                    <td className="py-1.5 px-2.5 text-center">
+                                      <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
+                                        doc.status === 'PAID'
+                                          ? 'bg-emerald-100 text-emerald-800'
+                                          : doc.status === 'OVERDUE'
+                                          ? 'bg-rose-100 text-rose-800'
+                                          : 'bg-amber-100 text-amber-800'
+                                      }`}>
+                                        {doc.status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+            </div>
+          )}
+
+          {/* ══ 3. COMPACT CARDS VIEW ══════════════════════════════════════════ */}
+          {viewMode === "CARDS" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredContacts.map(contact => {
+                const dynamicBalance = getContactBalanceDue(contact);
+                const docCount = getContactDocCount(contact);
+                const contractSummary = getContactContractSummary(contact);
+                const hasOverdue = dynamicBalance > 0;
+
+                return (
+                  <div key={contact.id} className="glass-card glass-card-hover p-3.5 rounded-2xl space-y-2.5 group relative border border-slate-200/90 shadow-sm hover:shadow-md transition-all">
+
+                    {/* Action buttons — hover reveal */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => {
+                          setSelectedContactId(contact.id);
+                          setViewMode('SPLIT');
+                        }}
+                        className="p-1 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50 transition shadow-sm"
+                        title="ดูรายละเอียด"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => openEdit(contact)}
+                        className="p-1 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50 transition shadow-sm"
+                        title="แก้ไข"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(contact)}
+                        className="p-1 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition shadow-sm"
+                        title="ลบ"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Card Header & Avatar */}
+                    <div className="flex items-start gap-2.5 pr-14">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-xs shrink-0 shadow-sm ${
+                        contact.type === 'CUSTOMER'
+                          ? 'bg-gradient-to-tr from-sky-500 to-blue-600 text-white'
+                          : 'bg-gradient-to-tr from-amber-500 to-orange-600 text-white'
+                      }`}>
+                        {contact.companyName.charAt(0)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1">
+                          <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold border ${
+                            contact.type === 'CUSTOMER'
+                              ? 'bg-sky-50 text-sky-700 border-sky-200'
+                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                          }`}>
+                            {contact.type === 'CUSTOMER' ? '🧑‍💼 ลูกค้า' : '🏭 ซัพฯ'}
+                          </span>
+                          {contact.creditDays && (
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-slate-100 text-slate-600 font-mono">
+                              {contact.creditDays} วัน
+                            </span>
+                          )}
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-slate-50 text-slate-500 border border-slate-200 font-mono">
+                            {docCount} ใบ
+                          </span>
+                        </div>
+                        <h3 className="text-xs font-extrabold text-slate-900 mt-1 truncate" title={contact.companyName}>{contact.companyName}</h3>
+                        <span className="text-[10px] text-slate-400 font-medium truncate block">{contact.name || 'ฝ่ายจัดซื้อ / บัญชี'}</span>
+                      </div>
+                    </div>
+
+                    {/* Card Body & Details */}
+                    <div className="space-y-1 pt-1.5 border-t border-slate-100 text-[11px]">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1 text-slate-600">
+                          <FileText className="w-3 h-3 text-sky-500 shrink-0" />
+                          <span className="font-mono font-bold text-slate-800 text-[10px]">{contact.taxId}</span>
+                        </div>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-medium">
+                          {contact.branchCode === '00000' ? 'สนง.ใหญ่' : `สาขา ${contact.branchCode}`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] text-slate-500">
+                        {contact.phone ? (
+                          <div className="flex items-center gap-1 text-slate-600 font-medium">
+                            <Phone className="w-2.5 h-2.5 text-slate-400" />
+                            <span>{contact.phone}</span>
+                          </div>
+                        ) : <span />}
+
+                        {contact.email && (
+                          <div className="flex items-center gap-1 text-slate-600 font-medium">
+                            <Mail className="w-2.5 h-2.5 text-slate-400" />
+                            <span className="truncate max-w-[120px]">{contact.email}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Contract PO Badge & Backlog Info */}
+                    {contractSummary && (
+                      <div className="bg-slate-50/80 rounded-xl p-2 border border-slate-200/80 space-y-1 text-xs">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="font-bold text-slate-700 flex items-center gap-1">
+                            <Layers className="w-3 h-3 text-indigo-600" />
+                            <span>PO: {contractSummary.poNumbers}</span>
+                          </span>
+                          <span className="font-mono font-bold text-slate-800">
+                            ฿{formatMoney(contractSummary.totalPoAmount)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[9px] pt-1 border-t border-slate-200/60">
+                          <span className="text-emerald-700 font-medium">
+                            ✓ รับแล้ว {contractSummary.percentPaid.toFixed(0)}%
+                          </span>
+                          {contractSummary.uninvoicedAmount > 1 ? (
+                            <span className="text-indigo-700 font-bold font-mono">
+                              รอ INV: ฿{formatMoney(contractSummary.uninvoicedAmount)}
+                            </span>
+                          ) : (
+                            <span className="text-emerald-700 font-bold">✓ บิลครบ</span>
+                          )}
+                        </div>
                       </div>
                     )}
-                  </div>
-                </div>
 
-                {/* Contract PO Badge & Backlog Info */}
-                {contractSummary && (
-                  <div className="bg-slate-50/80 rounded-xl p-2.5 border border-slate-200/80 space-y-1 text-xs">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-bold text-slate-700 flex items-center gap-1">
-                        <Layers className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>สัญญา PO: {contractSummary.poNumbers}</span>
-                      </span>
-                      <span className="font-mono font-bold text-slate-800">
-                        ฿{formatMoney(contractSummary.totalPoAmount)}
+                    {/* Card Footer: Real-time Balance Due */}
+                    <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${hasOverdue ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`} />
+                        <span className="text-[10px] text-slate-500 font-bold">
+                          {contact.type === 'CUSTOMER' ? (hasOverdue ? 'ค้างชำระ (AR)' : 'ชำระครบ') : (hasOverdue ? 'รอจ่าย' : 'ครบถ้วน')}
+                        </span>
+                      </div>
+
+                      <span className={`font-mono font-bold text-xs ${hasOverdue ? 'text-rose-600' : 'text-emerald-600'}`}>
+                        ฿{formatMoney(dynamicBalance)}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-[10px] pt-1 border-t border-slate-200/60">
-                      <span className="text-emerald-700 font-medium">
-                        ✓ รับเงินแล้ว {contractSummary.percentPaid.toFixed(0)}% (฿{formatMoney(contractSummary.paidAmount)})
-                      </span>
-                      {contractSummary.uninvoicedAmount > 1 ? (
-                        <span className="text-indigo-700 font-bold font-mono">
-                          ⏳ รอเปิด INV: ฿{formatMoney(contractSummary.uninvoicedAmount)}
-                        </span>
-                      ) : (
-                        <span className="text-emerald-700 font-bold">
-                          ✓ เปิดบิลครบ 100%
-                        </span>
-                      )}
-                    </div>
                   </div>
-                )}
-
-                {/* Card Footer: Real-time Balance Due */}
-                <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${hasOverdue ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`} />
-                    <div>
-                      <span className="text-[11px] text-slate-600 font-bold block">
-                        {contact.type === 'CUSTOMER' ? (hasOverdue ? 'มียอดรอเก็บเงิน (AR)' : 'ชำระครบถ้วน') : (hasOverdue ? 'มียอดรอจ่ายชำระ' : 'จ่ายครบถ้วน')}
-                      </span>
-                      {contractSummary && contractSummary.uninvoicedAmount > 1 && !hasOverdue && (
-                        <span className="text-[10px] text-indigo-600 block font-medium">
-                          (งวดสัญญาถัดไปรอวางบิล)
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <span className="text-[10px] text-slate-400 block font-medium">
-                      {contact.type === 'CUSTOMER' ? 'ยอดลูกหนี้ค้างชำระ (AR)' : 'ยอดเจ้าหนี้คงค้าง'}
-                    </span>
-                    <span className={`font-mono font-bold text-sm ${hasOverdue ? 'text-rose-600' : 'text-emerald-600'}`}>
-                      ฿{formatMoney(dynamicBalance)}
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* ══ ADD / EDIT MODAL ══════════════════════════════════════════════════ */}
