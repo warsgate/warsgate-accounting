@@ -423,19 +423,28 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
             <div className="space-y-1.5 mt-2 pt-2 border-t border-slate-200/70 text-[9.5px] text-slate-600">
               {/* Bank payment & PromptPay info for Sales documents */}
               {['QUOTATION', 'INVOICE', 'TAX_INVOICE'].includes(doc.type) && (
-                <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between gap-3">
-                  <div className="font-mono text-[9px] text-slate-700 space-y-0.5 min-w-0">
-                    <span className="font-bold text-slate-900 block font-sans flex items-center gap-1">
+                <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between gap-2.5">
+                  <div className="font-mono text-[9px] text-slate-700 space-y-0.5 min-w-0 flex-1">
+                    <span className="font-bold text-slate-900 block font-sans flex items-center gap-1 text-[9.5px]">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
-                      ช่องทางชำระเงิน (Payment Options):
+                      การชำระเงิน / Payment:
                     </span>
-                    <div className="text-slate-800">ธ.กสิกรไทย (KBANK) : <strong className="font-mono text-slate-950">089-2-54321-9</strong></div>
-                    <div className="text-slate-600">ชื่อบัญชี: บจก. วอร์สเกต ออโตเมชั่น</div>
-                    <div className="text-emerald-700 font-semibold pt-0.5">PromptPay Tax ID: {company.taxId || '0135565012345'}</div>
+                    <div className="text-slate-800 flex items-center gap-1">
+                      <span>• Kasikorn Bank (กสิกรไทย):</span>
+                      <strong className="font-mono text-slate-950 font-bold bg-slate-50 px-1 rounded border border-slate-200">1701912566</strong>
+                    </div>
+                    <div className="text-slate-800 flex items-center gap-1">
+                      <span>• Siam Commercial Bank (ไทยพาณิชย์):</span>
+                      <strong className="font-mono text-slate-950 font-bold bg-slate-50 px-1 rounded border border-slate-200">383-443-1293</strong>
+                    </div>
+                    <div className="text-slate-600 font-sans text-[8.5px] pt-0.5">
+                      ชื่อบัญชี: <strong className="text-slate-900 font-bold">บริษัท วอร์สเกต จำกัด</strong>
+                    </div>
+                    <div className="text-emerald-700 font-semibold text-[8.5px]">PromptPay Tax ID: {company.taxId || '0135564010972'}</div>
                   </div>
                   <div className="shrink-0 text-center bg-slate-50 p-1.5 rounded-lg border border-slate-200">
                     <img 
-                      src={getPromptPayQrUrl(company.taxId || '0135565012345', doc.netPayment || doc.grandTotal)} 
+                      src={getPromptPayQrUrl(company.taxId || '0135564010972', doc.netPayment || doc.grandTotal)} 
                       alt="PromptPay QR"
                       className="w-16 h-16 object-contain rounded"
                     />

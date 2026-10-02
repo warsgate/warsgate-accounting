@@ -87,13 +87,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   // Calculate actual dynamic balance per bank account strictly from RECEIPT and PAYMENT_VOUCHER
   const dynamicBankAccounts = (bankAccounts || []).map(account => {
-    const isMain = account.isDefault || account.bankName.includes('กสิกร');
+    const isMain = account.isDefault || account.bankName.includes('กสิกร') || account.bankName.includes('Kasikorn');
     if (isMain) {
       const kbankCashIn = documents
-        .filter(d => d.type === 'RECEIPT' && d.status === 'PAID' && (!d.bankAccount || d.bankAccount.includes('089-2-54321-9') || d.bankAccount.includes('KBANK') || d.bankAccount.includes('กสิกร')))
+        .filter(d => d.type === 'RECEIPT' && d.status === 'PAID' && (!d.bankAccount || d.bankAccount.includes('1701912566') || d.bankAccount.includes('089-2-54321-9') || d.bankAccount.includes('KBANK') || d.bankAccount.includes('กสิกร') || d.bankAccount.includes('Kasikorn')))
         .reduce((sum, d) => sum + (d.netPayment || d.grandTotal - (d.withholdingTaxTotal || 0)), 0);
       const kbankCashOut = documents
-        .filter(d => d.type === 'PAYMENT_VOUCHER' && d.status === 'PAID' && (!d.bankAccount || d.bankAccount.includes('089-2-54321-9') || d.bankAccount.includes('KBANK') || d.bankAccount.includes('กสิกร')))
+        .filter(d => d.type === 'PAYMENT_VOUCHER' && d.status === 'PAID' && (!d.bankAccount || d.bankAccount.includes('1701912566') || d.bankAccount.includes('089-2-54321-9') || d.bankAccount.includes('KBANK') || d.bankAccount.includes('กสิกร') || d.bankAccount.includes('Kasikorn')))
         .reduce((sum, d) => sum + (d.netPayment || d.grandTotal - (d.withholdingTaxTotal || 0)), 0);
       const txCount = documents.filter(d => (d.type === 'RECEIPT' || d.type === 'PAYMENT_VOUCHER') && d.status === 'PAID').length;
       return {
@@ -103,9 +103,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       };
     } else {
       const scbCashIn = documents
-        .filter(d => d.type === 'RECEIPT' && d.status === 'PAID' && d.bankAccount && (d.bankAccount.includes('SCB') || d.bankAccount.includes('142-3-98765-4') || d.bankAccount.includes('ไทยพาณิชย์')))
+        .filter(d => d.type === 'RECEIPT' && d.status === 'PAID' && d.bankAccount && (d.bankAccount.includes('SCB') || d.bankAccount.includes('383-443-1293') || d.bankAccount.includes('142-3-98765-4') || d.bankAccount.includes('ไทยพาณิชย์') || d.bankAccount.includes('Siam Commercial')))
         .reduce((sum, d) => sum + (d.netPayment || d.grandTotal - (d.withholdingTaxTotal || 0)), 0);
-      const txCount = documents.filter(d => d.type === 'RECEIPT' && d.status === 'PAID' && d.bankAccount && (d.bankAccount.includes('SCB') || d.bankAccount.includes('142-3-98765-4'))).length;
+      const txCount = documents.filter(d => d.type === 'RECEIPT' && d.status === 'PAID' && d.bankAccount && (d.bankAccount.includes('SCB') || d.bankAccount.includes('383-443-1293') || d.bankAccount.includes('142-3-98765-4'))).length;
       return {
         ...account,
         balance: account.balance + scbCashIn,

@@ -127,7 +127,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     initialDocument?.paymentMethod || 'BANK_TRANSFER'
   );
   const [bankAccount, setBankAccount] = useState<string>(
-    initialDocument?.bankAccount || 'KBANK 089-2-54321-9 (บจก. วอร์สเกต)'
+    initialDocument?.bankAccount || 'Kasikorn Bank 1701912566 (บริษัท วอร์สเกต จำกัด)'
   );
 
   const defaultFirstItem: DocumentItem = {
