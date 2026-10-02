@@ -3,14 +3,14 @@ import {
   Settings, Building2, Phone, MapPin, Hash, ChevronRight, Save, Trash2, 
   AlertTriangle, FileText, CheckCircle2, Sparkles, RefreshCw, Database, 
   Download, Upload, FileSpreadsheet, HardDrive, Check, Copy, AlertCircle, 
-  FileCheck, Layers, Terminal, ShieldCheck, Search, Filter
+  FileCheck, Layers, Terminal, ShieldCheck, Search, Filter, Lock
 } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { 
   CompanyProfile, DocumentNumberingConfig, DocumentNumberSetting, DocumentType, 
   AccountingDocument, Contact, ProductService, BankAccount, 
-  ChartOfAccount, JournalEntry 
+  ChartOfAccount, JournalEntry, UserProfile
 } from '../../types';
 import { defaultNumberingConfig, previewDocumentNo } from '../../utils/numbering';
 import { 
@@ -19,7 +19,7 @@ import {
 } from '../../data/initialData';
 import { AVAILABLE_USER_PROFILES, ROLE_LABELS } from '../../data/userRoles';
 import { getAuditLogs, clearAuditLogs } from '../../utils/auditLogger';
-
+import { SecuritySettingsPanel } from './SecuritySettingsPanel';
 
 interface SettingsViewProps {
   company: CompanyProfile;
@@ -29,6 +29,8 @@ interface SettingsViewProps {
   documents?: AccountingDocument[];
   contacts?: Contact[];
   products?: ProductService[];
+  currentUser?: UserProfile;
+  onLockScreen?: () => void;
 }
 
 const DOCUMENT_LABELS: Record<DocumentType, { name: string; desc: string; category: string; badgeColor: string }> = {
@@ -50,9 +52,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onUpdateNumberingConfig,
   documents = initialDocuments,
   contacts = initialContacts,
-  products = initialProducts
+  products = initialProducts,
+  currentUser,
+  onLockScreen
 }) => {
-  const [activeTab, setActiveTab] = useState<'company' | 'numbering' | 'roles' | 'audit' | 'backup' | 'danger'>('company');
+  const [activeTab, setActiveTab] = useState<'company' | 'numbering' | 'roles' | 'security2fa' | 'audit' | 'backup' | 'danger'>('company');
   const [auditSearch, setAuditSearch] = useState('');
   const [auditFilterRole, setAuditFilterRole] = useState<string>('ALL');
   const [auditLogsList, setAuditLogsList] = useState<any[]>(() => {
@@ -438,6 +442,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     { id: 'company' as const, label: 'ข้อมูลองค์กร & บริษัท', icon: Building2, subtitle: 'Tax ID, ที่อยู่, ผู้มีอำนาจลงนาม' },
     { id: 'numbering' as const, label: 'การตั้งค่าเลขที่เอกสารรัน', icon: Hash, subtitle: 'กำหนด Prefix, รูปแบบวันที่, ลำดับรัน' },
     { id: 'roles' as const, label: 'สิทธิ์ผู้ใช้งาน (Roles & RBAC)', icon: ShieldCheck, subtitle: 'ตารางสิทธิ์แยกตาม 5 ตำแหน่งงาน' },
+    { id: 'security2fa' as const, label: 'ระบบความปลอดภัย 2 ชั้น (2FA)', icon: Lock, subtitle: 'รหัส OTP, Dynamic TOTP และป้องกันเจาะระบบ' },
     { id: 'audit' as const, label: 'ประวัติการใช้งาน (Audit Trail)', icon: Terminal, subtitle: 'บันทึกเหตุการณ์และประวัติทำรายการ' },
     { id: 'backup' as const, label: 'สำรอง & กู้คืนฐานข้อมูล', icon: Database, subtitle: 'ดาวน์โหลด JSON/Excel ป้องกันเซิร์ฟเวอร์ปิด' },
     { id: 'danger' as const, label: 'จัดการฐานข้อมูล & ล้างระบบ', icon: AlertTriangle, subtitle: 'รีเซ็ตข้อมูลทดสอบทั้งหมด' },
@@ -893,6 +898,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
 
             </div>
+          )}
+
+          {/* ─── TAB: 2-Factor Authentication (2FA) Security System ───────── */}
+          {activeTab === 'security2fa' && (
+            <SecuritySettingsPanel 
+              currentUser={currentUser}
+              onLockScreen={onLockScreen}
+            />
           )}
 
           {/* ─── TAB: Audit Trail Log ──────────────────────────────────────── */}

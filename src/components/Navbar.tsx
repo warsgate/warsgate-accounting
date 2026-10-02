@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Search, PanelLeft, Bell, PlusCircle, ChevronDown, 
   ShieldCheck, FileText, CreditCard, Box, Cpu, 
-  ExternalLink, UserCheck, Check, Sparkles
+  ExternalLink, UserCheck, Check, Sparkles, Lock
 } from 'lucide-react';
 import { CompanyProfile, UserProfile } from '../types';
 import { AVAILABLE_USER_PROFILES } from '../data/userRoles';
@@ -17,6 +17,7 @@ interface NavbarProps {
   currentUser?: UserProfile;
   onSwitchUser?: (user: UserProfile) => void;
   onOpenLineNotification?: () => void;
+  onLockScreen?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -27,7 +28,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleSidebar,
   currentUser = AVAILABLE_USER_PROFILES[0],
   onSwitchUser,
-  onOpenLineNotification
+  onOpenLineNotification,
+  onLockScreen
 }) => {
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -110,6 +112,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Bell className="w-3.5 h-3.5 text-emerald-600 animate-bounce" />
               <span className="hidden sm:inline">LINE Alert</span>
+            </button>
+          )}
+
+          {/* Quick Lock 2FA Button */}
+          {onLockScreen && (
+            <button
+              onClick={onLockScreen}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-xs border border-slate-700 shadow-xs transition active:scale-95 group"
+              title="ล็อกระบบด้วยความปลอดภัย 2 ชั้น (2FA Lock Screen)"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform" />
+              <span className="hidden md:inline font-bold">ล็อก 2FA</span>
             </button>
           )}
 
@@ -234,7 +248,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     );
                   })}
 
-                  <div className="border-t border-slate-100 pt-1 mt-1">
+                  <div className="border-t border-slate-100 pt-1 mt-1 space-y-1">
                     <button
                       onClick={() => {
                         setActiveTab('settings');
@@ -244,6 +258,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                     >
                       ⚙ ดูตารางสิทธิ์ผู้ใช้งานทั้งหมด (Role Matrix)
                     </button>
+
+                    {onLockScreen && (
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          onLockScreen();
+                        }}
+                        className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-[11px] transition shadow-xs"
+                      >
+                        <Lock className="w-3 h-3 text-amber-400" />
+                        <span>🔒 ล็อกหน้าจอ 2FA (Lock Screen)</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </>

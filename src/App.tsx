@@ -22,6 +22,12 @@ import { BillingNoteView } from './components/Billing/BillingNoteView';
 import { initialBillingNotes, initialWarrantyRetentions } from './data/initialBillingNotes';
 import { LineNotificationModal } from './components/Settings/LineNotificationModal';
 import { ProjectGanttTracker } from './components/Analytics/ProjectGanttTracker';
+import { TwoFactorAuthModal } from './components/Security/TwoFactorAuthModal';
+import { 
+  isSession2FAAuthenticated, 
+  setSession2FAAuthenticated, 
+  getSecurityConfig 
+} from './utils/securityConfig';
 
 import { 
   initialCompanyProfile, 
@@ -60,6 +66,23 @@ export function App() {
       action: 'SWITCH_ROLE',
       details: `สลับบทบาทผู้ใช้งานเป็น ${user.name} (${user.roleTitle})`
     });
+  };
+
+  // 2-Factor Authentication (2FA) Security Gate State
+  const [isLocked, setIsLocked] = useState<boolean>(() => {
+    const secConfig = getSecurityConfig();
+    if (!secConfig.is2FAEnabled) return false;
+    return !isSession2FAAuthenticated();
+  });
+
+  const handleLockScreen = () => {
+    setSession2FAAuthenticated(false);
+    setIsLocked(true);
+  };
+
+  const handleUnlockSuccess = () => {
+    setSession2FAAuthenticated(true);
+    setIsLocked(false);
   };
 
   // Seed milestone plans & merge updated initial plans
@@ -536,6 +559,7 @@ export function App() {
         currentUser={currentUser}
         onSwitchUser={handleSwitchUser}
         onOpenLineNotification={() => setShowLineNotificationModal(true)}
+        onLockScreen={handleLockScreen}
       />
 
       {/* Main Workspace Layout */}
@@ -737,6 +761,8 @@ export function App() {
                 documents={documents}
                 contacts={contacts}
                 products={products}
+                currentUser={currentUser}
+                onLockScreen={handleLockScreen}
               />
             )}
           </div>
@@ -821,6 +847,15 @@ export function App() {
           onRejectDocument={(docId) => {
             handleUpdateDocumentStatus(docId, 'CANCELLED');
           }}
+        />
+      )}
+
+      {/* Two-Factor Authentication (2FA) Security Gate Lock Screen */}
+      {isLocked && (
+        <TwoFactorAuthModal
+          currentUser={currentUser}
+          onSuccess={handleUnlockSuccess}
+          onSwitchUser={handleSwitchUser}
         />
       )}
 
