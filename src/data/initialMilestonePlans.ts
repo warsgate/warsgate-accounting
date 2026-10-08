@@ -253,9 +253,9 @@ export const initialMilestonePlans: ContractMilestonePlan[] = [
         percentage: 50,
         amount: 2323499.86,
         dueDate: '2026-08-22',
-        status: 'INVOICED',
+        status: 'PAID',
         invoiceDocNo: 'INV-690800001',
-        notes: 'ออกใบแจ้งหนี้ INV-690800001 วางบิลงวดที่ 2 (50%) เรียบร้อย รอการชำระเงิน'
+        notes: 'รับชำระเงินงวดที่ 2 (50%) ตามใบเสร็จรับเงิน REC-690800001 วันที่ 07/10/2569 เรียบร้อยแล้ว'
       },
       {
         id: 'ms-pnp-3',

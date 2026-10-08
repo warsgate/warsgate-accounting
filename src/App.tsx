@@ -175,6 +175,18 @@ export function App() {
         changed = true;
       }
 
+      // Always ensure REC-690800001 (Receipt for INV-690800001) is present and INV-690800001 is PAID
+      const targetREC6908 = initialDocuments.find(d => d.documentNo === 'REC-690800001');
+      if (targetREC6908 && !next.some(d => d.documentNo === 'REC-690800001')) {
+        next = [targetREC6908, ...next];
+        changed = true;
+      }
+      const inv6908 = next.find(d => d.documentNo === 'INV-690800001');
+      if (inv6908 && inv6908.status !== 'PAID') {
+        inv6908.status = 'PAID';
+        changed = true;
+      }
+
       if (changed) {
         localStorage.setItem('warsgate_documents', JSON.stringify(next));
         return next;
@@ -236,7 +248,7 @@ export function App() {
 
         // Status reconciliation map for official documents
         const officialStatusMap: Record<string, DocumentStatus> = {
-          'INV-690800001': 'PENDING', // Solenoid IMV งวดที่ 2 (50%) วางบิลแล้ว
+          'INV-690800001': 'PAID', // Solenoid IMV งวดที่ 2 (50%) ได้รับชำระแล้ว (REC-690800001 วันที่ 07/10/2569)
           'INV-690600005': 'PAID',
           'INV-690600004': 'PAID',
           'INV-690600003': 'PAID',
