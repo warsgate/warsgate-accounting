@@ -25,7 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed = false,
   onToggleCollapse
 }) => {
-  const salesCount = documents.filter(d => ["QUOTATION", "INVOICE", "TAX_INVOICE", "RECEIPT"].includes(d.type)).length;
+  const salesCount = documents.filter(d => ["QUOTATION", "INVOICE", "TAX_INVOICE", "DELIVERY_ORDER", "RECEIPT"].includes(d.type)).length;
   const expenseCount = documents.filter(d => ["PURCHASE_ORDER", "PURCHASE_INVOICE", "PAYMENT_VOUCHER", "WHT_CERTIFICATE"].includes(d.type)).length;
   const contactsCount = contacts.length;
   const productsCount = products.length;

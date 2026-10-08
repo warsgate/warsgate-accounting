@@ -168,6 +168,13 @@ export function App() {
         }
       }
 
+      // Always ensure DO-2609-001 (Delivery Order for customer PO 2609002) is present
+      const targetDO2609 = initialDocuments.find(d => d.documentNo === 'DO-2609-001');
+      if (targetDO2609 && !next.some(d => d.documentNo === 'DO-2609-001')) {
+        next = [targetDO2609, ...next];
+        changed = true;
+      }
+
       if (changed) {
         localStorage.setItem('warsgate_documents', JSON.stringify(next));
         return next;
