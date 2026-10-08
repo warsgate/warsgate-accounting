@@ -20,6 +20,7 @@ interface SalesViewProps {
   onUpdateStatus: (docId: string, status: DocumentStatus) => void;
   onDeleteDocument: (docId: string) => void;
   onBatchCreateDocuments?: (newDocs: AccountingDocument[]) => void;
+  onUpdateDocument?: (doc: AccountingDocument) => void;
 }
 
 export const SalesView: React.FC<SalesViewProps> = ({
@@ -31,7 +32,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
   onIssueReceipt,
   onUpdateStatus,
   onDeleteDocument,
-  onBatchCreateDocuments
+  onBatchCreateDocuments,
+  onUpdateDocument
 }) => {
   const [activeTypeTab, setActiveTypeTab] = useState<string>('QUOTATION');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -43,6 +45,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
   const [showCostEstimatorModal, setShowCostEstimatorModal] = useState<boolean>(false);
   const [poFilter, setPoFilter] = useState<'ALL' | 'WITH_PO_ONLY' | 'NO_PO'>('ALL');
+  const [whtFilter, setWhtFilter] = useState<'ALL' | 'WITH_WHT' | 'NO_WHT'>('ALL');
 
   // Sales-only document categories
   const salesTypes: DocumentType[] = ['QUOTATION', 'INVOICE', 'TAX_INVOICE', 'DELIVERY_ORDER', 'RECEIPT'];
@@ -149,6 +152,10 @@ export const SalesView: React.FC<SalesViewProps> = ({
     if (poFilter === 'WITH_PO_ONLY' && (!doc.referencePoNo || doc.referencePoNo.trim() === '')) return false;
     if (poFilter === 'NO_PO' && (doc.referencePoNo && doc.referencePoNo.trim() !== '')) return false;
 
+    // 2.2 Withholding Tax Filter
+    if (whtFilter === 'WITH_WHT' && (!doc.withholdingTaxTotal || doc.withholdingTaxTotal <= 0)) return false;
+    if (whtFilter === 'NO_WHT' && doc.withholdingTaxTotal && doc.withholdingTaxTotal > 0) return false;
+
     // 3. Date Range Filter
     if (datePreset === 'LATEST_MONTH') {
       if (!(doc.issueDate || '').startsWith(activeTabLatest.ym)) return false;
@@ -182,15 +189,50 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const totalFilteredNet = filteredDocs.reduce((acc, doc) => acc + (doc.netPayment || doc.grandTotal || 0), 0);
 
   // Check if any filter is actively applied
-  const hasActiveFilters = statusFilter !== 'ALL' || poFilter !== 'ALL' || datePreset !== 'ALL' || startDate !== '' || endDate !== '' || searchTerm !== '';
+  const hasActiveFilters = statusFilter !== 'ALL' || poFilter !== 'ALL' || whtFilter !== 'ALL' || datePreset !== 'ALL' || startDate !== '' || endDate !== '' || searchTerm !== '';
 
   const handleResetFilters = () => {
     setStatusFilter('ALL');
     setPoFilter('ALL');
+    setWhtFilter('ALL');
     setDatePreset('ALL');
     setStartDate('');
     setEndDate('');
     setSearchTerm('');
+  };
+
+  // Quick toggle 3% Withholding Tax on invoice document
+  const handleToggleDocWht3 = (doc: AccountingDocument) => {
+    if (!onUpdateDocument) return;
+    const hasWht = (doc.withholdingTaxTotal || 0) > 0;
+    const targetRate = hasWht ? 0 : 3;
+
+    const newItems = (doc.items || []).map(item => ({
+      ...item,
+      withholdingTaxRate: targetRate,
+    }));
+
+    const subtotal = newItems.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+    const discountTotal = doc.discountTotal || 0;
+    const vatRate = doc.vatRate !== undefined ? doc.vatRate : 7;
+    const vatAmount = subtotal * (vatRate / 100);
+    const grandTotal = subtotal + vatAmount;
+    const withholdingTaxTotal = targetRate > 0 ? (subtotal * 0.03) : 0;
+    const netPayment = grandTotal - withholdingTaxTotal;
+
+    const updatedDoc: AccountingDocument = {
+      ...doc,
+      items: newItems,
+      subtotal,
+      discountTotal,
+      vatRate,
+      vatAmount,
+      grandTotal,
+      withholdingTaxTotal,
+      netPayment,
+    };
+
+    onUpdateDocument(updatedDoc);
   };
 
   return (
@@ -379,6 +421,21 @@ export const SalesView: React.FC<SalesViewProps> = ({
             <option value="ALL">📑 PO ลูกค้า: ทั้งหมด</option>
             <option value="WITH_PO_ONLY">🎯 เฉพาะที่มี PO ลูกค้าแล้ว ({salesDocs.filter(d => activeTypeTab === 'INVOICE' ? (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') : d.type === activeTypeTab).filter(d => d.referencePoNo && d.referencePoNo.trim() !== '').length})</option>
             <option value="NO_PO">⚪ ยังไม่มี PO ลูกค้า</option>
+          </select>
+
+          {/* Withholding Tax Filter Dropdown */}
+          <select
+            value={whtFilter}
+            onChange={(e) => setWhtFilter(e.target.value as any)}
+            className={`text-xs rounded-xl px-2.5 py-1.5 font-bold focus:outline-none cursor-pointer border transition shadow-2xs ${
+              whtFilter !== 'ALL'
+                ? 'bg-rose-600 text-white border-rose-600 shadow-rose-200'
+                : 'bg-slate-50/80 hover:bg-slate-50 border-slate-200/90 text-slate-700 focus:border-rose-400'
+            }`}
+          >
+            <option value="ALL">🏷️ หัก ณ ที่จ่าย: ทั้งหมด</option>
+            <option value="WITH_WHT">✓ มีหัก ณ ที่จ่าย 3% ({salesDocs.filter(d => activeTypeTab === 'INVOICE' ? (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') : d.type === activeTypeTab).filter(d => (d.withholdingTaxTotal || 0) > 0).length})</option>
+            <option value="NO_WHT">⚪ ไม่หัก ณ ที่จ่าย ({salesDocs.filter(d => activeTypeTab === 'INVOICE' ? (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') : d.type === activeTypeTab).filter(d => (d.withholdingTaxTotal || 0) <= 0).length})</option>
           </select>
 
           {/* Reset Filters */}
@@ -588,10 +645,38 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         </td>
                         <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-800">
                           <div>฿{formatMoney(doc.grandTotal)}</div>
-                          {doc.withholdingTaxTotal > 0 && doc.type !== 'DELIVERY_ORDER' && (
-                            <span className="text-[10px] text-rose-500 block font-normal">
-                              หัก ณ ที่จ่าย 3%: -฿{formatMoney(doc.withholdingTaxTotal)}
-                            </span>
+                          {doc.type !== 'DELIVERY_ORDER' && (
+                            <div className="mt-1 flex items-center justify-end">
+                              {onUpdateDocument && (doc.type === 'INVOICE' || doc.type === 'TAX_INVOICE') ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleDocWht3(doc);
+                                  }}
+                                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10.5px] font-bold border transition shadow-2xs ${
+                                    doc.withholdingTaxTotal > 0
+                                      ? 'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100 hover:border-rose-400'
+                                      : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100 hover:text-slate-600'
+                                  }`}
+                                  title={doc.withholdingTaxTotal > 0 ? "คลิกเพื่อยกเลิกหัก ณ ที่จ่าย 3%" : "คลิกเพื่อเลือกหัก ณ ที่จ่าย 3%"}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={doc.withholdingTaxTotal > 0}
+                                    onChange={() => {}}
+                                    className="w-3 h-3 rounded accent-rose-600 pointer-events-none cursor-pointer"
+                                  />
+                                  <span>{doc.withholdingTaxTotal > 0 ? `หัก 3%: -฿${formatMoney(doc.withholdingTaxTotal)}` : 'เลือกหัก 3%'}</span>
+                                </button>
+                              ) : (
+                                doc.withholdingTaxTotal > 0 && (
+                                  <span className="text-[10px] text-rose-500 block font-normal">
+                                    หัก ณ ที่จ่าย 3%: -฿{formatMoney(doc.withholdingTaxTotal)}
+                                  </span>
+                                )
+                              )}
+                            </div>
                           )}
                         </td>
                         <td className="py-3.5 px-4 text-center">

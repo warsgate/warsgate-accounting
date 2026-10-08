@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   TrendingDown, TrendingUp, Plus, Search, Filter, Printer, Pencil, Trash2, AlertTriangle, 
   FileText, CheckCircle2, RotateCcw, Calendar, ShoppingBag, Receipt, DollarSign, ShieldAlert, Cpu, Sparkles
@@ -8,6 +8,7 @@ import { formatMoney, getStatusBadge, formatThaiDate, getLatestYearMonthInfo, ge
 import { BomPoGeneratorModal } from './BomPoGeneratorModal';
 import { ProjectCostMatrixModal } from '../ProjectCostMatrixModal';
 import { AiOcrExpenseModal } from './AiOcrExpenseModal';
+import { initialDocuments } from '../../data/initialData';
 
 interface ExpenseViewProps {
   documents: AccountingDocument[];
@@ -36,7 +37,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
 }) => {
   const [activeTypeTab, setActiveTypeTab] = useState<string>('PURCHASE_ORDER');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [datePreset, setDatePreset] = useState<string>('LATEST_MONTH');
+  const [datePreset, setDatePreset] = useState<string>('ALL');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -44,6 +45,30 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   const [showBomPoModal, setShowBomPoModal] = useState<boolean>(false);
   const [showCostMatrixModal, setShowCostMatrixModal] = useState<boolean>(false);
   const [showAiOcrModal, setShowAiOcrModal] = useState<boolean>(false);
+
+  // Auto-sync: Ensure official PO-2608-001 (P-TECH Software product tracing line ADC - งวดที่ 1 มัดจำ 30% งานจ้างทำ ไม่มี VAT หัก 3%) is present & up to date
+  useEffect(() => {
+    const targetDoc = initialDocuments.find(d => d.documentNo === 'PO-2608-001');
+    if (!targetDoc || !onBatchCreateDocuments) return;
+
+    const currentDoc = (documents || []).find(
+      d => d.documentNo === 'PO-2608-001' || d.id === 'doc-po-ptech-260801'
+    );
+
+    if (!currentDoc) {
+      onBatchCreateDocuments([targetDoc]);
+    } else if (currentDoc.vatAmount !== targetDoc.vatAmount || currentDoc.withholdingTaxTotal !== targetDoc.withholdingTaxTotal) {
+      onBatchCreateDocuments([targetDoc]);
+    }
+
+    const targetDoc2609 = initialDocuments.find(d => d.documentNo === 'PO-2609-001');
+    if (targetDoc2609) {
+      const currentDoc2609 = (documents || []).find(d => d.documentNo === 'PO-2609-001' || d.id === 'doc-po-ptech-260901');
+      if (currentDoc2609 && (currentDoc2609.vatAmount !== targetDoc2609.vatAmount || currentDoc2609.withholdingTaxTotal !== targetDoc2609.withholdingTaxTotal)) {
+        onBatchCreateDocuments([targetDoc2609]);
+      }
+    }
+  }, [documents, onBatchCreateDocuments]);
 
   const expenseDocs = useMemo(() => (documents || []).filter(d => d && EXPENSE_DOC_TYPES.includes(d.type)), [documents]);
 
@@ -78,21 +103,28 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
     if (activeTypeTab === 'PAYMENT_VOUCHER' && doc.type !== 'PAYMENT_VOUCHER') return false;
     if (activeTypeTab === 'WHT_CERTIFICATE' && doc.type !== 'WHT_CERTIFICATE') return false;
     if (statusFilter !== 'ALL' && doc.status !== statusFilter) return false;
-    if (datePreset === 'LATEST_MONTH') {
-      if (!(doc.issueDate || '').startsWith(activeTabLatest.ym)) return false;
-    } else {
-      if (startDate && (doc.issueDate || '') < startDate) return false;
-      if (endDate && (doc.issueDate || '') > endDate) return false;
-    }
-    if (searchTerm) {
+
+    // Search Filter (when searching, search across all dates)
+    if (searchTerm.trim() !== '') {
       const q = searchTerm.toLowerCase();
-      return (
-        (doc.documentNo || '').toLowerCase().includes(q) ||
-        (doc.contact?.companyName || '').toLowerCase().includes(q) ||
-        (doc.contact?.taxId || '').includes(q) ||
-        (doc.contact?.name || '').toLowerCase().includes(q) ||
-        (doc.notes || '').toLowerCase().includes(q)
-      );
+      const matchDocNo = (doc.documentNo || '').toLowerCase().includes(q);
+      const matchCompany = (doc.contact?.companyName || '').toLowerCase().includes(q);
+      const matchTaxId = (doc.contact?.taxId || '').includes(q);
+      const matchName = (doc.contact?.name || '').toLowerCase().includes(q);
+      const matchNotes = (doc.notes || '').toLowerCase().includes(q);
+      const matchProject = (doc.projectNote || '').toLowerCase().includes(q);
+      const matchItems = doc.items?.some(i => (i.name || i.description || i.code || '').toLowerCase().includes(q));
+      if (!matchDocNo && !matchCompany && !matchTaxId && !matchName && !matchNotes && !matchProject && !matchItems) return false;
+    } else {
+      // Date Range Filter (only applied when NOT searching)
+      if (datePreset === 'LATEST_MONTH') {
+        if (!(doc.issueDate || '').startsWith(activeTabLatest.ym)) return false;
+      } else if (datePreset === 'THIS_YEAR') {
+        if (!(doc.issueDate || '').startsWith(activeTabLatest.year)) return false;
+      } else {
+        if (startDate && (doc.issueDate || '') < startDate) return false;
+        if (endDate && (doc.issueDate || '') > endDate) return false;
+      }
     }
     return true;
   }).sort((a, b) => {
@@ -221,6 +253,19 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
           >
             <Cpu className="w-3.5 h-3.5 text-indigo-200 animate-pulse" />
             <span>🛒 สร้าง PO จาก BOM</span>
+          </button>
+          <button
+            onClick={() => {
+              const targetDoc = initialDocuments.find(d => d.documentNo === 'PO-2608-001');
+              if (targetDoc && onBatchCreateDocuments) {
+                onBatchCreateDocuments([targetDoc]);
+              }
+            }}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white font-bold text-xs shadow-md shadow-amber-200 flex items-center gap-1.5 transition-all hover:scale-[1.02] active:scale-95"
+            title="เปิด PO มัดจำ 30% เพื่อเริ่มงาน งานจ้างทำระบบ Software product tracing line ADC ไม่มี VAT หัก ณ ที่จ่าย 3% (บจก. พี-เทค แอนด์ คอนซัลติ้ง)"
+          >
+            <ShoppingBag className="w-3.5 h-3.5" />
+            <span>+ PO มัดจำ 30% (งานจ้างทำ หัก 3% ไม่มี VAT)</span>
           </button>
           <button
             onClick={() => openCreateModal('PURCHASE_ORDER')}

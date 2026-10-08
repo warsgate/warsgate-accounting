@@ -122,10 +122,55 @@ export function App() {
     ]);
 
     setDocuments(prev => {
-      const filtered = prev.filter(d => !obsoleteDocNos.has(d.documentNo) && !obsoleteDocIds.has(d.id));
-      if (filtered.length !== prev.length) {
-        localStorage.setItem('warsgate_documents', JSON.stringify(filtered));
-        return filtered;
+      let changed = false;
+      let next = prev.filter(d => !obsoleteDocNos.has(d.documentNo) && !obsoleteDocIds.has(d.id));
+      if (next.length !== prev.length) {
+        changed = true;
+      }
+
+      // Automatically sync any missing official initial documents (e.g. PO-2608-001)
+      const existingDocNos = new Set(next.map(d => d.documentNo));
+      const existingIds = new Set(next.map(d => d.id));
+      const missing = initialDocuments.filter(d => 
+        !existingIds.has(d.id) && 
+        (!d.documentNo || !existingDocNos.has(d.documentNo))
+      );
+
+      if (missing.length > 0) {
+        next = [...next, ...missing];
+        changed = true;
+      }
+
+      // Always ensure PO-2608-001 has the latest terms (30% deposit, No VAT, WHT 3%)
+      const targetPTechPO = initialDocuments.find(d => d.documentNo === 'PO-2608-001');
+      if (targetPTechPO) {
+        const idx = next.findIndex(d => d.documentNo === 'PO-2608-001' || d.id === 'doc-po-ptech-260801');
+        if (idx >= 0) {
+          if (next[idx].vatAmount !== targetPTechPO.vatAmount || next[idx].withholdingTaxTotal !== targetPTechPO.withholdingTaxTotal) {
+            next[idx] = targetPTechPO;
+            changed = true;
+          }
+        } else {
+          next = [targetPTechPO, ...next];
+          changed = true;
+        }
+      }
+
+      // Always ensure PO-2609-001 has the latest terms (hire-of-work, No VAT, WHT 3%)
+      const targetPTechPO2609 = initialDocuments.find(d => d.documentNo === 'PO-2609-001');
+      if (targetPTechPO2609) {
+        const idx = next.findIndex(d => d.documentNo === 'PO-2609-001' || d.id === 'doc-po-ptech-260901');
+        if (idx >= 0) {
+          if (next[idx].vatAmount !== targetPTechPO2609.vatAmount || next[idx].withholdingTaxTotal !== targetPTechPO2609.withholdingTaxTotal) {
+            next[idx] = targetPTechPO2609;
+            changed = true;
+          }
+        }
+      }
+
+      if (changed) {
+        localStorage.setItem('warsgate_documents', JSON.stringify(next));
+        return next;
       }
       return prev;
     });
@@ -403,7 +448,10 @@ export function App() {
 
   const handleBatchSaveDocuments = (newDocs: AccountingDocument[]) => {
     setDocuments(prev => {
-      const updated = [...newDocs, ...prev];
+      const newDocNos = new Set(newDocs.map(d => d.documentNo).filter(Boolean));
+      const newIds = new Set(newDocs.map(d => d.id));
+      const filteredPrev = prev.filter(d => !newDocNos.has(d.documentNo) && !newIds.has(d.id));
+      const updated = [...newDocs, ...filteredPrev];
       localStorage.setItem('warsgate_documents', JSON.stringify(updated));
       return updated;
     });
@@ -612,6 +660,7 @@ export function App() {
                 onUpdateStatus={handleUpdateDocumentStatus}
                 onDeleteDocument={handleDeleteDocument}
                 onBatchCreateDocuments={handleBatchSaveDocuments}
+                onUpdateDocument={handleSaveDocument}
               />
             )}
 

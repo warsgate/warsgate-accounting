@@ -2879,6 +2879,55 @@
       "createdByName": "คุณจีระวัฒน์ (MD)"
     },
     {
+      "id": "doc-po-ptech-260801",
+      "documentNo": "PO-2608-001",
+      "type": "PURCHASE_ORDER",
+      "issueDate": "2026-08-07",
+      "dueDate": "2026-09-06",
+      "referenceDocNo": "QT-256908-0001",
+      "projectNote": "Line ADC - Software product tracing (งวดที่ 1 มัดจำ 30%)",
+      "contact": {
+        "id": "cont-ptech-1",
+        "name": "ฝ่ายขาย / ประสานงานขาย",
+        "companyName": "บริษัท พี-เทค แอนด์ คอนซัลติ้ง จำกัด",
+        "taxId": "0105568020018",
+        "isBranch": false,
+        "branchCode": "00000",
+        "address": "234/107 ถนน01 กาญจนาภิเษก แขวงสามวาตะวันตก เขตคลองสามวา กรุงเทพมหานคร 10510",
+        "phone": "+(66) 81 184 6590",
+        "email": "saintentex@gmail.com",
+        "type": "SUPPLIER",
+        "creditDays": 30,
+        "totalTransactions": 2,
+        "balanceDue": 0
+      },
+      "items": [
+        {
+          "id": "item-po-ptech-adc-1",
+          "code": "SW-LINE-ADC-M1",
+          "name": "Software product tracing line ADC (งวดที่ 1 มัดจำ 30% เพื่อเริ่มงาน)",
+          "description": "Software product tracing line ADC - งวดที่ 1 มัดจำ 30% เพื่อเริ่มงาน (ตามใบเสนอราคาเลขที่ QT-256908-0001 ลงวันที่ 7/8/2569 มูลค่าโครงการรวม 200,000.00 บาท)",
+          "quantity": 1,
+          "unit": "งวด",
+          "pricePerUnit": 60000,
+          "discount": 0,
+          "amount": 60000,
+          "vatInclusive": false,
+          "withholdingTaxRate": 3
+        }
+      ],
+      "subtotal": 60000,
+      "discountTotal": 0,
+      "vatRate": 0,
+      "vatAmount": 0,
+      "grandTotal": 60000,
+      "withholdingTaxTotal": 1800,
+      "netPayment": 58200,
+      "status": "APPROVED",
+      "notes": "เปิดใบสั่งซื้อ/สัญญาจ้างทำของ งวดที่ 1 มัดจำ 30% เพื่อเริ่มงาน (งานจ้างทำ ไม่มี VAT | หักภาษี ณ ที่จ่าย 3% เป็นเงิน 1,800.00 บาท | ยอดจ่ายสุทธิ 58,200.00 บาท) ตามใบเสนอราคาเลขที่ QT-256908-0001 (บจก. พี-เทค แอนด์ คอนซัลติ้ง) | โครงการ: Software product tracing line ADC (มูลค่ารวมโครงการ 200,000.00 บาท) | งวดที่ 2 ส่งงาน 60% (120,000 บ.) | งวดที่ 3 ปิดโครงการ 10% (20,000 บ.) | โอนเข้าบัญชีออมทรัพย์ ธ.กสิกรไทย 205-1-39998-9 บจก. พี-เทค แอนด์ คอนซัลติ้ง สาขาแฟชั่นไอส์แลนด์",
+      "createdByName": "แผนกจัดซื้อ / คุณจีระวัฒน์ (MD)"
+    },
+    {
       "id": "doc-po-ptech-260901",
       "documentNo": "PO-2609-001",
       "type": "PURCHASE_ORDER",
@@ -2911,7 +2960,7 @@
           "discount": 0,
           "amount": 4500,
           "vatInclusive": false,
-          "withholdingTaxRate": 0
+          "withholdingTaxRate": 3
         },
         {
           "id": "item-po-ptech-2",
@@ -2924,18 +2973,18 @@
           "discount": 0,
           "amount": 4500,
           "vatInclusive": false,
-          "withholdingTaxRate": 0
+          "withholdingTaxRate": 3
         }
       ],
       "subtotal": 9000,
       "discountTotal": 0,
-      "vatRate": 7,
-      "vatAmount": 630,
-      "grandTotal": 9630,
-      "withholdingTaxTotal": 0,
-      "netPayment": 9630,
+      "vatRate": 0,
+      "vatAmount": 0,
+      "grandTotal": 9000,
+      "withholdingTaxTotal": 270,
+      "netPayment": 8730,
       "status": "APPROVED",
-      "notes": "จัดส่งที่: บริษัท วอร์สเกต จำกัด (สำนักงานใหญ่) หมู่บ้าน พฤกษาวิลล์ 46/1 เลขที่ 50/8 หมู่ 4 ตำบลคลองสาม อำเภอคลองหลวง จังหวัดปทุมธานี 12120 โทร. 083-066-7309",
+      "notes": "งานจ้างทำ ไม่มี VAT | หักภาษี ณ ที่จ่าย 3% (270.00 บาท) | ยอดจ่ายสุทธิ 8,730.00 บาท | จัดส่งที่: บริษัท วอร์สเกต จำกัด (สำนักงานใหญ่) หมู่บ้าน พฤกษาวิลล์ 46/1 เลขที่ 50/8 หมู่ 4 ตำบลคลองสาม อำเภอคลองหลวง จังหวัดปทุมธานี 12120 โทร. 083-066-7309",
       "createdByName": "แผนกจัดซื้อ / คุณจีระวัฒน์ (MD)"
     },
     {

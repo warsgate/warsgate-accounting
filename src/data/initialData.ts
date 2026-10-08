@@ -2534,6 +2534,43 @@ export const initialDocuments: AccountingDocument[] = [
     createdByName: 'คุณจีระวัฒน์ (MD)',
   },
 
+  // ─── ใบสั่งซื้อ: PO-2608-001 (บจก. พี-เทค แอนด์ คอนซัลติ้ง - งวดที่ 1 มัดจำ 30% งานจ้างทำระบบ ไม่มี VAT หัก ณ ที่จ่าย 3%) ───
+  {
+    id: 'doc-po-ptech-260801',
+    documentNo: 'PO-2608-001',
+    type: 'PURCHASE_ORDER',
+    issueDate: '2026-08-07',
+    dueDate: '2026-09-06',
+    referenceDocNo: 'QT-256908-0001',
+    projectNote: 'Line ADC - Software product tracing (งวดที่ 1 มัดจำ 30%)',
+    contact: initialContacts[3], // บริษัท พี-เทค แอนด์ คอนซัลติ้ง จำกัด
+    items: [
+      {
+        id: 'item-po-ptech-adc-1',
+        code: 'SW-LINE-ADC-M1',
+        name: 'Software product tracing line ADC (งานจ้างทำระบบ - งวดที่ 1 มัดจำ 30% เพื่อเริ่มงาน)',
+        description: 'Software product tracing line ADC - งานจ้างทำระบบ (งวดที่ 1 มัดจำ 30% เพื่อเริ่มงาน ไม่มี VAT หัก ณ ที่จ่าย 3% ตามใบเสนอราคาเลขที่ QT-256908-0001 ลงวันที่ 7/8/2569)',
+        quantity: 1,
+        unit: 'งวด',
+        pricePerUnit: 60000.00,
+        discount: 0,
+        amount: 60000.00,
+        vatInclusive: false,
+        withholdingTaxRate: 3,
+      }
+    ],
+    subtotal: 60000.00,
+    discountTotal: 0.00,
+    vatRate: 0,
+    vatAmount: 0.00,
+    grandTotal: 60000.00,
+    withholdingTaxTotal: 1800.00,
+    netPayment: 58200.00,
+    status: 'APPROVED',
+    notes: 'เปิดใบสั่งซื้อ/สัญญาจ้างทำของ งวดที่ 1 มัดจำ 30% เพื่อเริ่มงาน (งานจ้างทำ ไม่มี VAT | หักภาษี ณ ที่จ่าย 3% เป็นเงิน 1,800.00 บาท | ยอดจ่ายสุทธิ 58,200.00 บาท) ตามใบเสนอราคาเลขที่ QT-256908-0001 (บจก. พี-เทค แอนด์ คอนซัลติ้ง) | โครงการ: Software product tracing line ADC (มูลค่ารวมโครงการ 200,000.00 บาท) | งวดที่ 2 ส่งงาน 60% (120,000 บ.) | งวดที่ 3 ปิดโครงการ 10% (20,000 บ.) | โอนเข้าบัญชีออมทรัพย์ ธ.กสิกรไทย 205-1-39998-9 บจก. พี-เทค แอนด์ คอนซัลติ้ง สาขาแฟชั่นไอส์แลนด์',
+    createdByName: 'แผนกจัดซื้อ / คุณจีระวัฒน์ (MD)',
+  },
+
   // ─── ใบสั่งซื้อ: PO-2609-001 (บจก. พี-เทค แอนด์ คอนซัลติ้ง) ───────────────
   {
     id: 'doc-po-ptech-260901',
@@ -2554,7 +2591,7 @@ export const initialDocuments: AccountingDocument[] = [
         discount: 0,
         amount: 4500.00,
         vatInclusive: false,
-        withholdingTaxRate: 0,
+        withholdingTaxRate: 3,
       },
       {
         id: 'item-po-ptech-2',
@@ -2567,18 +2604,18 @@ export const initialDocuments: AccountingDocument[] = [
         discount: 0,
         amount: 4500.00,
         vatInclusive: false,
-        withholdingTaxRate: 0,
+        withholdingTaxRate: 3,
       }
     ],
     subtotal: 9000.00,
     discountTotal: 0.00,
-    vatRate: 7,
-    vatAmount: 630.00,
-    grandTotal: 9630.00,
-    withholdingTaxTotal: 0,
-    netPayment: 9630.00,
+    vatRate: 0,
+    vatAmount: 0.00,
+    grandTotal: 9000.00,
+    withholdingTaxTotal: 270.00,
+    netPayment: 8730.00,
     status: 'APPROVED',
-    notes: 'จัดส่งที่: บริษัท วอร์สเกต จำกัด (สำนักงานใหญ่) หมู่บ้าน พฤกษาวิลล์ 46/1 เลขที่ 50/8 หมู่ 4 ตำบลคลองสาม อำเภอคลองหลวง จังหวัดปทุมธานี 12120 โทร. 083-066-7309',
+    notes: 'งานจ้างทำ ไม่มี VAT | หักภาษี ณ ที่จ่าย 3% (270.00 บาท) | ยอดจ่ายสุทธิ 8,730.00 บาท | จัดส่งที่: บริษัท วอร์สเกต จำกัด (สำนักงานใหญ่) หมู่บ้าน พฤกษาวิลล์ 46/1 เลขที่ 50/8 หมู่ 4 ตำบลคลองสาม อำเภอคลองหลวง จังหวัดปทุมธานี 12120 โทร. 083-066-7309',
     createdByName: 'แผนกจัดซื้อ / คุณจีระวัฒน์ (MD)',
   },
 

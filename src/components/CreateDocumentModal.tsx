@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, CheckCircle2, Pencil, Link2, FileText, ArrowRight, Cpu, Layers, Sparkles } from 'lucide-react';
+import { X, Plus, Trash2, CheckCircle2, Pencil, Link2, FileText, ArrowRight, Cpu, Layers, Sparkles, Percent } from 'lucide-react';
 import { AccountingDocument, Contact, ProductService, DocumentType, DocumentItem, DocumentStatus, DocumentNumberingConfig } from '../types';
 import { formatMoney } from '../utils/formatters';
 import { defaultNumberingConfig, previewDocumentNo } from '../utils/numbering';
@@ -157,6 +157,24 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     return [defaultFirstItem];
   });
 
+  const hasInitialWht = !!(
+    (initialDocument?.withholdingTaxTotal && initialDocument.withholdingTaxTotal > 0) ||
+    initialDocument?.items?.some(i => (Number(i.withholdingTaxRate) || 0) > 0) ||
+    (fromDocument?.withholdingTaxTotal && fromDocument.withholdingTaxTotal > 0) ||
+    fromDocument?.items?.some(i => (Number(i.withholdingTaxRate) || 0) > 0)
+  );
+
+  const [applyWht3, setApplyWht3] = useState<boolean>(hasInitialWht);
+
+  const handleToggleWht3 = (checked: boolean) => {
+    setApplyWht3(checked);
+    const targetRate = checked ? 3 : 0;
+    setItems(items.map(item => ({
+      ...item,
+      withholdingTaxRate: targetRate
+    })));
+  };
+
   // Handle Quick Import from existing invoice / quotation
   const handleImportFromDocument = (sourceDocId: string) => {
     const src = documents.find(d => d.id === sourceDocId);
@@ -185,6 +203,11 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       setNotes(`อ้างอิงใบเสนอราคาเลขที่ ${src.documentNo}`);
       setCustomDocNo(src.documentNo.replace(/^QT-/, 'INV-'));
     }
+    if ((src.withholdingTaxTotal && src.withholdingTaxTotal > 0) || src.items?.some(i => (Number(i.withholdingTaxRate) || 0) > 0)) {
+      setApplyWht3(true);
+    } else {
+      setApplyWht3(false);
+    }
   };
 
   // ── BOM Bridge Integration ───────────────────────────────────────────────────
@@ -194,7 +217,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     importedItems: DocumentItem[],
     meta: { projectCode: string; projectName: string; customerName?: string; bomProjectId?: string }
   ) => {
-    setItems(importedItems);
+    setItems(applyWht3 ? importedItems.map(i => ({ ...i, withholdingTaxRate: 3 })) : importedItems);
     if (meta.projectName) {
       if (!referencePoNo && meta.projectCode) {
         setReferencePoNo(meta.projectCode);
@@ -230,7 +253,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       discount: 0,
       amount: firstProd?.unitPrice || 1000,
       vatInclusive: false,
-      withholdingTaxRate: firstProd?.type === 'SERVICE' ? 3 : 0,
+      withholdingTaxRate: applyWht3 ? 3 : (firstProd?.type === 'SERVICE' ? 3 : 0),
     };
     setItems([...items, newItem]);
   };
@@ -255,7 +278,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       unit: prod.unit || 'ชิ้น',
       pricePerUnit: prod.unitPrice,
       amount: Math.max(0, qty * prod.unitPrice - disc),
-      withholdingTaxRate: prod.type === 'SERVICE' ? 3 : 0,
+      withholdingTaxRate: applyWht3 ? 3 : (prod.type === 'SERVICE' ? 3 : 0),
     };
     setItems(newItems);
   };
@@ -269,6 +292,11 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     current.amount = Math.max(0, qty * price - disc);
     newItems[index] = current;
     setItems(newItems);
+
+    if (field === 'withholdingTaxRate') {
+      const anyWht = newItems.some(i => (Number(i.withholdingTaxRate) || 0) > 0);
+      setApplyWht3(anyWht);
+    }
   };
 
   // ── Financial Calculations ────────────────────────────────────────────────
@@ -608,6 +636,50 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             </select>
           </div>
 
+          {/* ── Withholding Tax 3% Option Box (ช่องเลือกหัก ณ ที่จ่าย 3%) ── */}
+          <div className={`p-4 rounded-2xl border transition-all ${
+            applyWht3 
+              ? 'bg-rose-50/80 border-rose-300 text-rose-950 shadow-sm' 
+              : 'bg-slate-50/80 border-slate-200 text-slate-700 hover:bg-slate-100/80'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={applyWht3}
+                  onChange={e => handleToggleWht3(e.target.checked)}
+                  className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300 cursor-pointer accent-rose-600"
+                />
+                <div>
+                  <div className="font-bold text-xs flex items-center gap-2">
+                    <Percent className="w-3.5 h-3.5 text-rose-600" />
+                    <span>หักภาษี ณ ที่จ่าย 3% (Withholding Tax 3%)</span>
+                    {applyWht3 ? (
+                      <span className="text-[10px] bg-rose-600 text-white font-bold px-2 py-0.5 rounded-full shadow-2xs">
+                        หัก 3% อัตโนมัติ
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-slate-200 text-slate-600 font-medium px-2 py-0.5 rounded-full">
+                        ยังไม่ได้เลือกหัก
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10.5px] text-slate-500 mt-0.5">
+                    ติ๊กเลือกเพื่อหักภาษี ณ ที่จ่าย 3% จากยอดก่อน VAT สำหรับใบแจ้งหนี้ / ใบกำกับภาษี งานบริการ ค่าติดตั้ง ค่าจ้างทำของ หรือโครงการ Automation
+                  </div>
+                </div>
+              </label>
+              {applyWht3 && (
+                <div className="text-left sm:text-right sm:border-l sm:border-rose-200 sm:pl-4 shrink-0">
+                  <div className="text-[10px] text-rose-600 font-semibold">ยอดหักภาษี ณ ที่จ่าย 3%:</div>
+                  <div className="font-mono font-bold text-sm text-rose-700">
+                    -฿{formatMoney(withholdingTaxTotal)}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Line Items Table */}
           <div className="glass-panel p-4 rounded-2xl space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -621,6 +693,15 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                 <p className="text-[11px] text-slate-400">เลือกสินค้าสำเร็จรูป, พิมพ์กำหนดเอง หรือดึงตรงจาก Mechanical BOM</p>
               </div>
               <div className="flex items-center gap-2">
+                <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-rose-50 border border-slate-200 cursor-pointer text-xs font-bold text-slate-700 hover:text-rose-700 transition shadow-2xs">
+                  <input
+                    type="checkbox"
+                    checked={applyWht3}
+                    onChange={e => handleToggleWht3(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded text-rose-600 accent-rose-600 cursor-pointer"
+                  />
+                  <span>หัก ณ ที่จ่าย 3%</span>
+                </label>
                 <button
                   type="button"
                   onClick={() => setShowBomModal(true)}
@@ -830,12 +911,26 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                 <span>ยอดรวมทั้งสิ้น (Grand Total):</span>
                 <span>{formatMoney(grandTotal)}</span>
               </div>
-              {withholdingTaxTotal > 0 && (
-                <div className="flex justify-between py-1 text-amber-600">
-                  <span>หัก ภาษี ณ ที่จ่าย (WHT):</span>
-                  <span>-{formatMoney(withholdingTaxTotal)}</span>
-                </div>
-              )}
+              <div className={`flex justify-between items-center py-1.5 px-2 rounded-xl border transition ${
+                applyWht3
+                  ? 'bg-rose-50/90 border-rose-300 text-rose-800'
+                  : 'bg-slate-50 border-slate-200/80 text-slate-600 hover:bg-slate-100'
+              }`}>
+                <label className="flex items-center gap-2 cursor-pointer select-none font-sans">
+                  <input
+                    type="checkbox"
+                    checked={applyWht3}
+                    onChange={e => handleToggleWht3(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded text-rose-600 accent-rose-600 cursor-pointer"
+                  />
+                  <div>
+                    <span className="font-bold text-xs">หักภาษี ณ ที่จ่าย 3% (WHT):</span>
+                  </div>
+                </label>
+                <span className="font-bold font-mono text-xs text-rose-600">
+                  {withholdingTaxTotal > 0 ? `-฿${formatMoney(withholdingTaxTotal)}` : '฿0.00'}
+                </span>
+              </div>
               <div className="flex justify-between py-2.5 bg-emerald-50 border border-emerald-200 px-3.5 rounded-xl font-bold text-sm text-emerald-700">
                 <span>ยอดชำระสุทธิ (Net Payment):</span>
                 <span>{formatMoney(netPayment)}</span>
