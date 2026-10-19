@@ -371,7 +371,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
   return (
     <div 
       ref={menuRef}
-      className="bg-[#0b101b] text-slate-300 border-b border-slate-800/80 px-3 sm:px-4 py-1.5 flex items-center justify-between select-none text-[12px] font-sans tracking-wide z-40 relative shadow-inner"
+      className="no-print bg-[#0b101b] text-slate-300 border-b border-slate-800/80 px-3 sm:px-4 py-1.5 flex items-center justify-between select-none text-[12px] font-sans tracking-wide z-40 relative shadow-inner"
     >
       {/* Left: Studio Branding & Menu Items */}
       <div className="flex items-center gap-1 sm:gap-2">

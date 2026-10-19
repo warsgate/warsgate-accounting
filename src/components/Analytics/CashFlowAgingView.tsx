@@ -210,7 +210,7 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
             title: ms.title,
             percentage: ms.percentage,
             amount: ms.amount,
-            dueDate: ms.dueDate,
+            dueDate: ms.dueDate || '',
             status: ms.status,
             notes: ms.notes,
           });

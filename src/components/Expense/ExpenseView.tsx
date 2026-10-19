@@ -120,7 +120,7 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
       if (datePreset === 'LATEST_MONTH') {
         if (!(doc.issueDate || '').startsWith(activeTabLatest.ym)) return false;
       } else if (datePreset === 'THIS_YEAR') {
-        if (!(doc.issueDate || '').startsWith(activeTabLatest.year)) return false;
+        if (!(doc.issueDate || '').startsWith(String(activeTabLatest.year))) return false;
       } else {
         if (startDate && (doc.issueDate || '') < startDate) return false;
         if (endDate && (doc.issueDate || '') > endDate) return false;

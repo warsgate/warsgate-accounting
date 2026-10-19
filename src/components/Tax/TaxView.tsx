@@ -184,7 +184,7 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
             <span className="text-amber-600 font-bold">RD Compliance</span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="no-print flex items-center gap-2">
           {/* Month Filter */}
           <select
             value={selectedMonth}
@@ -210,7 +210,7 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
       </div>
 
       {/* ── Top Alert Banner (Smart Pre-Alerts) ─────────────────────────────── */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-sky-500/10 border border-amber-200/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-sm">
+      <div className="no-print p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-sky-500/10 border border-amber-200/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-200">
             <Clock className="w-5 h-5 animate-pulse" />
@@ -248,7 +248,7 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
       </div>
 
       {/* ── Tax Report Navigation Tabs ──────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
+      <div className="no-print flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
         <button
           onClick={() => setActiveTab('TAX_PLANNING')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm ${

@@ -261,7 +261,7 @@ export const BillingNoteView: React.FC<BillingNoteViewProps> = ({
       </div>
 
       {/* ── Main Tab Navigation Bar ─────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-3">
+      <div className="no-print flex items-center justify-between gap-4 border-b border-slate-200 pb-3">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveMainTab("BILLING_NOTES")}
@@ -312,7 +312,7 @@ export const BillingNoteView: React.FC<BillingNoteViewProps> = ({
         <div className="space-y-6">
           
           {/* Filters Bar */}
-          <div className="glass-panel p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-sm border border-slate-200 bg-white">
+          <div className="no-print glass-panel p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-sm border border-slate-200 bg-white">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" />
               <input
@@ -894,7 +894,7 @@ export const BillingNoteView: React.FC<BillingNoteViewProps> = ({
           <div className="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-10 shadow-2xl border border-slate-200 space-y-6 my-8 print:p-0 print:border-none print:shadow-none">
             
             {/* Modal Action Header (Hidden in Print) */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200 print:hidden">
+            <div className="no-print flex items-center justify-between pb-4 border-b border-slate-200 print:hidden">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
                   ตัวอย่างเอกสารใบวางบิล (Billing Note Preview)
@@ -902,7 +902,127 @@ export const BillingNoteView: React.FC<BillingNoteViewProps> = ({
               </div>
               <div className="flex items-center gap-2.5">
                 <button
-                  onClick={() => window.print()}
+                  onClick={() => {
+                    const printableEl = document.getElementById('printable-billing-note-content');
+                    const docTitle = `${selectedNoteForPrint.documentNo}-BillingNote`;
+                    if (!printableEl) {
+                      window.print();
+                      return;
+                    }
+                    const prevTitle = document.title;
+                    document.title = docTitle;
+                    const printFrame = document.createElement('iframe');
+                    printFrame.style.position = 'fixed';
+                    printFrame.style.right = '0';
+                    printFrame.style.bottom = '0';
+                    printFrame.style.width = '210mm';
+                    printFrame.style.height = '0';
+                    printFrame.style.border = '0';
+                    printFrame.style.visibility = 'hidden';
+                    document.body.appendChild(printFrame);
+
+                    const frameDoc = printFrame.contentWindow?.document;
+                    if (!frameDoc) {
+                      document.body.removeChild(printFrame);
+                      document.title = prevTitle;
+                      window.print();
+                      return;
+                    }
+
+                    const escapeAttr = (v: string) => v.replace(/"/g, '&quot;');
+                    const appStyleTags: string[] = [];
+                    Array.from(document.styleSheets).forEach((sheet) => {
+                      try {
+                        const css = Array.from(sheet.cssRules).map((r) => r.cssText).join('\n');
+                        appStyleTags.push(`<style>${css}</style>`);
+                      } catch {
+                        if (sheet.href) appStyleTags.push(`<link rel="stylesheet" href="${escapeAttr(sheet.href)}">`);
+                      }
+                    });
+
+                    frameDoc.open();
+                    frameDoc.write(`
+                      <!DOCTYPE html>
+                      <html lang="th">
+                      <head>
+                        <meta charset="UTF-8">
+                        <title>${docTitle}</title>
+                        <link rel="preconnect" href="https://fonts.googleapis.com">
+                        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                        <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+                        ${appStyleTags.join('\n')}
+                        <style>
+                          @media print {
+                            header, footer, nav, aside { display: revert !important; }
+                          }
+                          @page {
+                            size: A4 portrait;
+                            margin: 6mm 8mm 8mm 8mm;
+                          }
+                          body {
+                            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif !important;
+                            background: #ffffff !important;
+                            color: #0f172a !important;
+                            padding: 0 !important;
+                            margin: 0 !important;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                          }
+                        </style>
+                      </head>
+                      <body>
+                        <div style="width: 100%; max-width: 210mm; margin: 0 auto; padding: 0;">
+                          ${printableEl.innerHTML}
+                        </div>
+                      </body>
+                      </html>
+                    `);
+                    frameDoc.close();
+
+                    let printed = false;
+                    const cleanup = () => {
+                      document.title = prevTitle;
+                      try {
+                        document.body.removeChild(printFrame);
+                      } catch {
+                        // ignore
+                      }
+                    };
+                    const doPrint = () => {
+                      if (printed) return;
+                      printed = true;
+                      const win = printFrame.contentWindow;
+                      if (!win) {
+                        cleanup();
+                        window.print();
+                        return;
+                      }
+                      win.addEventListener('afterprint', cleanup);
+                      try {
+                        win.focus();
+                        win.print();
+                      } catch {
+                        window.print();
+                      }
+                      setTimeout(cleanup, 60000);
+                    };
+
+                    const fallbackTimer = setTimeout(doPrint, 4000);
+                    const waitAndPrint = () => {
+                      const fonts = printFrame.contentWindow?.document.fonts;
+                      Promise.resolve(fonts ? fonts.ready : undefined)
+                        .catch(() => undefined)
+                        .then(() => {
+                          clearTimeout(fallbackTimer);
+                          setTimeout(doPrint, 150);
+                        });
+                    };
+                    if (printFrame.contentWindow?.document.readyState === 'complete') {
+                      waitAndPrint();
+                    } else {
+                      printFrame.addEventListener('load', waitAndPrint, { once: true });
+                    }
+                  }}
                   className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-indigo-600/30 transition active:scale-95"
                 >
                   <Printer className="w-4 h-4" />
@@ -918,7 +1038,7 @@ export const BillingNoteView: React.FC<BillingNoteViewProps> = ({
             </div>
 
             {/* Official Thai Billing Note Paper Layout */}
-            <div className="space-y-6 text-slate-900">
+            <div id="printable-billing-note-content" className="space-y-6 text-slate-900">
               
               {/* Header Box */}
               <div className="flex flex-col sm:flex-row justify-between gap-6 pb-5 border-b-2 border-slate-900">

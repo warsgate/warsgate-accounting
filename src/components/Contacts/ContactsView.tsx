@@ -973,7 +973,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
                                     <td className="py-1.5 px-2.5 text-slate-500 font-mono">{doc.issueDate}</td>
                                     <td className="py-1.5 px-2.5 font-mono text-slate-600">{doc.referencePoNo || '-'}</td>
                                     <td className="py-1.5 px-2.5 text-right font-mono font-bold text-slate-900">
-                                      ฿{formatMoney(doc.totalAmount)}
+                                      ฿{formatMoney(doc.grandTotal)}
                                     </td>
                                     <td className="py-1.5 px-2.5 text-center">
                                       <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${

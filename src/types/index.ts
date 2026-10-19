@@ -68,6 +68,7 @@ export interface AccountingDocument {
   items: DocumentItem[];
   subtotal: number;
   discountTotal: number;
+  specialDiscount?: number;
   vatRate: number; // default 7%
   vatAmount: number;
   grandTotal: number;
@@ -200,6 +201,7 @@ export interface BomProject {
   suppliers?: string[];
   parts?: BomPart[];
   modules?: Array<{ id: string; code: string; name: string }>;
+  createdAt?: string;
   updatedAt?: string;
 }
 

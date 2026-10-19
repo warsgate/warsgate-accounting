@@ -34,22 +34,26 @@ export const formatThaiDate = (dateString: string, includeBE: boolean = true): s
 
 // Converts numbers to Thai Baht Text string (e.g., 1250.50 -> "หนึ่งพันสองร้อยห้าสิบบาทห้าสิบสตางค์")
 export const arabicToThaiBahtText = (numberInput: number): string => {
-  if (isNaN(numberInput)) return 'ศูนย์บาทถ้วน';
+  if (typeof numberInput !== 'number' || isNaN(numberInput)) return 'ศูนย์บาทถ้วน';
 
-  const numberStr = numberInput.toFixed(2);
+  const isNegative = numberInput < 0;
+  const rounded = Math.round(Math.abs(numberInput) * 100) / 100;
+  if (rounded === 0) return 'ศูนย์บาทถ้วน';
+
+  const numberStr = rounded.toFixed(2);
   const [bahtPart, satangPart] = numberStr.split('.');
-
-  if (parseFloat(numberStr) === 0) return 'ศูนย์บาทถ้วน';
 
   const digits = ['', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า'];
   const units = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน'];
 
   const convertGroup = (groupStr: string): string => {
+    const cleanStr = String(parseInt(groupStr, 10));
+    if (cleanStr === '0' || cleanStr === 'NaN') return '';
     let result = '';
-    const len = groupStr.length;
+    const len = cleanStr.length;
 
     for (let i = 0; i < len; i++) {
-      const digit = parseInt(groupStr[i]);
+      const digit = parseInt(cleanStr[i], 10);
       const position = len - i - 1;
 
       if (digit !== 0) {
@@ -68,7 +72,7 @@ export const arabicToThaiBahtText = (numberInput: number): string => {
   };
 
   let bahtText = '';
-  let bahtVal = parseInt(bahtPart);
+  const bahtVal = parseInt(bahtPart, 10);
 
   if (bahtVal === 0) {
     bahtText = 'ศูนย์บาท';
@@ -98,7 +102,7 @@ export const arabicToThaiBahtText = (numberInput: number): string => {
   }
 
   let satangText = '';
-  const satangVal = parseInt(satangPart);
+  const satangVal = parseInt(satangPart, 10);
 
   if (satangVal === 0) {
     satangText = 'ถ้วน';
@@ -106,7 +110,7 @@ export const arabicToThaiBahtText = (numberInput: number): string => {
     satangText = convertGroup(satangPart) + 'สตางค์';
   }
 
-  return bahtText + satangText;
+  return (isNegative ? 'ลบ' : '') + bahtText + satangText;
 };
 
 // Document Status Label & Color Badge Helper

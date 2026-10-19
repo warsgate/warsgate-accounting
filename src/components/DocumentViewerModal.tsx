@@ -90,29 +90,49 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
     printFrame.style.position = 'fixed';
     printFrame.style.right = '0';
     printFrame.style.bottom = '0';
-    printFrame.style.width = '0';
+    printFrame.style.width = '210mm';
     printFrame.style.height = '0';
     printFrame.style.border = '0';
+    printFrame.style.visibility = 'hidden';
     document.body.appendChild(printFrame);
 
     const frameDoc = printFrame.contentWindow?.document;
     if (!frameDoc) {
+      document.body.removeChild(printFrame);
       window.print();
       return;
     }
 
     frameDoc.open();
+    // Reuse the app's own compiled styles (Tailwind etc.) instead of the runtime CDN,
+    // so printing works offline and does not race against network speed.
+    const escapeAttr = (v: string) => v.replace(/"/g, '&quot;');
+    const appStyleTags: string[] = [];
+    Array.from(document.styleSheets).forEach((sheet) => {
+      try {
+        const css = Array.from(sheet.cssRules).map((r) => r.cssText).join('\n');
+        appStyleTags.push(`<style>${css}</style>`);
+      } catch {
+        // Cross-origin sheet (e.g. Google Fonts): link it instead of reading rules
+        if (sheet.href) appStyleTags.push(`<link rel="stylesheet" href="${escapeAttr(sheet.href)}">`);
+      }
+    });
+
     frameDoc.write(`
       <!DOCTYPE html>
       <html lang="th">
       <head>
         <meta charset="UTF-8">
         <title>${printDocName}</title>
-        <script src="https://cdn.tailwindcss.com"></script>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+        ${appStyleTags.join('\n')}
         <style>
+          /* Global app print rules hide these tags; documents inside the iframe must keep them */
+          @media print {
+            header, footer, nav, aside { display: revert !important; }
+          }
           @page {
             size: A4 portrait;
             margin: 6mm 8mm 8mm 8mm;
@@ -167,21 +187,49 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
     `);
     frameDoc.close();
 
-    setTimeout(() => {
+    let printed = false;
+    const cleanup = () => {
       try {
-        printFrame.contentWindow?.focus();
-        printFrame.contentWindow?.print();
+        document.body.removeChild(printFrame);
+      } catch {
+        // ignore
+      }
+    };
+    const doPrint = () => {
+      if (printed) return;
+      printed = true;
+      const win = printFrame.contentWindow;
+      if (!win) {
+        window.print();
+        return;
+      }
+      win.addEventListener('afterprint', cleanup);
+      try {
+        win.focus();
+        win.print();
       } catch {
         window.print();
       }
-      setTimeout(() => {
-        try {
-          document.body.removeChild(printFrame);
-        } catch {
-          // ignore
-        }
-      }, 1500);
-    }, 450);
+      // Fallback cleanup in case afterprint never fires
+      setTimeout(cleanup, 60000);
+    };
+
+    // Wait for stylesheets/fonts to really load; fall back after 4s so printing never hangs
+    const fallbackTimer = setTimeout(doPrint, 4000);
+    const waitAndPrint = () => {
+      const fonts = printFrame.contentWindow?.document.fonts;
+      Promise.resolve(fonts ? fonts.ready : undefined)
+        .catch(() => undefined)
+        .then(() => {
+          clearTimeout(fallbackTimer);
+          setTimeout(doPrint, 150);
+        });
+    };
+    if (printFrame.contentWindow?.document.readyState === 'complete') {
+      waitAndPrint();
+    } else {
+      printFrame.addEventListener('load', waitAndPrint, { once: true });
+    }
   };
 
   const renderDocumentSheet = (copyType: 'ORIGINAL' | 'COPY') => {
@@ -695,7 +743,9 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
         {/* Printable A4 Paper Document Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-950">
           {viewMode === 'WHT_50_TAWI' ? (
-            <WhtCertificateView document={doc} company={company} />
+            <div id="printable-document-content">
+              <WhtCertificateView document={doc} company={company} />
+            </div>
           ) : (
             <div id="printable-document-content" className="space-y-6 print:space-y-0">
               {copyMode === 'BOTH' ? (

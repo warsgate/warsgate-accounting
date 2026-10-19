@@ -10,6 +10,7 @@ import {
 } from '../../utils/securityConfig';
 import { addAuditLog } from '../../utils/auditLogger';
 import { AVAILABLE_USER_PROFILES } from '../../data/userRoles';
+import { UserProfile } from '../../types';
 
 interface SecuritySettingsPanelProps {
   currentUser?: UserProfile;

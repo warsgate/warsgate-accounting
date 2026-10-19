@@ -311,7 +311,7 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
       </div>
 
       {/* ── View Switcher & Filter Toolbar ──────────────────────────────────── */}
-      <div className="glass-panel p-2.5 sm:p-3 rounded-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 shadow-sm border border-slate-200 bg-white">
+      <div className="no-print glass-panel p-2.5 sm:p-3 rounded-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 shadow-sm border border-slate-200 bg-white">
         
         {/* View Mode Segmented Controls */}
         <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
@@ -419,7 +419,7 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
       {viewMode === "SINGLE" && (
         <div className="space-y-3">
           {/* Horizontal PO Tabs Strip */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          <div className="no-print flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
             {allFilteredPOs.map(po => {
               const isSelected = po.poNo === activePO?.poNo;
               const hasUninvoiced = po.uninvoicedAmount > 1;
@@ -1003,7 +1003,7 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                           {isExpanded && (
                             <div className="p-3 bg-white border-t border-slate-200 space-y-3">
                               {/* Milestones */}
-                              {poItem.milestonePlan?.milestones?.length > 0 && (
+                              {(poItem.milestonePlan?.milestones?.length ?? 0) > 0 && (
                                 <div className="overflow-x-auto rounded-lg border border-slate-200">
                                   <table className="w-full text-left text-xs min-w-[550px]">
                                     <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
@@ -1017,7 +1017,7 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                      {poItem.milestonePlan.milestones.map((m: ProjectMilestone) => (
+                                      {poItem.milestonePlan?.milestones.map((m: ProjectMilestone) => (
                                         <tr key={m.id} className="hover:bg-slate-50">
                                           <td className="py-1.5 px-2.5 text-center font-mono font-bold text-slate-600">{m.milestoneNo}</td>
                                           <td className="py-1.5 px-2.5 font-medium text-slate-800">{m.title}</td>

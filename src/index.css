@@ -86,7 +86,7 @@ body {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 8mm 10mm 10mm 10mm;
+    margin: 6mm 8mm 8mm 8mm;
   }
   
   html, body {
@@ -101,6 +101,13 @@ body {
     padding: 0 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  /* App shell uses overflow-hidden / scroll containers; let content flow across pages */
+  #root, #root > div, main {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
   }
 
   /* Hide non-printable UI elements */
