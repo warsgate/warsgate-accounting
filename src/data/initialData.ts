@@ -65,8 +65,8 @@ export const initialContacts: Contact[] = [
     email: 'noppon.a@kuroda-electric.com',
     type: 'CUSTOMER',
     creditDays: 30,
-    totalTransactions: 2,
-    balanceDue: 0.00, // มีเพียงใบเสนอราคา QT-2609-004 & QT-2609-005 ยังไม่มีการเปิดใบแจ้งหนี้ค้างชำระ
+    totalTransactions: 3,
+    balanceDue: 0.00, // มีเพียงใบเสนอราคา QT-2609-004, QT-2609-005 & QT-2610-001 ยังไม่มีการเปิดใบแจ้งหนี้ค้างชำระ
   },
   {
     id: 'cont-tsf-1',
@@ -3135,6 +3135,42 @@ export const initialDocuments: AccountingDocument[] = [
     netPayment: 156000.00,
     status: 'APPROVED',
     notes: 'โครงการ: โปรแกรม ระบบ Dashboard Data Monitor | เสนอ คุณนพพล อุ่นม่อน (Senior Specialist) บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) | กำหนดยืนราคา 30 วัน | เงื่อนไขการชำระเงิน: รายการนี้มัดจำ 50% ก่อนเริ่มงาน | หักภาษี ณ ที่จ่าย 3%',
+    createdByName: 'คุณจีระวัฒน์ (MD)',
+  },
+  // ─── ใบเสนอราคา: Computer IPC 1 เซต บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) ────
+  {
+    id: 'doc-kuroda-qt-ipc-2610001',
+    documentNo: 'QT-2610-001',
+    type: 'QUOTATION',
+    issueDate: '2026-10-19',
+    dueDate: '2026-11-18',
+    referencePoNo: '',
+    projectNote: 'งานจัดซื้อชุดคอมพิวเตอร์อุตสาหกรรม Computer IPC (Advantech ACP-4000)',
+    contact: initialContacts[1], // บจก. คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์)
+    items: [
+      {
+        id: 'item-qt2610001-1',
+        code: 'IPC-ADV-ACP4000',
+        name: 'Computer IPC',
+        description: 'Advantech ACP-4000/FSP 850W/Advantech AIMB-788E-00A1/ i7-14700/Kingston 32GB DDR5 / Kingston 1TB M.2 SSD NVME3/Win11 Pro',
+        quantity: 1,
+        unit: 'เซต',
+        pricePerUnit: 136000.00,
+        discount: 0,
+        amount: 136000.00,
+        vatInclusive: false,
+        withholdingTaxRate: 0,
+      }
+    ],
+    subtotal: 136000.00,
+    discountTotal: 0.00,
+    vatRate: 7,
+    vatAmount: 9520.00,
+    grandTotal: 145520.00,
+    withholdingTaxTotal: 0.00,
+    netPayment: 145520.00,
+    status: 'APPROVED',
+    notes: 'เสนอราคา Computer IPC (Advantech ACP-4000) | เสนอ คุณนพพล อุ่นม่อน (Senior Specialist) บริษัท คูโรดา เทคโน ทูลลิง แมชชีน (ไทยแลนด์) จํากัด | กำหนดยืนราคา 30 วัน | เงื่อนไขการชำระเงิน: ชำระ 100% หลังส่งของแล้ว',
     createdByName: 'คุณจีระวัฒน์ (MD)',
   },
 ];

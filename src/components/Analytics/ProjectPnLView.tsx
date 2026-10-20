@@ -155,7 +155,9 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
         (entry.referencePoNo || '').includes(po) ||
         entry.quotations.some(q => (q.referencePoNo || '').includes(po)) ||
         entry.invoices.some(i => (i.referencePoNo || '').includes(po))
-      ) || [
+      ) || Boolean(entry.referencePoNo && entry.referencePoNo.trim() !== '') ||
+      entry.quotations.some(q => q.status === 'APPROVED' || q.status === 'PAID' || Boolean(q.referencePoNo?.trim())) ||
+      entry.invoices.length > 0 || [
         'โครงการซอฟต์แวร์ Traceability Solenoid Line IMV & 5 Stations',
         'โครงการเครื่องจักร TSF1 Auto pack LM1 (Thai Sekisui Foam)',
         'โครงการชุดบอร์ดควบคุม PLC Line ADC & Data Center Line',
@@ -175,8 +177,10 @@ export const ProjectPnLView: React.FC<ProjectPnLViewProps> = ({
         // If single quotation, use it. If multiple, take the max/primary quote to avoid duplicate revisions
         const sortedQuotes = [...entry.quotations].sort((a, b) => (b.grandTotal || 0) - (a.grandTotal || 0));
         const primaryQuote = sortedQuotes[0];
+        const quoteVatRate = primaryQuote.vatRate ?? ((primaryQuote.vatAmount || 0) > 0 ? 7 : 0);
+        const vatMultiplier = 1 + quoteVatRate / 100;
         contractRevenue = primaryQuote.grandTotal || 0;
-        discountAmount = primaryQuote.specialDiscount || (primaryQuote.discountTotal ? primaryQuote.discountTotal * 1.07 : 0);
+        discountAmount = primaryQuote.specialDiscount || (primaryQuote.discountTotal ? Math.round(primaryQuote.discountTotal * vatMultiplier * 100) / 100 : 0);
         grossContractRevenue = contractRevenue + discountAmount;
       } else {
         const invoicedTotal = entry.invoices.reduce((s, d) => s + (d.grandTotal || 0), 0);

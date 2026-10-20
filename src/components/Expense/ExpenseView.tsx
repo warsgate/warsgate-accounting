@@ -46,28 +46,36 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   const [showCostMatrixModal, setShowCostMatrixModal] = useState<boolean>(false);
   const [showAiOcrModal, setShowAiOcrModal] = useState<boolean>(false);
 
-  // Auto-sync: Ensure official PO-2608-001 (P-TECH Software product tracing line ADC - งวดที่ 1 มัดจำ 30% งานจ้างทำ ไม่มี VAT หัก 3%) is present & up to date
+  // One-time migration for official PO-2608-001 & PO-2609-001 so user edits/deletions are preserved
   useEffect(() => {
+    if (localStorage.getItem('warsgate_po_ptech_migrated_v1') === 'true') return;
+    if (!onBatchCreateDocuments) return;
+
+    const deletedIds = new Set<string>(JSON.parse(localStorage.getItem('warsgate_deleted_doc_ids') || '[]'));
+    const toSync: AccountingDocument[] = [];
+
     const targetDoc = initialDocuments.find(d => d.documentNo === 'PO-2608-001');
-    if (!targetDoc || !onBatchCreateDocuments) return;
-
-    const currentDoc = (documents || []).find(
-      d => d.documentNo === 'PO-2608-001' || d.id === 'doc-po-ptech-260801'
-    );
-
-    if (!currentDoc) {
-      onBatchCreateDocuments([targetDoc]);
-    } else if (currentDoc.vatAmount !== targetDoc.vatAmount || currentDoc.withholdingTaxTotal !== targetDoc.withholdingTaxTotal) {
-      onBatchCreateDocuments([targetDoc]);
+    if (targetDoc && !deletedIds.has(targetDoc.id)) {
+      const currentDoc = (documents || []).find(
+        d => d.documentNo === 'PO-2608-001' || d.id === 'doc-po-ptech-260801'
+      );
+      if (!currentDoc || currentDoc.vatAmount !== targetDoc.vatAmount || currentDoc.withholdingTaxTotal !== targetDoc.withholdingTaxTotal) {
+        toSync.push(targetDoc);
+      }
     }
 
     const targetDoc2609 = initialDocuments.find(d => d.documentNo === 'PO-2609-001');
-    if (targetDoc2609) {
+    if (targetDoc2609 && !deletedIds.has(targetDoc2609.id)) {
       const currentDoc2609 = (documents || []).find(d => d.documentNo === 'PO-2609-001' || d.id === 'doc-po-ptech-260901');
       if (currentDoc2609 && (currentDoc2609.vatAmount !== targetDoc2609.vatAmount || currentDoc2609.withholdingTaxTotal !== targetDoc2609.withholdingTaxTotal)) {
-        onBatchCreateDocuments([targetDoc2609]);
+        toSync.push(targetDoc2609);
       }
     }
+
+    if (toSync.length > 0) {
+      onBatchCreateDocuments(toSync);
+    }
+    localStorage.setItem('warsgate_po_ptech_migrated_v1', 'true');
   }, [documents, onBatchCreateDocuments]);
 
   const expenseDocs = useMemo(() => (documents || []).filter(d => d && EXPENSE_DOC_TYPES.includes(d.type)), [documents]);
@@ -134,11 +142,12 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
     return (b.documentNo || '').localeCompare(a.documentNo || '');
   });
 
-  // Calculate live KPI metrics
-  const totalExpenseAmount = filteredDocs.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
-  const totalInputVat = filteredDocs.reduce((sum, d) => sum + (d.vatAmount || 0), 0);
-  const totalWht = filteredDocs.reduce((sum, d) => sum + (d.withholdingTaxTotal || 0), 0);
-  const totalFilteredNet = filteredDocs.reduce((sum, d) => sum + (d.netPayment || ((d.grandTotal || 0) - (d.withholdingTaxTotal || 0))), 0);
+  // Calculate live KPI metrics (exclude CANCELLED and DRAFT)
+  const activeFilteredDocs = filteredDocs.filter(d => d.status !== 'CANCELLED' && d.status !== 'DRAFT');
+  const totalExpenseAmount = activeFilteredDocs.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
+  const totalInputVat = activeFilteredDocs.reduce((sum, d) => sum + (d.vatAmount || 0), 0);
+  const totalWht = activeFilteredDocs.reduce((sum, d) => sum + (d.withholdingTaxTotal || 0), 0);
+  const totalFilteredNet = activeFilteredDocs.reduce((sum, d) => sum + (d.netPayment || ((d.grandTotal || 0) - (d.withholdingTaxTotal || 0))), 0);
 
   // Table Tabs Definition for Expense (เฉพาะ 4 ประเภทเอกสารชัดเจน ไม่มีแท็บ "ทั้งหมด")
   const tableTabs = [
@@ -181,17 +190,18 @@ export const ExpenseView: React.FC<ExpenseViewProps> = ({
   ];
 
   // ── High-Tech KPI Computations ──────────────────────────────────────────────
-  const poDocs = expenseDocs.filter(d => d.type === 'PURCHASE_ORDER');
+  const activeExpenseDocs = expenseDocs.filter(d => d.status !== 'CANCELLED' && d.status !== 'DRAFT');
+  const poDocs = activeExpenseDocs.filter(d => d.type === 'PURCHASE_ORDER');
   const poTotal = poDocs.reduce((s, d) => s + (d.grandTotal || 0), 0);
   
-  const piDocs = expenseDocs.filter(d => d.type === 'PURCHASE_INVOICE');
+  const piDocs = activeExpenseDocs.filter(d => d.type === 'PURCHASE_INVOICE');
   const piTotal = piDocs.reduce((s, d) => s + (d.grandTotal || 0), 0);
   
-  const pvDocs = expenseDocs.filter(d => d.type === 'PAYMENT_VOUCHER');
-  const pvTotal = pvDocs.reduce((s, d) => s + (d.netPayment || d.grandTotal || 0), 0);
+  const pvDocs = activeExpenseDocs.filter(d => d.type === 'PAYMENT_VOUCHER');
+  const pvTotal = pvDocs.reduce((s, d) => s + (d.grandTotal || 0), 0);
 
   const pendingPay = piDocs.filter(d => d.status !== 'PAID');
-  const pendingPayTotal = pendingPay.reduce((s, d) => s + (d.netPayment || d.grandTotal || 0), 0);
+  const pendingPayTotal = pendingPay.reduce((s, d) => s + (d.grandTotal || 0), 0);
 
   const hasActiveFilters = 
     statusFilter !== 'ALL' || 

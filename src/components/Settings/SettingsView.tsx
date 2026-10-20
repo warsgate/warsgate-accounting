@@ -132,14 +132,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   const handleClearAllData = () => {
-    localStorage.removeItem('warsgate_documents');
-    localStorage.removeItem('warsgate_contacts');
-    localStorage.removeItem('warsgate_products');
-    localStorage.removeItem('warsgate_company');
-    localStorage.removeItem('warsgate_doc_numbering');
-    localStorage.removeItem('warsgate_deleted_doc_ids');
-    localStorage.removeItem('warsgate_deleted_contact_ids');
-    localStorage.removeItem('warsgate_deleted_product_ids');
+    const keysToRemove = [
+      'warsgate_documents',
+      'warsgate_contacts',
+      'warsgate_products',
+      'warsgate_company',
+      'warsgate_doc_numbering',
+      'warsgate_milestone_plans',
+      'warsgate_billing_notes',
+      'warsgate_warranty_retentions',
+      'warsgate_stock_movements',
+      'warsgate_audit_logs',
+      'warsgate_deleted_doc_ids',
+      'warsgate_deleted_contact_ids',
+      'warsgate_deleted_product_ids',
+      'warsgate_qt2610_migrated_v1',
+      'warsgate_status_migration_v2',
+      'warsgate_po_ptech_migrated_v1',
+    ];
+    keysToRemove.forEach(k => localStorage.removeItem(k));
     setShowClearConfirm(false);
     window.location.reload();
   };
@@ -152,6 +163,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
     const timestampIso = `${dateStr}T${timeStr}+07:00`;
+
+    const safeParse = (key: string, fallback: any = []) => {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch {
+        return fallback;
+      }
+    };
 
     return {
       version: '1.0.0',
@@ -171,6 +191,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       contacts: contacts,
       products: products,
       documents: documents,
+      milestonePlans: safeParse('warsgate_milestone_plans', []),
+      billingNotes: safeParse('warsgate_billing_notes', []),
+      warrantyRetentions: safeParse('warsgate_warranty_retentions', []),
+      stockMovements: safeParse('warsgate_stock_movements', []),
+      auditLogs: safeParse('warsgate_audit_logs', []),
       chartOfAccounts: initialChartOfAccounts,
       journalEntries: initialJournalEntries,
     };
@@ -291,7 +316,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             'ลูกค้า/คู่ค้า': d.contact?.companyName || d.contact?.name || '',
             'ลำดับที่': idx + 1,
             'รหัสสินค้า': item.code || '',
-            'ชื่อรายการสินค้า/บริการ': item.description,
+            'ชื่อรายการสินค้า/บริการ': item.name || item.description || '',
+            'รายละเอียด': item.description || '',
             'จำนวน': item.quantity,
             'หน่วย': item.unit || '',
             'ราคาต่อหน่วย': item.pricePerUnit || 0,
@@ -309,6 +335,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         'ชื่อบัญชี': c.name,
         'หมวดบัญชี': c.category,
         'ประเภทเดบิต/เครดิตปกติ': c.type || '',
+        'เดบิต (Debit)': c.debit || 0,
+        'เครดิต (Credit)': c.credit || 0,
         'คำอธิบาย': c.name || '',
       }));
       const wsCoa = XLSX.utils.json_to_sheet(coaData);
@@ -373,8 +401,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         const parsed = JSON.parse(text);
 
         // Validation check
-        if (!parsed || (!parsed.documents && !parsed.company && !parsed.contacts)) {
+        if (!parsed || typeof parsed !== 'object' || (!parsed.documents && !parsed.company && !parsed.contacts)) {
           throw new Error('โครงสร้างไฟล์ไม่ถูกต้อง หรือไม่ใช่ไฟล์สำรองข้อมูลของระบบ WARSGATE');
+        }
+        if (parsed.documents !== undefined && !Array.isArray(parsed.documents)) {
+          throw new Error('ข้อมูลเอกสาร (documents) ในไฟล์สำรองไม่ใช่รูปแบบ Array ที่ถูกต้อง');
+        }
+        if (parsed.contacts !== undefined && !Array.isArray(parsed.contacts)) {
+          throw new Error('ข้อมูลผู้ติดต่อ (contacts) ในไฟล์สำรองไม่ใช่รูปแบบ Array ที่ถูกต้อง');
+        }
+        if (parsed.products !== undefined && !Array.isArray(parsed.products)) {
+          throw new Error('ข้อมูลสินค้า (products) ในไฟล์สำรองไม่ใช่รูปแบบ Array ที่ถูกต้อง');
         }
 
         setRestoreModalData(parsed);
@@ -397,24 +434,39 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     if (!restoreModalData) return;
 
     try {
-      if (restoreModalData.documents) {
+      if (Array.isArray(restoreModalData.documents)) {
         localStorage.setItem('warsgate_documents', JSON.stringify(restoreModalData.documents));
       }
-      if (restoreModalData.contacts) {
+      if (Array.isArray(restoreModalData.contacts)) {
         localStorage.setItem('warsgate_contacts', JSON.stringify(restoreModalData.contacts));
       }
-      if (restoreModalData.products) {
+      if (Array.isArray(restoreModalData.products)) {
         localStorage.setItem('warsgate_products', JSON.stringify(restoreModalData.products));
       }
-      if (restoreModalData.company) {
+      if (restoreModalData.company && typeof restoreModalData.company === 'object') {
         localStorage.setItem('warsgate_company', JSON.stringify(restoreModalData.company));
         onUpdateCompany(restoreModalData.company);
       }
-      if (restoreModalData.numberingConfig) {
+      if (restoreModalData.numberingConfig && typeof restoreModalData.numberingConfig === 'object') {
         localStorage.setItem('warsgate_doc_numbering', JSON.stringify(restoreModalData.numberingConfig));
         if (onUpdateNumberingConfig) {
           onUpdateNumberingConfig(restoreModalData.numberingConfig);
         }
+      }
+      if (Array.isArray(restoreModalData.milestonePlans)) {
+        localStorage.setItem('warsgate_milestone_plans', JSON.stringify(restoreModalData.milestonePlans));
+      }
+      if (Array.isArray(restoreModalData.billingNotes)) {
+        localStorage.setItem('warsgate_billing_notes', JSON.stringify(restoreModalData.billingNotes));
+      }
+      if (Array.isArray(restoreModalData.warrantyRetentions)) {
+        localStorage.setItem('warsgate_warranty_retentions', JSON.stringify(restoreModalData.warrantyRetentions));
+      }
+      if (Array.isArray(restoreModalData.stockMovements)) {
+        localStorage.setItem('warsgate_stock_movements', JSON.stringify(restoreModalData.stockMovements));
+      }
+      if (Array.isArray(restoreModalData.auditLogs)) {
+        localStorage.setItem('warsgate_audit_logs', JSON.stringify(restoreModalData.auditLogs));
       }
 
       // Reset any deletion tracking keys so restored items appear cleanly

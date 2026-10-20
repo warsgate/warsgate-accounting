@@ -826,16 +826,16 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">จำนวนในสต็อก</label>
                     <input
-                      type="number" min="0" value={formData.stockQty}
-                      onChange={e => setFormData({ ...formData, stockQty: parseInt(e.target.value) || 0 })}
+                      type="number" min="0" step="any" value={formData.stockQty}
+                      onChange={e => setFormData({ ...formData, stockQty: Math.max(0, parseFloat(e.target.value) || 0) })}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-purple-700"
                     />
                   </div>
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">แจ้งเตือนขั้นต่ำ</label>
                     <input
-                      type="number" min="0" value={formData.minStockAlert}
-                      onChange={e => setFormData({ ...formData, minStockAlert: parseInt(e.target.value) || 0 })}
+                      type="number" min="0" step="any" value={formData.minStockAlert}
+                      onChange={e => setFormData({ ...formData, minStockAlert: Math.max(0, parseFloat(e.target.value) || 0) })}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono"
                     />
                   </div>

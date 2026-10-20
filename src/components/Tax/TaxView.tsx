@@ -73,16 +73,31 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
   };
 
   // ── 1. ภาษีขาย (Output VAT) ────────────────────────────────────────────────
-  const allSalesVatDocs = documents.filter(d =>
-    ['RECEIPT', 'TAX_INVOICE'].includes(d.type) && d.status === 'PAID' && (d.vatAmount || 0) > 0
+  // Deduplicate when both TAX_INVOICE/INVOICE and RECEIPT exist for the same transaction
+  const paidReceiptRefDocNos = new Set(
+    documents
+      .filter(d => d.type === 'RECEIPT' && d.status === 'PAID' && (d.vatAmount || 0) > 0 && d.referenceDocNo)
+      .map(d => d.referenceDocNo!.trim())
   );
+  const allSalesVatDocs = documents.filter(d => {
+    if (d.status !== 'PAID' || (d.vatAmount || 0) <= 0) return false;
+    if (d.type === 'RECEIPT') return true;
+    if (d.type === 'TAX_INVOICE' || d.type === 'INVOICE') {
+      // Only include if there is no separate PAID RECEIPT already counted for this invoice
+      return !(d.documentNo && paidReceiptRefDocNos.has(d.documentNo.trim()));
+    }
+    return false;
+  });
   const salesVatDocs = filterByMonth(allSalesVatDocs);
   const totalSalesBase = salesVatDocs.reduce((sum, d) => sum + (d.subtotal || 0), 0);
   const totalSalesVat = salesVatDocs.reduce((sum, d) => sum + (d.vatAmount || 0), 0);
 
   // ── 2. ภาษีซื้อ (Input VAT) ────────────────────────────────────────────────
   const allPurchaseVatDocs = documents.filter(d =>
-    ['PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(d.type) && (d.vatAmount || 0) > 0
+    ['PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(d.type) &&
+    d.status !== 'CANCELLED' &&
+    d.status !== 'DRAFT' &&
+    (d.vatAmount || 0) > 0
   );
   const purchaseVatDocs = filterByMonth(allPurchaseVatDocs);
   const totalPurchaseBase = purchaseVatDocs.reduce((sum, d) => sum + (d.subtotal || 0), 0);
@@ -91,11 +106,27 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
   // ── 3. ภาษีมูลค่าเพิ่มสุทธิ ภ.พ. 30 ──────────────────────────────────────
   const netVatToPay = totalSalesVat - totalPurchaseVat;
 
+  // Helper to check if a contact is a juristic person (นิติบุคคล -> ภ.ง.ด.53) vs individual (บุคคลธรรมดา -> ภ.ง.ด.3)
+  const isCorporateContact = (doc: AccountingDocument): boolean => {
+    const name = `${doc.contact?.companyName || ''} ${doc.contact?.name || ''}`;
+    if (/บริษัท|บจก|หจก|ห้างหุ้นส่วน|จำกัด|จํากัด|co\.,?\s*ltd|limited|corp/i.test(name)) {
+      return true;
+    }
+    if (/^(นาย|นาง|น\.ส\.|นางสาว|ช่าง|คุณ)/.test(name.trim())) {
+      return false;
+    }
+    const cleanTaxId = (doc.contact?.taxId || '').replace(/\D/g, '');
+    // Thai juristic person tax IDs have 13 digits starting with '01'..'09' (e.g. 01055...), excluding placeholder '0000000000000'
+    return cleanTaxId.length === 13 && /^0[1-9]/.test(cleanTaxId);
+  };
+
   // ── 4. ภาษีหัก ณ ที่จ่าย ภ.ง.ด. 53 (นิติบุคคล) ───────────────────────────
   const allPnd53Docs = documents.filter(d =>
     ['PURCHASE_INVOICE', 'PAYMENT_VOUCHER', 'WHT_CERTIFICATE'].includes(d.type) &&
+    d.status !== 'CANCELLED' &&
+    d.status !== 'DRAFT' &&
     (d.withholdingTaxTotal || 0) > 0 &&
-    (d.contact?.companyName?.includes('บริษัท') || d.contact?.companyName?.includes('บจก') || d.contact?.companyName?.includes('หจก') || (d.contact?.taxId?.length === 13))
+    isCorporateContact(d)
   );
   const pnd53Docs = filterByMonth(allPnd53Docs);
   const totalPnd53Payment = pnd53Docs.reduce((sum, d) => sum + (d.subtotal || 0), 0);
@@ -104,17 +135,32 @@ export const TaxView: React.FC<TaxViewProps> = ({ documents }) => {
   // ── 5. ภาษีหัก ณ ที่จ่าย ภ.ง.ด. 3 (บุคคลธรรมดา) ─────────────────────────
   const allPnd3Docs = documents.filter(d =>
     ['PURCHASE_INVOICE', 'PAYMENT_VOUCHER', 'WHT_CERTIFICATE'].includes(d.type) &&
+    d.status !== 'CANCELLED' &&
+    d.status !== 'DRAFT' &&
     (d.withholdingTaxTotal || 0) > 0 &&
-    !allPnd53Docs.some(p => p.id === d.id)
+    !isCorporateContact(d)
   );
   const pnd3Docs = filterByMonth(allPnd3Docs);
   const totalPnd3Payment = pnd3Docs.reduce((sum, d) => sum + (d.subtotal || 0), 0);
   const totalPnd3Wht = pnd3Docs.reduce((sum, d) => sum + (d.withholdingTaxTotal || 0), 0);
 
   // ── 6. เครดิตภาษีถูกหัก ณ ที่จ่าย 3% จากลูกค้าทั้งระบบ (WHT Receivable) ────
+  // Count each billed/paid sales transaction once (prefer RECEIPT, fallback to INVOICE/TAX_INVOICE without duplicate RECEIPT)
+  const whtReceiptRefSet = new Set(
+    documents
+      .filter(d => d.type === 'RECEIPT' && d.status !== 'CANCELLED' && d.status !== 'DRAFT' && d.referenceDocNo)
+      .map(d => d.referenceDocNo!.trim())
+  );
   const totalWhtCreditFromCustomers = documents
-    .filter(d => ['QUOTATION', 'INVOICE', 'RECEIPT'].includes(d.type))
-    .reduce((sum, d) => sum + (d.withholdingTaxTotal || 0), 0) || 240492.70;
+    .filter(d => {
+      if (d.status === 'CANCELLED' || d.status === 'DRAFT') return false;
+      if (d.type === 'RECEIPT') return true;
+      if (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') {
+        return !(d.documentNo && whtReceiptRefSet.has(d.documentNo.trim()));
+      }
+      return false;
+    })
+    .reduce((sum, d) => sum + (d.withholdingTaxTotal || 0), 0);
 
   // ─── ข้อมูลประมาณการ 2569 (จากงบกำไรขาดทุนจริง) ────────────────────────────
   const projectedRevenue = 8016423.30;

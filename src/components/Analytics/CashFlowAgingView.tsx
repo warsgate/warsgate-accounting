@@ -43,13 +43,16 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedDocNo, setCopiedDocNo] = useState<string | null>(null);
 
-  // Helper to get today's date
+  // Helper to get today's date normalized to midnight
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  // Helper to calculate days overdue
+  // Helper to calculate days overdue (normalized to midnight to avoid time-of-day drift)
   const getDaysOverdue = (dueDateStr?: string): number => {
     if (!dueDateStr) return 0;
     const due = new Date(dueDateStr);
+    if (isNaN(due.getTime())) return 0;
+    due.setHours(0, 0, 0, 0);
     const diffTime = today.getTime() - due.getTime();
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
   };
@@ -218,7 +221,11 @@ export const CashFlowAgingView: React.FC<CashFlowAgingViewProps> = ({
       });
     });
 
-    return list.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    return list.sort((a, b) => {
+      const timeA = a.dueDate ? new Date(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+      const timeB = b.dueDate ? new Date(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+      return (isNaN(timeA) ? Number.MAX_SAFE_INTEGER : timeA) - (isNaN(timeB) ? Number.MAX_SAFE_INTEGER : timeB);
+    });
   }, [milestonePlans]);
 
   const totalUpcomingMilestoneAmount = useMemo(() => {

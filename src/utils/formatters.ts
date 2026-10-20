@@ -282,6 +282,9 @@ export const getProjectName = (doc: any): string => {
   if (docNo === 'QT-2609-005' || allText.includes('โปรแกรม ระบบ dashboard data monitor') || itemText.includes('srv-dashboard-sw')) {
     return 'งาน Dashboard Data Monitor - Software (Kuroda)';
   }
+  if (docNo === 'QT-2610-001' || itemText.includes('acp-4000') || itemText.includes('aimb-788e')) {
+    return 'งาน Computer IPC Advantech ACP-4000 (Kuroda)';
+  }
 
   // Fallback to explicit projectNote / projectName if custom named
   if (projNote) return projNote;

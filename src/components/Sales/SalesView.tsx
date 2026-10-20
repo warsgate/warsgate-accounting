@@ -37,7 +37,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
 }) => {
   const [activeTypeTab, setActiveTypeTab] = useState<string>('QUOTATION');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [datePreset, setDatePreset] = useState<string>('LATEST_MONTH');
+  const [datePreset, setDatePreset] = useState<string>('ALL');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -156,23 +156,26 @@ export const SalesView: React.FC<SalesViewProps> = ({
     if (whtFilter === 'WITH_WHT' && (!doc.withholdingTaxTotal || doc.withholdingTaxTotal <= 0)) return false;
     if (whtFilter === 'NO_WHT' && doc.withholdingTaxTotal && doc.withholdingTaxTotal > 0) return false;
 
-    // 3. Date Range Filter
-    if (datePreset === 'LATEST_MONTH') {
-      if (!(doc.issueDate || '').startsWith(activeTabLatest.ym)) return false;
-    } else {
-      if (startDate && doc.issueDate < startDate) return false;
-      if (endDate && doc.issueDate > endDate) return false;
-    }
-
-    // 4. Search Filter
+    // 3. Search Filter (when searching, search across all dates; otherwise apply Date Range Filter)
     if (searchTerm.trim() !== '') {
       const term = searchTerm.toLowerCase();
-      const matchDocNo = doc.documentNo.toLowerCase().includes(term);
+      const matchDocNo = (doc.documentNo || '').toLowerCase().includes(term);
       const matchPo = (doc.referencePoNo || '').toLowerCase().includes(term);
       const matchCustomer = (doc.contact?.companyName || doc.contact?.name || '').toLowerCase().includes(term);
       const matchTaxId = (doc.contact?.taxId || '').toLowerCase().includes(term);
-      const matchItems = doc.items?.some(i => (i.description || i.name || "").toLowerCase().includes(term));
-      if (!matchDocNo && !matchPo && !matchCustomer && !matchTaxId && !matchItems) return false;
+      const matchProject = (doc.projectNote || '').toLowerCase().includes(term);
+      const matchItems = doc.items?.some(i => (i.description || i.name || '').toLowerCase().includes(term));
+      if (!matchDocNo && !matchPo && !matchCustomer && !matchTaxId && !matchProject && !matchItems) return false;
+    } else {
+      // Date Range Filter (only applied when NOT searching)
+      if (datePreset === 'LATEST_MONTH') {
+        if (!(doc.issueDate || '').startsWith(activeTabLatest.ym)) return false;
+      } else if (datePreset === 'THIS_YEAR') {
+        if (!(doc.issueDate || '').startsWith(String(activeTabLatest.year))) return false;
+      } else {
+        if (startDate && doc.issueDate < startDate) return false;
+        if (endDate && doc.issueDate > endDate) return false;
+      }
     }
 
     return true;

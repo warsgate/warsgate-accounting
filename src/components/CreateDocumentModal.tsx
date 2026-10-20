@@ -11,6 +11,7 @@ interface CreateDocumentModalProps {
   fromDocument?: AccountingDocument | null;
   documents?: AccountingDocument[];
   numberingConfig?: DocumentNumberingConfig;
+  onUpdateNumberingConfig?: (config: DocumentNumberingConfig) => void;
   contacts: Contact[];
   products: ProductService[];
   onClose: () => void;
@@ -35,6 +36,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   fromDocument,
   documents = [],
   numberingConfig: propNumberingConfig,
+  onUpdateNumberingConfig,
   contacts,
   products,
   onClose,
@@ -157,6 +159,14 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     return [defaultFirstItem];
   });
 
+  const hasInitialVat = initialDocument
+    ? (initialDocument.vatRate !== undefined ? initialDocument.vatRate > 0 : (initialDocument.vatAmount || 0) > 0)
+    : fromDocument
+    ? (fromDocument.vatRate !== undefined ? fromDocument.vatRate > 0 : (fromDocument.vatAmount || 0) > 0)
+    : true;
+
+  const [applyVat7, setApplyVat7] = useState<boolean>(hasInitialVat);
+
   const hasInitialWht = !!(
     (initialDocument?.withholdingTaxTotal && initialDocument.withholdingTaxTotal > 0) ||
     initialDocument?.items?.some(i => (Number(i.withholdingTaxRate) || 0) > 0) ||
@@ -195,6 +205,9 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     if (src.documentNo) {
       setReferenceDocNo(src.documentNo);
     }
+    if (src.projectNote) {
+      setProjectNote(src.projectNote);
+    }
     if (docType === 'RECEIPT') {
       setStatus('PAID');
       setNotes(`รับชำระเงินตามใบแจ้งหนี้เลขที่ ${src.documentNo} (${src.contact?.companyName})`);
@@ -203,6 +216,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       setNotes(`อ้างอิงใบเสนอราคาเลขที่ ${src.documentNo}`);
       setCustomDocNo(src.documentNo.replace(/^QT-/, 'INV-'));
     }
+    setApplyVat7(src.vatRate !== undefined ? src.vatRate > 0 : (src.vatAmount || 0) > 0);
     if ((src.withholdingTaxTotal && src.withholdingTaxTotal > 0) || src.items?.some(i => (Number(i.withholdingTaxRate) || 0) > 0)) {
       setApplyWht3(true);
     } else {
@@ -283,13 +297,15 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     setItems(newItems);
   };
 
+  const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+
   const handleItemFieldChange = (index: number, field: keyof DocumentItem, value: any) => {
     const newItems = [...items];
     const current = { ...newItems[index], [field]: value };
     const qty = Number(current.quantity) || 0;
     const price = Number(current.pricePerUnit) || 0;
     const disc = Number(current.discount) || 0;
-    current.amount = Math.max(0, qty * price - disc);
+    current.amount = round2(Math.max(0, qty * price - disc));
     newItems[index] = current;
     setItems(newItems);
 
@@ -300,20 +316,21 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   };
 
   // ── Financial Calculations ────────────────────────────────────────────────
-  const subtotal = items.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
-  const discountTotal = items.reduce((sum, i) => sum + (Number(i.discount) || 0), 0);
-  const vatAmount = subtotal * 0.07;
-  const grandTotal = subtotal + vatAmount;
+  const subtotal = round2(items.reduce((sum, i) => sum + (Number(i.amount) || 0), 0));
+  const discountTotal = round2(items.reduce((sum, i) => sum + (Number(i.discount) || 0), 0));
+  const vatRate = applyVat7 ? 7 : 0;
+  const vatAmount = applyVat7 ? round2(subtotal * 0.07) : 0;
+  const grandTotal = round2(subtotal + vatAmount);
 
-  const withholdingTaxTotal = items.reduce((sum, i) => {
+  const withholdingTaxTotal = round2(items.reduce((sum, i) => {
     const rate = Number(i.withholdingTaxRate) || 0;
     if (rate > 0) {
-      return sum + (Number(i.amount) || 0) * (rate / 100);
+      return sum + round2((Number(i.amount) || 0) * (rate / 100));
     }
     return sum;
-  }, 0);
+  }, 0));
 
-  const netPayment = grandTotal - withholdingTaxTotal;
+  const netPayment = round2(grandTotal - withholdingTaxTotal);
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = (e: React.FormEvent) => {
@@ -354,7 +371,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         items,
         subtotal,
         discountTotal,
-        vatRate: 7,
+        vatRate,
         vatAmount,
         grandTotal,
         withholdingTaxTotal,
@@ -370,7 +387,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       const autoDocNo = previewDocumentNo(setting, issueDate);
       const docNo = customDocNo.trim() ? customDocNo.trim() : autoDocNo;
 
-      // Auto increment next number in storage
+      // Auto increment next number in storage and parent React state
       try {
         const updatedConfig = {
           ...numConfig,
@@ -380,6 +397,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           }
         };
         localStorage.setItem('warsgate_doc_numbering', JSON.stringify(updatedConfig));
+        onUpdateNumberingConfig?.(updatedConfig);
       } catch (err) {
         console.error('Error saving numbering config', err);
       }
@@ -390,14 +408,14 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         type: docType,
         issueDate,
         dueDate,
-        referencePoNo: referencePoNo.trim() || undefined,
-        referenceDocNo: referenceDocNo.trim() || undefined,
-        projectNote: projectNote.trim() || undefined,
+        referencePoNo: referencePoNo.trim() || fromDocument?.referencePoNo || undefined,
+        referenceDocNo: referenceDocNo.trim() || fromDocument?.documentNo || undefined,
+        projectNote: projectNote.trim() || fromDocument?.projectNote || undefined,
         contact,
         items,
         subtotal,
         discountTotal,
-        vatRate: 7,
+        vatRate,
         vatAmount,
         grandTotal,
         withholdingTaxTotal,
@@ -496,7 +514,11 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                 <option value="INVOICE">ใบแจ้งหนี้ (INV)</option>
                 <option value="TAX_INVOICE">ใบกำกับภาษี (TAX)</option>
                 <option value="RECEIPT">ใบเสร็จรับเงิน (REC)</option>
+                <option value="DELIVERY_ORDER">ใบส่งของชั่วคราว (DO)</option>
                 <option value="PURCHASE_ORDER">ใบสั่งซื้อ (PO)</option>
+                <option value="PURCHASE_INVOICE">ใบแจ้งหนี้ค่าใช้จ่าย (PINV)</option>
+                <option value="PAYMENT_VOUCHER">ใบสำคัญจ่าย (PV)</option>
+                <option value="WHT_CERTIFICATE">หนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ)</option>
               </select>
             </div>
 
@@ -520,6 +542,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                 onChange={e => setStatus(e.target.value as DocumentStatus)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-semibold focus:outline-none focus:border-rose-400"
               >
+                <option value="DRAFT">ร่างเอกสาร (Draft)</option>
                 <option value="PENDING">รอดำเนินการ / รอชำระ (Pending)</option>
                 <option value="APPROVED">อนุมัติแล้ว (Approved)</option>
                 <option value="PAID">ชำระเงินแล้ว (Paid)</option>
@@ -903,9 +926,25 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                   <span>-{formatMoney(discountTotal)}</span>
                 </div>
               )}
-              <div className="flex justify-between py-1 border-b border-slate-100">
-                <span className="text-slate-500">ภาษีมูลค่าเพิ่ม VAT 7%:</span>
-                <span className="font-semibold text-slate-800">{formatMoney(vatAmount)}</span>
+              <div className={`flex justify-between items-center py-1.5 px-2 rounded-xl border transition ${
+                applyVat7
+                  ? 'bg-sky-50/90 border-sky-300 text-sky-900'
+                  : 'bg-slate-50 border-slate-200/80 text-slate-500 hover:bg-slate-100'
+              }`}>
+                <label className="flex items-center gap-2 cursor-pointer select-none font-sans">
+                  <input
+                    type="checkbox"
+                    checked={applyVat7}
+                    onChange={e => setApplyVat7(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded text-sky-600 accent-sky-600 cursor-pointer"
+                  />
+                  <span className="font-bold text-xs">
+                    {applyVat7 ? 'คิดภาษีมูลค่าเพิ่ม VAT 7%:' : 'ไม่คิด VAT (0%):'}
+                  </span>
+                </label>
+                <span className="font-bold font-mono text-xs text-slate-800">
+                  ฿{formatMoney(vatAmount)}
+                </span>
               </div>
               <div className="flex justify-between py-1.5 font-bold text-sm text-rose-600 border-b border-slate-100">
                 <span>ยอดรวมทั้งสิ้น (Grand Total):</span>

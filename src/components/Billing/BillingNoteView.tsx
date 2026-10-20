@@ -108,24 +108,39 @@ export const BillingNoteView: React.FC<BillingNoteViewProps> = ({
       return;
     }
 
-    const currentYear = new Date().getFullYear();
-    const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
-    const count = billingNotes.length + 1;
-    const documentNo = `BN-${String(currentYear + 543).slice(-2)}${currentMonth}-${String(count).padStart(3, "0")}`;
+    const parsedDate = issueDate ? new Date(issueDate) : new Date();
+    const issueYear = !isNaN(parsedDate.getTime()) ? parsedDate.getFullYear() : new Date().getFullYear();
+    const issueMonth = !isNaN(parsedDate.getTime())
+      ? String(parsedDate.getMonth() + 1).padStart(2, "0")
+      : String(new Date().getMonth() + 1).padStart(2, "0");
+    const prefix = `BN-${String(issueYear + 543).slice(-2)}${issueMonth}-`;
+    const maxExistingSeq = billingNotes.reduce((max, n) => {
+      if (n.documentNo && n.documentNo.startsWith(prefix)) {
+        const seq = parseInt(n.documentNo.slice(prefix.length), 10);
+        if (!isNaN(seq) && seq > max) return seq;
+      }
+      return max;
+    }, 0);
+    const nextSeq = Math.max(billingNotes.length + 1, maxExistingSeq + 1);
+    const documentNo = `${prefix}${String(nextSeq).padStart(3, "0")}`;
 
-    const items: BillingNoteItem[] = selectedInvoicesList.map(inv => ({
-      invoiceId: inv.id,
-      invoiceDocNo: inv.documentNo,
-      referencePoNo: inv.referencePoNo,
-      projectName: getProjectName(inv),
-      issueDate: inv.issueDate,
-      dueDate: inv.dueDate,
-      subtotal: inv.subtotal || (inv.grandTotal / 1.07),
-      vatAmount: inv.vatAmount || 0,
-      whtAmount: inv.withholdingTaxTotal || 0,
-      grandTotal: inv.grandTotal,
-      netPayment: inv.netPayment || (inv.grandTotal - (inv.withholdingTaxTotal || 0)),
-    }));
+    const items: BillingNoteItem[] = selectedInvoicesList.map(inv => {
+      const rate = inv.vatRate ?? ((inv.vatAmount || 0) > 0 ? 7 : 0);
+      const fallbackSub = Math.round(((inv.grandTotal || 0) / (1 + rate / 100)) * 100) / 100;
+      return {
+        invoiceId: inv.id,
+        invoiceDocNo: inv.documentNo,
+        referencePoNo: inv.referencePoNo,
+        projectName: getProjectName(inv),
+        issueDate: inv.issueDate,
+        dueDate: inv.dueDate,
+        subtotal: inv.subtotal ?? fallbackSub,
+        vatAmount: inv.vatAmount || 0,
+        whtAmount: inv.withholdingTaxTotal || 0,
+        grandTotal: inv.grandTotal,
+        netPayment: inv.netPayment || (inv.grandTotal - (inv.withholdingTaxTotal || 0)),
+      };
+    });
 
     const newNote: BillingNote = {
       id: `bn-${Date.now()}`,

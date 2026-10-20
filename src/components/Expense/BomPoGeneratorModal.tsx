@@ -122,12 +122,18 @@ export const BomPoGeneratorModal: React.FC<BomPoGeneratorModalProps> = ({
     let groupIndex = 0;
 
     groupsMap.forEach((partsList, supKey) => {
-      // Find matching contact or fallback
-      const matched = supplierContacts.find(c => 
-        c.companyName.toLowerCase().includes(supKey.toLowerCase()) ||
-        c.name.toLowerCase().includes(supKey.toLowerCase()) ||
-        supKey.toLowerCase().includes(c.companyName.toLowerCase())
-      ) || supplierContacts[0] || contacts[0];
+      // Find matching contact (require at least 2 characters to avoid false substring matches)
+      const cleanKey = supKey.trim().toLowerCase();
+      const matched = cleanKey.length >= 2
+        ? supplierContacts.find(c => {
+            const comp = (c.companyName || '').trim().toLowerCase();
+            const name = (c.name || '').trim().toLowerCase();
+            return (
+              (comp.length >= 2 && (comp.includes(cleanKey) || cleanKey.includes(comp))) ||
+              (name.length >= 2 && name.includes(cleanKey))
+            );
+          })
+        : undefined;
 
       const subtotal = partsList.reduce((sum, p) => {
         const cost = p.unitPrice || p.targetUnitPrice || 0;

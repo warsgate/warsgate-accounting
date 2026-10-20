@@ -13,6 +13,8 @@ export const getDocTypeLabel = (type: DocumentType): string => {
       return "ใบกำกับภาษี (TAX)";
     case "RECEIPT":
       return "ใบเสร็จรับเงิน (REC)";
+    case "DELIVERY_ORDER":
+      return "ใบส่งของชั่วคราว (DO)";
     case "PURCHASE_ORDER":
       return "ใบสั่งซื้อ (PO)";
     case "PURCHASE_INVOICE":
@@ -192,6 +194,7 @@ export const exportSalesToExcel = (
       { wch: 6 },  // ลำดับ
       { wch: 18 }, // เลขที่เอกสาร
       { wch: 18 }, // ประเภทเอกสาร
+      { wch: 28 }, // โครงการ / ชื่องาน
       { wch: 14 }, // วันที่ออกเอกสาร
       { wch: 18 }, // เลขที่ PO ลูกค้า
       { wch: 32 }, // ชื่อลูกค้า

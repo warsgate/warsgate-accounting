@@ -26,29 +26,49 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [chartMode, setChartMode] = useState<'PO_VS_EXPENSE' | 'CASH_FLOW' | 'INVOICE_TREND'>('PO_VS_EXPENSE');
 
   // ── Dynamic calculations from actual documents ─────────────────────────────
-  // Total sales revenue from Invoices / Tax Invoices
-  const allInvoices = (documents || []).filter(d => (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') && d.status !== 'CANCELLED');
+  // Total sales revenue from Invoices / Tax Invoices (exclude CANCELLED/DRAFT and deduplicate paired INVOICE + TAX_INVOICE)
+  const rawInvoices = (documents || []).filter(
+    d => (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') && d.status !== 'CANCELLED' && d.status !== 'DRAFT'
+  );
+  const invoiceDocNos = new Set(
+    rawInvoices.filter(d => d.type === 'INVOICE' && d.documentNo).map(d => d.documentNo.trim())
+  );
+  const allInvoices = rawInvoices.filter(d => {
+    if (d.type === 'TAX_INVOICE' && d.referenceDocNo && invoiceDocNos.has(d.referenceDocNo.trim())) {
+      return false;
+    }
+    return true;
+  });
   const totalInvoicedAmount = allInvoices.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
 
   const paidInvoices = allInvoices.filter(d => d.status === 'PAID');
-  const totalPaidInvoicesAmount = paidInvoices.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
+  const totalPaidInvoicesAmount = paidInvoices.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
 
-  const pendingInvoices = allInvoices.filter(d => d.status === 'PENDING' || d.status === 'OVERDUE');
-  const totalPendingInvoicesAmount = pendingInvoices.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
+  const pendingInvoices = allInvoices.filter(d => d.status === 'PENDING' || d.status === 'OVERDUE' || d.status === 'APPROVED');
+  const totalPendingInvoicesAmount = pendingInvoices.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
 
   const totalRevenue = totalInvoicedAmount;
   const totalAR = totalPendingInvoicesAmount;
 
-  // Total Customer PO Inflow & Net Payment Calculation (from actual customer POs linked with Quotations)
-  const poQuotations = (documents || [])
-    .filter(d => d.type === 'QUOTATION' && d.referencePoNo && d.status !== 'CANCELLED');
+  // Total Customer PO Inflow & Net Payment Calculation (deduplicate by referencePoNo so revisions aren't double-counted)
+  const rawPoQuotations = (documents || [])
+    .filter(d => d.type === 'QUOTATION' && d.referencePoNo && d.status !== 'CANCELLED' && d.status !== 'DRAFT');
+  const poQuotationByPoNo = new Map<string, AccountingDocument>();
+  rawPoQuotations.forEach(d => {
+    const key = d.referencePoNo!.trim();
+    const existing = poQuotationByPoNo.get(key);
+    if (!existing || (d.grandTotal || 0) > (existing.grandTotal || 0)) {
+      poQuotationByPoNo.set(key, d);
+    }
+  });
+  const poQuotations = Array.from(poQuotationByPoNo.values());
   const totalCustomerPO = poQuotations.reduce((sum, d) => sum + d.grandTotal, 0);
   const totalCustomerPONet = poQuotations.reduce((sum, d) => sum + (d.netPayment || (d.grandTotal - (d.withholdingTaxTotal || 0))), 0);
   const totalCustomerPOWht = poQuotations.reduce((sum, d) => sum + (d.withholdingTaxTotal || 0), 0);
 
-  // Total Expenses (Purchase Orders, Purchase Invoices, Payment Vouchers)
+  // Total Expenses (Purchase Orders, Purchase Invoices, Payment Vouchers - exclude CANCELLED/DRAFT)
   const totalExpense = (documents || [])
-    .filter(d => ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(d.type) && d.status !== 'CANCELLED')
+    .filter(d => ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(d.type) && d.status !== 'CANCELLED' && d.status !== 'DRAFT')
     .reduce((sum, d) => sum + d.grandTotal, 0);
 
   // Cash In: ONLY recognize money received into bank accounts when official RECEIPT is issued and marked PAID (net after 3% WHT)
@@ -70,10 +90,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         (d.contact?.taxId && c.taxId && d.contact.taxId.replace(/[-\s]/g, '') === c.taxId.replace(/[-\s]/g, '')) ||
         (d.contact?.companyName && c.companyName && d.contact.companyName.trim().toLowerCase() === c.companyName.trim().toLowerCase())
       );
-      const cPending = cInvoices.filter(d => d.status === 'PENDING' || d.status === 'OVERDUE');
-      const cPendingAmount = cPending.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
+      const cPending = cInvoices.filter(d => d.status === 'PENDING' || d.status === 'OVERDUE' || d.status === 'APPROVED');
+      const cPendingAmount = cPending.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
       const cPaid = cInvoices.filter(d => d.status === 'PAID');
-      const cPaidAmount = cPaid.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
+      const cPaidAmount = cPaid.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
       const cTotal = cInvoices.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
       return {
         contact: c,

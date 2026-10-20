@@ -481,7 +481,7 @@ export const CustomerBalancesView: React.FC<CustomerBalancesViewProps> = ({
                         </span>
                       ) : (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> ค้างเปิด INV {((activePO.uninvoicedAmount / activePO.totalPoAmount) * 100).toFixed(0)}%
+                          <Clock className="w-3 h-3" /> ค้างเปิด INV {(activePO.totalPoAmount > 0 ? (activePO.uninvoicedAmount / activePO.totalPoAmount) * 100 : 0).toFixed(0)}%
                         </span>
                       )}
                     </div>

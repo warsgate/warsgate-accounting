@@ -31,21 +31,53 @@ export const AccountingView: React.FC<AccountingViewProps> = ({
   const totalEquity = chartOfAccounts.filter(c => c.category === 'EQUITY').reduce((s, c) => s + (c.credit - c.debit), 0);
   const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
 
-  // Real-time Revenue & Expense from documents
-  const salesRevenue = documents
-    .filter(d => ['INVOICE', 'TAX_INVOICE', 'RECEIPT'].includes(d.type))
-    .reduce((sum, d) => sum + (d.subtotal || 0), 0) || 12450000;
+  // Real-time Revenue & Expense from documents (exclude CANCELLED/DRAFT and deduplicate paired INVOICE/TAX_INVOICE/RECEIPT)
+  const activeSalesDocs = documents.filter(
+    d => ['INVOICE', 'TAX_INVOICE', 'RECEIPT'].includes(d.type) && d.status !== 'CANCELLED' && d.status !== 'DRAFT'
+  );
+  const receiptRefDocNos = new Set(
+    activeSalesDocs.filter(d => d.type === 'RECEIPT' && d.referenceDocNo).map(d => d.referenceDocNo!.trim())
+  );
+  const invoiceDocNos = new Set(
+    activeSalesDocs.filter(d => d.type === 'INVOICE' && d.documentNo).map(d => d.documentNo.trim())
+  );
+  const deduplicatedSalesDocs = activeSalesDocs.filter(d => {
+    if (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') {
+      if (d.documentNo && receiptRefDocNos.has(d.documentNo.trim())) return false;
+      if (d.type === 'TAX_INVOICE' && d.referenceDocNo && invoiceDocNos.has(d.referenceDocNo.trim())) return false;
+    }
+    return true;
+  });
+  const salesRevenue = deduplicatedSalesDocs.reduce((sum, d) => sum + (d.subtotal || 0), 0);
 
-  const costOfGoodsSold = documents
-    .filter(d => ['PURCHASE_ORDER', 'PURCHASE_INVOICE'].includes(d.type))
-    .reduce((sum, d) => sum + (d.subtotal || 0), 0) || 6850000;
+  const activePurchaseDocs = documents.filter(
+    d => ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(d.type) && d.status !== 'CANCELLED' && d.status !== 'DRAFT'
+  );
+  const pvRefDocNos = new Set(
+    activePurchaseDocs
+      .filter(d => (d.type === 'PAYMENT_VOUCHER' || d.type === 'PURCHASE_INVOICE') && d.referenceDocNo)
+      .map(d => d.referenceDocNo!.trim())
+  );
+  const deduplicatedPurchaseDocs = activePurchaseDocs.filter(d => {
+    if (d.type === 'PURCHASE_ORDER' && d.documentNo && pvRefDocNos.has(d.documentNo.trim())) {
+      return false;
+    }
+    return true;
+  });
+  const costOfGoodsSold = deduplicatedPurchaseDocs.reduce((sum, d) => sum + (d.subtotal || 0), 0);
 
   const grossProfit = salesRevenue - costOfGoodsSold;
   const grossMarginPct = salesRevenue > 0 ? (grossProfit / salesRevenue) * 100 : 0;
 
-  const sgaExpenses = 1850000; // Operating, salary, utility, transport
+  const sgaExpenses = chartOfAccounts
+    .filter(c => c.category === 'EXPENSE' && !c.code.startsWith('51'))
+    .reduce((s, c) => s + (c.debit - c.credit), 0);
   const operatingProfit = grossProfit - sgaExpenses;
-  const corporateTax = operatingProfit > 0 ? operatingProfit * 0.15 : 0;
+  const corporateTax = operatingProfit > 300000
+    ? (operatingProfit <= 3000000
+        ? (operatingProfit - 300000) * 0.15
+        : (2700000 * 0.15) + ((operatingProfit - 3000000) * 0.20))
+    : 0;
   const netProfit = operatingProfit - corporateTax;
 
   // Monthly Closing Checklist State

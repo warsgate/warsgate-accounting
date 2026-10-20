@@ -104,14 +104,12 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
       });
 
       // Filter unpaid invoices (PENDING, OVERDUE, or not PAID / CANCELLED / DRAFT)
-      // Note: IV-690100001 (TSF1 Downpayment 40%) is officially PAID
       const unpaidInvoices = salesInvoices.filter(d => {
-        if (d.documentNo === 'IV-690100001' || d.documentNo === 'INV-690100001') return false;
         return d.status !== 'PAID' && d.status !== 'CANCELLED' && d.status !== 'DRAFT';
       });
 
       if (unpaidInvoices.length > 0) {
-        return unpaidInvoices.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
+        return unpaidInvoices.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
       }
 
       // If customer has sales invoices and all are paid, balance due is 0
@@ -119,9 +117,6 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
 
       // If customer has other docs (e.g. Quotations, POs) but no invoices issued yet, balance due is 0
       if (contactDocs.length > 0) return 0;
-
-      // Thai Sekisui Foam has no overdue AR (all issued invoices are paid)
-      if (isSekisui) return 0;
 
       return contact.balanceDue || 0;
     } else if (contact.type === 'SUPPLIER') {
@@ -131,7 +126,7 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
       );
 
       if (unpaidPurchaseInvoices.length > 0) {
-        return unpaidPurchaseInvoices.reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
+        return unpaidPurchaseInvoices.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
       }
 
       if (purchaseInvoices.length > 0) return 0;
@@ -150,9 +145,9 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
       (contact.taxId && contact.taxId.replace(/[-\s]/g, '') === '0105539045865') ||
       (contact.companyName && (contact.companyName.includes('เซกิซุย') || contact.companyName.includes('Sekisui')));
 
-    // Find PO quotations for this contact
-    const poDocs = documents.filter(d => 
-      d.type === 'QUOTATION' && d.referencePoNo && d.status !== 'CANCELLED' && (
+    // Find PO quotations for this contact and deduplicate by referencePoNo
+    const rawPoDocs = documents.filter(d => 
+      d.type === 'QUOTATION' && d.referencePoNo && d.status !== 'CANCELLED' && d.status !== 'DRAFT' && (
         (d.contact?.id && d.contact.id === contact.id) ||
         (d.contact?.taxId && contact.taxId && d.contact.taxId.replace(/[-\s]/g, '') === contact.taxId.replace(/[-\s]/g, '')) ||
         (d.contact?.companyName && contact.companyName && d.contact.companyName.trim().toLowerCase() === contact.companyName.trim().toLowerCase()) ||
@@ -160,24 +155,43 @@ export const ContactsView: React.FC<ContactsViewProps> = ({
       )
     );
 
-    if (poDocs.length === 0) return null;
+    if (rawPoDocs.length === 0) return null;
+
+    const poByNo = new Map<string, AccountingDocument>();
+    rawPoDocs.forEach(d => {
+      const key = d.referencePoNo!.trim();
+      const existing = poByNo.get(key);
+      if (!existing || (d.grandTotal || 0) > (existing.grandTotal || 0)) {
+        poByNo.set(key, d);
+      }
+    });
+    const poDocs = Array.from(poByNo.values());
 
     const totalPoAmount = poDocs.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
     const poNumbers = Array.from(new Set(poDocs.map(d => d.referencePoNo).filter(Boolean))).join(', ');
 
-    // Find all invoices
-    const custInvoices = documents.filter(d => 
-      (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') && d.status !== 'CANCELLED' && (
+    // Find all invoices (excluding duplicate TAX_INVOICE copies paired with an INVOICE)
+    const rawCustInvoices = documents.filter(d => 
+      (d.type === 'INVOICE' || d.type === 'TAX_INVOICE') && d.status !== 'CANCELLED' && d.status !== 'DRAFT' && (
         (d.contact?.id && d.contact.id === contact.id) ||
         (d.contact?.taxId && contact.taxId && d.contact.taxId.replace(/[-\s]/g, '') === contact.taxId.replace(/[-\s]/g, '')) ||
         (d.contact?.companyName && contact.companyName && d.contact.companyName.trim().toLowerCase() === contact.companyName.trim().toLowerCase()) ||
         (isSekisui && (d.referencePoNo === 'PO252155' || d.documentNo === 'IV-690100001'))
       )
     );
+    const custInvoiceDocNos = new Set(
+      rawCustInvoices.filter(d => d.type === 'INVOICE' && d.documentNo).map(d => d.documentNo.trim())
+    );
+    const custInvoices = rawCustInvoices.filter(d => {
+      if (d.type === 'TAX_INVOICE' && d.referenceDocNo && custInvoiceDocNos.has(d.referenceDocNo.trim())) {
+        return false;
+      }
+      return true;
+    });
 
     // Sum invoiced amount
     let invoicedAmount = custInvoices.reduce((sum, d) => sum + (d.grandTotal || 0), 0);
-    let paidAmount = custInvoices.filter(d => d.status === 'PAID' || d.documentNo === 'IV-690100001').reduce((sum, d) => sum + (d.netPayment || d.grandTotal || 0), 0);
+    let paidAmount = custInvoices.filter(d => d.status === 'PAID').reduce((sum, d) => sum + (d.grandTotal || 0), 0);
 
     // If milestone plans exist, sync
     if (milestonePlans && milestonePlans.length > 0) {

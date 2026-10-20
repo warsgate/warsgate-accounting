@@ -119,9 +119,10 @@ export const AiOcrExpenseModal: React.FC<AiOcrExpenseModalProps> = ({
         mockTaxId = '0105533061234';
       }
 
-      const subtotal = mockItems.reduce((s, i) => s + i.amount, 0);
-      const vatAmount = subtotal * 0.07;
-      const grandTotal = subtotal + vatAmount;
+      const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+      const subtotal = round2(mockItems.reduce((s, i) => s + i.amount, 0));
+      const vatAmount = round2(subtotal * 0.07);
+      const grandTotal = round2(subtotal + vatAmount);
 
       setExtracted({
         supplierName: mockSupplier,

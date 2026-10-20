@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   FileText, Plus, CheckCircle2, Clock, AlertCircle, DollarSign,
   TrendingUp, Building2, ChevronRight, ChevronDown, Sparkles,
@@ -43,9 +43,13 @@ export const MilestoneBillingView: React.FC<MilestoneBillingViewProps> = ({
       try {
         const parsed: ContractMilestonePlan[] = JSON.parse(saved);
         const map = new Map<string, ContractMilestonePlan>();
-        initialMilestonePlans.forEach(p => map.set(p.id, p));
         parsed.forEach(p => {
-          if (p.id !== 'plan-kuroda-vision' && !map.has(p.id)) {
+          if (p.id !== 'plan-kuroda-vision') {
+            map.set(p.id, p);
+          }
+        });
+        initialMilestonePlans.forEach(p => {
+          if (!map.has(p.id)) {
             map.set(p.id, p);
           }
         });
@@ -67,6 +71,49 @@ export const MilestoneBillingView: React.FC<MilestoneBillingViewProps> = ({
   const [selectedPlanForEdit, setSelectedPlanForEdit] = useState<ContractMilestonePlan | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expandedPlanIds, setExpandedPlanIds] = useState<Set<string>>(new Set());
+
+  // Automatically sync milestone status (INVOICED <-> PAID) with linked invoice status in documents
+  useEffect(() => {
+    const invoiceStatusByDocNo = new Map<string, string>();
+    const invoiceStatusById = new Map<string, string>();
+    documents.forEach(d => {
+      if ((d.type === 'INVOICE' || d.type === 'TAX_INVOICE') && d.status !== 'CANCELLED') {
+        if (d.documentNo) invoiceStatusByDocNo.set(d.documentNo.trim(), d.status);
+        invoiceStatusById.set(d.id, d.status);
+      }
+    });
+
+    setPlans(prevPlans => {
+      let anyChanged = false;
+      const nextPlans = prevPlans.map(plan => {
+        let planChanged = false;
+        const nextMilestones = plan.milestones.map(m => {
+          const invStatus =
+            (m.invoiceDocNo && invoiceStatusByDocNo.get(m.invoiceDocNo.trim())) ||
+            (m.invoiceDocId && invoiceStatusById.get(m.invoiceDocId));
+          if (invStatus === 'PAID' && m.status !== 'PAID') {
+            planChanged = true;
+            return { ...m, status: 'PAID' as const };
+          }
+          if ((invStatus === 'PENDING' || invStatus === 'OVERDUE') && m.status === 'PAID') {
+            planChanged = true;
+            return { ...m, status: 'INVOICED' as const };
+          }
+          return m;
+        });
+        if (planChanged) {
+          anyChanged = true;
+          return { ...plan, milestones: nextMilestones };
+        }
+        return plan;
+      });
+      if (anyChanged) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextPlans));
+        return nextPlans;
+      }
+      return prevPlans;
+    });
+  }, [documents]);
 
   // Save to LocalStorage
   const savePlans = (updatedPlans: ContractMilestonePlan[]) => {

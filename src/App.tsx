@@ -94,11 +94,15 @@ export function App() {
       try {
         const parsed: ContractMilestonePlan[] = JSON.parse(saved);
         const map = new Map<string, ContractMilestonePlan>();
-        // First set initial plans
-        initialMilestonePlans.forEach(p => map.set(p.id, p));
-        // Then merge user customized plans (exclude deleted plan-kuroda-vision)
+        // Keep user customized/saved plans first (exclude deleted plan-kuroda-vision)
         parsed.forEach(p => {
-          if (p.id !== 'plan-kuroda-vision' && !map.has(p.id)) {
+          if (p.id !== 'plan-kuroda-vision') {
+            map.set(p.id, p);
+          }
+        });
+        // Add any newly introduced initial plans that don't exist yet
+        initialMilestonePlans.forEach(p => {
+          if (!map.has(p.id)) {
             map.set(p.id, p);
           }
         });
@@ -120,6 +124,7 @@ export function App() {
     const obsoleteDocIds = new Set([
       'doc-kuroda-qt-2609002', 'doc-qt-001', 'doc-inv-001', 'doc-po-001'
     ]);
+    const alreadyMigratedQt2610 = localStorage.getItem('warsgate_qt2610_migrated_v1') === 'true';
 
     setDocuments(prev => {
       let changed = false;
@@ -141,33 +146,6 @@ export function App() {
         changed = true;
       }
 
-      // Always ensure PO-2608-001 has the latest terms (30% deposit, No VAT, WHT 3%)
-      const targetPTechPO = initialDocuments.find(d => d.documentNo === 'PO-2608-001');
-      if (targetPTechPO) {
-        const idx = next.findIndex(d => d.documentNo === 'PO-2608-001' || d.id === 'doc-po-ptech-260801');
-        if (idx >= 0) {
-          if (next[idx].vatAmount !== targetPTechPO.vatAmount || next[idx].withholdingTaxTotal !== targetPTechPO.withholdingTaxTotal) {
-            next[idx] = targetPTechPO;
-            changed = true;
-          }
-        } else {
-          next = [targetPTechPO, ...next];
-          changed = true;
-        }
-      }
-
-      // Always ensure PO-2609-001 has the latest terms (hire-of-work, No VAT, WHT 3%)
-      const targetPTechPO2609 = initialDocuments.find(d => d.documentNo === 'PO-2609-001');
-      if (targetPTechPO2609) {
-        const idx = next.findIndex(d => d.documentNo === 'PO-2609-001' || d.id === 'doc-po-ptech-260901');
-        if (idx >= 0) {
-          if (next[idx].vatAmount !== targetPTechPO2609.vatAmount || next[idx].withholdingTaxTotal !== targetPTechPO2609.withholdingTaxTotal) {
-            next[idx] = targetPTechPO2609;
-            changed = true;
-          }
-        }
-      }
-
       // Always ensure DO-2609-001 (Delivery Order for customer PO 2609002) is present
       const targetDO2609 = initialDocuments.find(d => d.documentNo === 'DO-2609-001');
       if (targetDO2609 && !next.some(d => d.documentNo === 'DO-2609-001')) {
@@ -181,10 +159,23 @@ export function App() {
         next = [targetREC6908, ...next];
         changed = true;
       }
-      const inv6908 = next.find(d => d.documentNo === 'INV-690800001');
-      if (inv6908 && inv6908.status !== 'PAID') {
-        inv6908.status = 'PAID';
+      const inv6908Idx = next.findIndex(d => d.documentNo === 'INV-690800001');
+      if (inv6908Idx >= 0 && next[inv6908Idx].status !== 'PAID') {
+        next = next.map((d, i) => i === inv6908Idx ? { ...d, status: 'PAID' as DocumentStatus } : d);
         changed = true;
+      }
+
+      // One-time migration for QT-2610-001 payment terms so subsequent user edits are preserved
+      if (!alreadyMigratedQt2610) {
+        const targetQT2610 = initialDocuments.find(d => d.documentNo === 'QT-2610-001');
+        if (targetQT2610) {
+          const idx = next.findIndex(d => d.documentNo === 'QT-2610-001' || d.id === 'doc-kuroda-qt-ipc-2610001');
+          if (idx >= 0 && next[idx].notes !== targetQT2610.notes) {
+            next = next.map((d, i) => i === idx ? { ...d, notes: targetQT2610.notes } : d);
+            changed = true;
+          }
+        }
+        localStorage.setItem('warsgate_qt2610_migrated_v1', 'true');
       }
 
       if (changed) {
@@ -232,6 +223,7 @@ export function App() {
   const [documents, setDocuments] = useState<AccountingDocument[]>(() => {
     const saved = localStorage.getItem('warsgate_documents');
     const deletedIds = new Set<string>(JSON.parse(localStorage.getItem('warsgate_deleted_doc_ids') || '[]'));
+    const statusMigrationDone = localStorage.getItem('warsgate_status_migration_v2') === 'true';
     if (saved !== null) {
       try {
         const parsed: AccountingDocument[] = JSON.parse(saved);
@@ -246,7 +238,7 @@ export function App() {
           'doc-kuroda-qt-2609002', 'doc-qt-001', 'doc-inv-001', 'doc-po-001'
         ]);
 
-        // Status reconciliation map for official documents
+        // One-time status reconciliation map for official documents
         const officialStatusMap: Record<string, DocumentStatus> = {
           'INV-690800001': 'PAID', // Solenoid IMV งวดที่ 2 (50%) ได้รับชำระแล้ว (REC-690800001 วันที่ 07/10/2569)
           'INV-690600005': 'PAID',
@@ -257,18 +249,20 @@ export function App() {
           'INV-690400001': 'PAID',
           'IV-690100001': 'PAID',
           'INV-690100001': 'PAID',
-          'INV-2608-001': 'PENDING', // Line ADC งวดที่ 1 (50%) วางบิลแล้ว
         };
 
         // Exclude any document that was explicitly deleted by the user or obsolete draft invoice
         const filteredParsed = parsed
           .filter(d => !deletedIds.has(d.id) && !obsoleteDocIds.has(d.id) && !obsoleteDocNos.has(d.documentNo))
           .map(d => {
-            if (d.documentNo && officialStatusMap[d.documentNo]) {
+            if (!statusMigrationDone && d.documentNo && officialStatusMap[d.documentNo]) {
               return { ...d, status: officialStatusMap[d.documentNo] };
             }
             return d;
           });
+        if (!statusMigrationDone) {
+          localStorage.setItem('warsgate_status_migration_v2', 'true');
+        }
 
         const existingIds = new Set(filteredParsed.map(d => d.id));
         const existingDocNos = new Set(filteredParsed.map(d => d.documentNo));
@@ -321,9 +315,13 @@ export function App() {
       try {
         const parsed: ContractMilestonePlan[] = JSON.parse(saved);
         const map = new Map<string, ContractMilestonePlan>();
-        initialMilestonePlans.forEach(p => map.set(p.id, p));
         parsed.forEach(p => {
-          if (p.id !== 'plan-kuroda-vision' && !map.has(p.id)) {
+          if (p.id !== 'plan-kuroda-vision') {
+            map.set(p.id, p);
+          }
+        });
+        initialMilestonePlans.forEach(p => {
+          if (!map.has(p.id)) {
             map.set(p.id, p);
           }
         });
@@ -427,6 +425,10 @@ export function App() {
     localStorage.setItem('warsgate_products', JSON.stringify(products));
   }, [products]);
 
+  useEffect(() => {
+    localStorage.setItem('warsgate_milestone_plans', JSON.stringify(milestonePlans));
+  }, [milestonePlans]);
+
   // Modal States
   const [viewDoc, setViewDoc] = useState<AccountingDocument | null>(null);
   const [createDocType, setCreateDocType] = useState<DocumentType | null>(null);
@@ -444,6 +446,80 @@ export function App() {
     setViewDoc(null);
   };
 
+  // Reconcile linked invoices based on active receipts (handles full vs partial payments & deletions/cancellations)
+  const reconcileLinkedInvoices = (
+    docs: AccountingDocument[],
+    targetRefDocNos: Set<string>,
+    targetInvoiceIds?: Set<string>
+  ): AccountingDocument[] => {
+    if (targetRefDocNos.size === 0 && (!targetInvoiceIds || targetInvoiceIds.size === 0)) {
+      return docs;
+    }
+
+    const activeReceiptsByRef = new Map<string, number>();
+    docs.forEach(d => {
+      if (d.type === 'RECEIPT' && d.status !== 'CANCELLED' && d.status !== 'DRAFT' && d.referenceDocNo) {
+        const ref = d.referenceDocNo.trim();
+        activeReceiptsByRef.set(ref, (activeReceiptsByRef.get(ref) || 0) + (d.grandTotal || 0));
+      }
+    });
+
+    return docs.map(d => {
+      if (d.type !== 'INVOICE' && d.type !== 'TAX_INVOICE') return d;
+      const docNo = (d.documentNo || '').trim();
+      const isTarget = (docNo && targetRefDocNos.has(docNo)) || (targetInvoiceIds && targetInvoiceIds.has(d.id));
+      if (!isTarget) return d;
+
+      const totalReceived = activeReceiptsByRef.get(docNo) || 0;
+      const invTotal = d.grandTotal || 0;
+      if (invTotal > 0 && totalReceived >= invTotal - 0.01) {
+        return d.status !== 'PAID' ? { ...d, status: 'PAID' as DocumentStatus } : d;
+      } else if (d.status === 'PAID') {
+        return { ...d, status: 'PENDING' as DocumentStatus };
+      }
+      return d;
+    });
+  };
+
+  // Sync milestone statuses whenever documents change (INVOICED <-> PAID)
+  useEffect(() => {
+    const invoiceStatusByDocNo = new Map<string, DocumentStatus>();
+    const invoiceStatusById = new Map<string, DocumentStatus>();
+    documents.forEach(d => {
+      if ((d.type === 'INVOICE' || d.type === 'TAX_INVOICE') && d.status !== 'CANCELLED') {
+        if (d.documentNo) invoiceStatusByDocNo.set(d.documentNo.trim(), d.status);
+        invoiceStatusById.set(d.id, d.status);
+      }
+    });
+
+    setMilestonePlans(prevPlans => {
+      let anyChanged = false;
+      const nextPlans = prevPlans.map(plan => {
+        let planChanged = false;
+        const nextMilestones = plan.milestones.map(m => {
+          const invStatus =
+            (m.invoiceDocNo && invoiceStatusByDocNo.get(m.invoiceDocNo.trim())) ||
+            (m.invoiceDocId && invoiceStatusById.get(m.invoiceDocId));
+          if (invStatus === 'PAID' && m.status !== 'PAID') {
+            planChanged = true;
+            return { ...m, status: 'PAID' as const };
+          }
+          if ((invStatus === 'PENDING' || invStatus === 'OVERDUE') && m.status === 'PAID') {
+            planChanged = true;
+            return { ...m, status: 'INVOICED' as const };
+          }
+          return m;
+        });
+        if (planChanged) {
+          anyChanged = true;
+          return { ...plan, milestones: nextMilestones };
+        }
+        return plan;
+      });
+      return anyChanged ? nextPlans : prevPlans;
+    });
+  }, [documents]);
+
   // Actions
   const handleSaveDocument = (doc: AccountingDocument) => {
     // If saving document, remove from deleted blacklist
@@ -457,9 +533,28 @@ export function App() {
       // ignore
     }
 
+    const normalizedDoc: AccountingDocument =
+      doc.type === 'RECEIPT' && !doc.referenceDocNo?.trim() && fromDoc?.documentNo
+        ? { ...doc, referenceDocNo: fromDoc.documentNo.trim() }
+        : doc;
+
     setDocuments(prev => {
-      const exists = prev.some(d => d.id === doc.id);
-      const updated = exists ? prev.map(d => d.id === doc.id ? doc : d) : [doc, ...prev];
+      const prevDoc = prev.find(d => d.id === normalizedDoc.id);
+      const exists = Boolean(prevDoc);
+      const baseList = exists ? prev.map(d => d.id === normalizedDoc.id ? normalizedDoc : d) : [normalizedDoc, ...prev];
+
+      const targetRefDocNos = new Set<string>();
+      const targetInvoiceIds = new Set<string>();
+      if (normalizedDoc.type === 'RECEIPT') {
+        if (normalizedDoc.referenceDocNo?.trim()) targetRefDocNos.add(normalizedDoc.referenceDocNo.trim());
+        if (prevDoc?.referenceDocNo?.trim()) targetRefDocNos.add(prevDoc.referenceDocNo.trim());
+        if (fromDoc && (fromDoc.type === 'INVOICE' || fromDoc.type === 'TAX_INVOICE')) {
+          targetInvoiceIds.add(fromDoc.id);
+          if (fromDoc.documentNo?.trim()) targetRefDocNos.add(fromDoc.documentNo.trim());
+        }
+      }
+
+      const updated = reconcileLinkedInvoices(baseList, targetRefDocNos, targetInvoiceIds);
       localStorage.setItem('warsgate_documents', JSON.stringify(updated));
       return updated;
     });
@@ -488,9 +583,15 @@ export function App() {
       localStorage.setItem('warsgate_deleted_doc_ids', JSON.stringify([docId]));
     }
 
-    // 2. Remove from active state and localStorage
+    // 2. Remove from active state and reconcile linked invoices if a receipt was deleted
     setDocuments(prev => {
-      const updated = prev.filter(d => d.id !== docId);
+      const deletedDoc = prev.find(d => d.id === docId);
+      const remaining = prev.filter(d => d.id !== docId);
+      const targetRefDocNos = new Set<string>();
+      if (deletedDoc?.type === 'RECEIPT' && deletedDoc.referenceDocNo?.trim()) {
+        targetRefDocNos.add(deletedDoc.referenceDocNo.trim());
+      }
+      const updated = reconcileLinkedInvoices(remaining, targetRefDocNos);
       localStorage.setItem('warsgate_documents', JSON.stringify(updated));
       return updated;
     });
@@ -498,7 +599,13 @@ export function App() {
 
   const handleUpdateDocumentStatus = (docId: string, newStatus: DocumentStatus) => {
     setDocuments(prev => {
-      const updated = prev.map(d => d.id === docId ? { ...d, status: newStatus } : d);
+      const targetDoc = prev.find(d => d.id === docId);
+      const baseList = prev.map(d => d.id === docId ? { ...d, status: newStatus } : d);
+      const targetRefDocNos = new Set<string>();
+      if (targetDoc?.type === 'RECEIPT' && targetDoc.referenceDocNo?.trim()) {
+        targetRefDocNos.add(targetDoc.referenceDocNo.trim());
+      }
+      const updated = reconcileLinkedInvoices(baseList, targetRefDocNos);
       localStorage.setItem('warsgate_documents', JSON.stringify(updated));
       return updated;
     });
@@ -887,6 +994,7 @@ export function App() {
           fromDocument={fromDoc}
           documents={documents}
           numberingConfig={numberingConfig}
+          onUpdateNumberingConfig={(cfg) => setNumberingConfig(cfg)}
           contacts={contacts}
           products={products}
           onClose={() => {
