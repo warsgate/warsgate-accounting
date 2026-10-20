@@ -166,8 +166,8 @@ export const MilestoneBillingView: React.FC<MilestoneBillingViewProps> = ({
       return;
     }
 
-    const nextDocNo = generateNextDocumentNo('INVOICE', numberingConfig);
     const issueDate = new Date().toISOString().split('T')[0];
+    const nextDocNo = generateNextDocumentNo('INVOICE', numberingConfig, issueDate, documents);
     const dueDays = plan.customerContact.creditDays || 30;
     const dueDateObj = new Date();
     dueDateObj.setDate(dueDateObj.getDate() + dueDays);

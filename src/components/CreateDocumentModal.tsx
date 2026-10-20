@@ -44,7 +44,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 }) => {
   const isEdit = !!initialDocument;
   const [docType, setDocType] = useState<DocumentType>(
-    initialDocument?.type || (fromDocument ? 'RECEIPT' : initialType)
+    initialDocument?.type || initialType
   );
   const isPurchase = docType === 'PURCHASE_ORDER' || docType === 'PURCHASE_INVOICE' || docType === 'PAYMENT_VOUCHER';
 
@@ -56,21 +56,18 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   const filteredContacts = contacts.filter(c => isPurchase ? (c.type === 'SUPPLIER' || c.type === 'BOTH') : (c.type === 'CUSTOMER' || c.type === 'BOTH'));
   
   const findDefaultContactId = () => {
-    if (initialDocument?.contact?.id) {
-      const found = contacts.find(c => c.id === initialDocument.contact.id);
+    const targetContact = initialDocument?.contact || fromDocument?.contact;
+    if (targetContact?.id) {
+      const found = contacts.find(c => c.id === targetContact.id);
       if (found) return found.id;
     }
-    if (initialDocument?.contact?.taxId) {
-      const cleanTax = initialDocument.contact.taxId.replace(/[-\s]/g, '');
+    if (targetContact?.taxId) {
+      const cleanTax = targetContact.taxId.replace(/[-\s]/g, '');
       const found = contacts.find(c => c.taxId && c.taxId.replace(/[-\s]/g, '') === cleanTax);
       if (found) return found.id;
     }
-    if (initialDocument?.contact?.companyName) {
-      const found = contacts.find(c => c.companyName.trim().toLowerCase() === initialDocument.contact.companyName.trim().toLowerCase());
-      if (found) return found.id;
-    }
-    if (fromDocument?.contact?.id) {
-      const found = contacts.find(c => c.id === fromDocument.contact.id);
+    if (targetContact?.companyName) {
+      const found = contacts.find(c => c.companyName.trim().toLowerCase() === targetContact.companyName.trim().toLowerCase());
       if (found) return found.id;
     }
     return filteredContacts[0]?.id || contacts[0]?.id || '';
@@ -84,34 +81,81 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   const [selectedContactId, setSelectedContactId] = useState<string>(defaultContactId);
   const [issueDate, setIssueDate] = useState<string>(initialDocument?.issueDate || todayStr);
   const [dueDate, setDueDate] = useState<string>(initialDocument?.dueDate || nextMonthStr);
-  const [status, setStatus] = useState<DocumentStatus>(
-    initialDocument?.status || (docType === 'RECEIPT' ? 'PAID' : 'PENDING')
-  );
+  const [status, setStatus] = useState<DocumentStatus>(() => {
+    if (initialDocument?.status) return initialDocument.status;
+    if (docType === 'RECEIPT' || docType === 'PAYMENT_VOUCHER') return 'PAID';
+    if (docType === 'TAX_INVOICE' || docType === 'DELIVERY_ORDER' || docType === 'WHT_CERTIFICATE') return 'APPROVED';
+    return 'PENDING';
+  });
+
+  const buildConversionNotes = (src: AccountingDocument, target: DocumentType): string => {
+    const poSuffix = src.referencePoNo ? ` (PO: ${src.referencePoNo})` : '';
+    const companyName = src.contact?.companyName ? ` (${src.contact.companyName})` : '';
+    switch (target) {
+      case 'RECEIPT':
+        return `รับชำระเงินตามเอกสารเลขที่ ${src.documentNo}${companyName}${poSuffix}`;
+      case 'INVOICE':
+        return `อ้างอิงตาม${src.type === 'DELIVERY_ORDER' ? 'ใบส่งของชั่วคราว' : 'ใบเสนอราคา'}เลขที่ ${src.documentNo}${poSuffix}`;
+      case 'DELIVERY_ORDER':
+        return `จัดส่งสินค้าตามใบเสนอราคาเลขที่ ${src.documentNo}${poSuffix}`;
+      case 'TAX_INVOICE':
+        return `ใบกำกับภาษีอ้างอิงใบแจ้งหนี้เลขที่ ${src.documentNo}${poSuffix}`;
+      case 'PURCHASE_INVOICE':
+        return `บันทึกใบแจ้งหนี้ค่าใช้จ่ายตามใบสั่งซื้อเลขที่ ${src.documentNo}${companyName}`;
+      case 'PAYMENT_VOUCHER':
+        return `จ่ายชำระเงินตามเอกสารเลขที่ ${src.documentNo}${companyName}`;
+      case 'WHT_CERTIFICATE':
+        return `หนังสือรับรองการหักภาษี ณ ที่จ่าย (50 ทวิ) อ้างอิงเอกสารเลขที่ ${src.documentNo}${companyName}`;
+      default:
+        return src.notes || `อ้างอิงเอกสารเลขที่ ${src.documentNo}${poSuffix}`;
+    }
+  };
+
+  const buildConvertedDocNo = (srcDocNo: string, target: DocumentType, dateStr: string): string => {
+    const existingSet = new Set(documents.map(d => d.documentNo?.trim()).filter(Boolean));
+    const prefixMap: Record<DocumentType, string> = {
+      QUOTATION: 'QT-',
+      INVOICE: 'INV-',
+      TAX_INVOICE: 'TAX-',
+      RECEIPT: 'REC-',
+      DELIVERY_ORDER: 'DO-',
+      PURCHASE_ORDER: 'PO-',
+      PURCHASE_INVOICE: 'PINV-',
+      PAYMENT_VOUCHER: 'PV-',
+      WHT_CERTIFICATE: 'WHT-',
+    };
+    const replaced = srcDocNo.replace(/^(QT|INV|IV|TAX|REC|DO|PO|PINV|PV|WHT)-/, prefixMap[target]);
+    if (replaced !== srcDocNo && !existingSet.has(replaced)) {
+      return replaced;
+    }
+    const setting = numConfig[target] || defaultNumberingConfig[target];
+    return previewDocumentNo(setting, dateStr, documents);
+  };
 
   const initialNotes = initialDocument?.notes !== undefined
     ? initialDocument.notes
     : fromDocument
-    ? `รับชำระเงินตามใบแจ้งหนี้เลขที่ ${fromDocument.documentNo} (${fromDocument.contact?.companyName})`
+    ? buildConversionNotes(fromDocument, docType)
     : 'กำหนดยอดชำระตามวงเงินเครดิต 30 วัน โอนเข้าบัญชี บจก. วอร์สเกต';
 
   const [notes, setNotes] = useState<string>(initialNotes);
   const [customDocNo, setCustomDocNo] = useState<string>(() => {
     if (initialDocument?.documentNo) return initialDocument.documentNo;
     if (fromDocument?.documentNo) {
-      return fromDocument.documentNo
-        .replace(/^INV-/, 'REC-')
-        .replace(/^TAX-/, 'REC-')
-        .replace(/^QT-/, 'INV-');
+      return buildConvertedDocNo(fromDocument.documentNo, docType, todayStr);
     }
     const setting = numConfig[docType] || defaultNumberingConfig[docType];
-    return previewDocumentNo(setting, todayStr);
+    return previewDocumentNo(setting, todayStr, documents);
   });
 
   // When docType or issueDate changes and not in edit mode
   useEffect(() => {
     if (!isEdit && !fromDocument) {
       const setting = numConfig[docType] || defaultNumberingConfig[docType];
-      setCustomDocNo(previewDocumentNo(setting, issueDate));
+      setCustomDocNo(previewDocumentNo(setting, issueDate, documents));
+    } else if (!isEdit && fromDocument?.documentNo) {
+      setCustomDocNo(buildConvertedDocNo(fromDocument.documentNo, docType, issueDate));
+      setNotes(buildConversionNotes(fromDocument, docType));
     }
   }, [docType, issueDate]);
 
@@ -208,13 +252,14 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     if (src.projectNote) {
       setProjectNote(src.projectNote);
     }
-    if (docType === 'RECEIPT') {
+    if (docType === 'RECEIPT' || docType === 'PAYMENT_VOUCHER') {
       setStatus('PAID');
-      setNotes(`รับชำระเงินตามใบแจ้งหนี้เลขที่ ${src.documentNo} (${src.contact?.companyName})`);
-      setCustomDocNo(src.documentNo.replace(/^INV-/, 'REC-').replace(/^TAX-/, 'REC-'));
-    } else if (docType === 'INVOICE') {
-      setNotes(`อ้างอิงใบเสนอราคาเลขที่ ${src.documentNo}`);
-      setCustomDocNo(src.documentNo.replace(/^QT-/, 'INV-'));
+    } else if (docType === 'TAX_INVOICE' || docType === 'DELIVERY_ORDER' || docType === 'WHT_CERTIFICATE') {
+      setStatus('APPROVED');
+    }
+    setNotes(buildConversionNotes(src, docType));
+    if (src.documentNo) {
+      setCustomDocNo(buildConvertedDocNo(src.documentNo, docType, issueDate));
     }
     setApplyVat7(src.vatRate !== undefined ? src.vatRate > 0 : (src.vatAmount || 0) > 0);
     if ((src.withholdingTaxTotal && src.withholdingTaxTotal > 0) || src.items?.some(i => (Number(i.withholdingTaxRate) || 0) > 0)) {
@@ -384,7 +429,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       onSubmit(updatedDoc);
     } else {
       const setting = numConfig[docType] || defaultNumberingConfig[docType];
-      const autoDocNo = previewDocumentNo(setting, issueDate);
+      const autoDocNo = previewDocumentNo(setting, issueDate, documents);
       const docNo = customDocNo.trim() ? customDocNo.trim() : autoDocNo;
 
       // Auto increment next number in storage and parent React state
@@ -454,7 +499,7 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                 {isEdit
                   ? `แก้ไข: ${DOCUMENT_TYPE_NAMES[docType]} (${initialDocument.documentNo})`
                   : fromDocument
-                  ? `ออกใบเสร็จรับเงิน (ดึงข้อมูลจาก ${fromDocument.documentNo})`
+                  ? `สร้าง ${DOCUMENT_TYPE_NAMES[docType]} (ดึงข้อมูลจาก ${fromDocument.documentNo})`
                   : `สร้าง ${DOCUMENT_TYPE_NAMES[docType]} ใหม่`}
               </h2>
               <span className={`text-[11px] ${isEdit || fromDocument ? 'text-white/80' : 'text-slate-400'}`}>
@@ -472,16 +517,16 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         {/* ── Form Body ─────────────────────────────────────────────────────── */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
 
-          {/* ── Quick Import Banner from Invoices (When creating or if not fromDocument) ── */}
-          {!isEdit && documents.filter(d => ['INVOICE', 'TAX_INVOICE', 'QUOTATION'].includes(d.type)).length > 0 && (
+          {/* ── Quick Import Banner from Source Documents ── */}
+          {!isEdit && documents.length > 0 && (
             <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200">
                   <Link2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-bold text-slate-800 text-xs">🔗 ดึงข้อมูลอัตโนมัติจากใบแจ้งหนี้ / ใบเสนอราคา</div>
-                  <div className="text-[10px] text-slate-500">เลือกเอกสารต้นทางเพื่อคัดลอกลูกค้า รายการสินค้า และยอดเงินทันที</div>
+                  <div className="font-bold text-slate-800 text-xs">🔗 ดึงข้อมูลอัตโนมัติจากเอกสารต้นทาง (One-Click Import)</div>
+                  <div className="text-[10px] text-slate-500">เลือกใบเสนอราคา ใบแจ้งหนี้ หรือใบสั่งซื้อ เพื่อคัดลอกคู่ค้า รายการ และยอดเงินทันที</div>
                 </div>
               </div>
               <select
@@ -489,9 +534,13 @@ export const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
                 defaultValue={fromDocument?.id || ''}
                 className="w-full sm:w-auto bg-white border border-amber-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-sm"
               >
-                <option value="">-- เลือกใบแจ้งหนี้เพื่อดึงข้อมูล --</option>
+                <option value="">-- เลือกเอกสารต้นทางเพื่อดึงข้อมูล --</option>
                 {documents
-                  .filter(d => ['INVOICE', 'TAX_INVOICE', 'QUOTATION'].includes(d.type))
+                  .filter(d =>
+                    isPurchase || docType === 'WHT_CERTIFICATE'
+                      ? ['PURCHASE_ORDER', 'PURCHASE_INVOICE', 'PAYMENT_VOUCHER'].includes(d.type)
+                      : ['QUOTATION', 'DELIVERY_ORDER', 'INVOICE', 'TAX_INVOICE'].includes(d.type)
+                  )
                   .map(d => (
                     <option key={d.id} value={d.id}>
                       {d.documentNo} - {d.contact?.companyName} ({formatMoney(d.grandTotal)})

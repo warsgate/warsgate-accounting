@@ -66,8 +66,22 @@ export const defaultNumberingConfig: DocumentNumberingConfig = {
   },
 };
 
-export const previewDocumentNo = (setting: DocumentNumberSetting, dateStr?: string): string => {
-  const date = dateStr ? new Date(dateStr) : new Date();
+export const previewDocumentNo = (
+  setting: DocumentNumberSetting,
+  dateStr?: string,
+  existingDocuments?: { documentNo?: string; type?: DocumentType }[]
+): string => {
+  let date = new Date();
+  if (dateStr) {
+    const parts = dateStr.split('-').map(Number);
+    if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
+      date = new Date(parts[0], parts[1] - 1, parts[2]);
+    } else {
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed.getTime())) date = parsed;
+    }
+  }
+
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const shortYear = String(year).slice(-2);
@@ -81,21 +95,56 @@ export const previewDocumentNo = (setting: DocumentNumberSetting, dateStr?: stri
     datePart = `${year}`;
   }
 
-  const numPart = String(setting.nextNumber || 1).padStart(setting.digits, '0');
   const sep = setting.separator ?? '-';
+  const prefixHeader = datePart
+    ? `${setting.prefix}${sep}${datePart}${sep}`
+    : `${setting.prefix}${sep}`;
 
-  if (!datePart) {
-    return `${setting.prefix}${sep}${numPart}`;
+  let effectiveNext = setting.nextNumber || 1;
+
+  if (existingDocuments && existingDocuments.length > 0) {
+    const existingDocNos = new Set<string>();
+    let maxExistingSeq = 0;
+
+    for (const doc of existingDocuments) {
+      const docNo = doc.documentNo?.trim();
+      if (!docNo) continue;
+      existingDocNos.add(docNo);
+
+      if (docNo.startsWith(prefixHeader)) {
+        const tail = docNo.slice(prefixHeader.length);
+        const match = tail.match(/^(\d+)/);
+        if (match) {
+          const seq = parseInt(match[1], 10);
+          if (!isNaN(seq) && seq > maxExistingSeq) {
+            maxExistingSeq = seq;
+          }
+        }
+      }
+    }
+
+    if (maxExistingSeq >= effectiveNext) {
+      effectiveNext = maxExistingSeq + 1;
+    }
+
+    let candidate = `${prefixHeader}${String(effectiveNext).padStart(setting.digits, '0')}`;
+    while (existingDocNos.has(candidate)) {
+      effectiveNext += 1;
+      candidate = `${prefixHeader}${String(effectiveNext).padStart(setting.digits, '0')}`;
+    }
+    return candidate;
   }
 
-  return `${setting.prefix}${sep}${datePart}${sep}${numPart}`;
+  const numPart = String(effectiveNext).padStart(setting.digits, '0');
+  return `${prefixHeader}${numPart}`;
 };
 
 export const generateNextDocumentNo = (
   type: DocumentType,
   config: DocumentNumberingConfig,
-  issueDate?: string
+  issueDate?: string,
+  existingDocuments?: { documentNo?: string; type?: DocumentType }[]
 ): string => {
   const setting = config[type] || defaultNumberingConfig[type];
-  return previewDocumentNo(setting, issueDate);
+  return previewDocumentNo(setting, issueDate, existingDocuments);
 };

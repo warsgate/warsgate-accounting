@@ -1892,7 +1892,7 @@ export const initialDocuments: AccountingDocument[] = [
         withholdingTaxRate: 3,
       }
     ],
-    subtotal: 3645600.00,
+    subtotal: 3545600.00, // 3,645,600.00 - 100,000.00 Discount
     discountTotal: 100000.00,
     vatRate: 7,
     vatAmount: 248192.00,
@@ -2507,6 +2507,19 @@ export const initialDocuments: AccountingDocument[] = [
         pricePerUnit: 123000.00,
         discount: 0,
         amount: 123000.00,
+        vatInclusive: false,
+        withholdingTaxRate: 0,
+      },
+      {
+        id: 'item-inv70-7',
+        code: 'PNP-PM-2607',
+        name: '7. Project Management & Engineering Allocation (งวดที่ 1)',
+        description: 'ค่าบริหารโครงการและวิศวกรรมติดตั้งตามสัดส่วนการเบิกงวดที่ 1 (50% ของมูลค่าสัญญาสุทธิ)',
+        quantity: 1,
+        unit: 'Job',
+        pricePerUnit: 23076.00,
+        discount: 0,
+        amount: 23076.00,
         vatInclusive: false,
         withholdingTaxRate: 0,
       },

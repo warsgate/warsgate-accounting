@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Printer, Download, CheckCircle, ShieldCheck, FileText, Award, Cpu, ShoppingBag } from 'lucide-react';
-import { AccountingDocument, CompanyProfile } from '../types';
+import { X, Printer, Download, CheckCircle, ShieldCheck, FileText, Award, Cpu, ShoppingBag, Truck, Receipt, ArrowRightCircle } from 'lucide-react';
+import { AccountingDocument, CompanyProfile, DocumentType } from '../types';
 import { formatMoney, formatNumber, formatThaiDate, arabicToThaiBahtText, getProjectName } from '../utils/formatters';
 import { WhtCertificateView } from './WhtCertificateView';
 import { downloadEtaxXml } from '../utils/etaxGenerator';
@@ -13,6 +13,7 @@ interface DocumentViewerModalProps {
   onClose: () => void;
   onIssueReceipt?: (doc: AccountingDocument) => void;
   onGeneratePoFromQuotation?: (doc: AccountingDocument) => void;
+  onConvertDocument?: (sourceDoc: AccountingDocument, targetType: DocumentType) => void;
 }
 
 export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
@@ -20,7 +21,8 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
   company,
   onClose,
   onIssueReceipt,
-  onGeneratePoFromQuotation
+  onGeneratePoFromQuotation,
+  onConvertDocument
 }) => {
   if (!doc) return null;
 
@@ -517,16 +519,32 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 
           {/* Right: Total Calculation Table */}
           <div className="space-y-0.5 font-mono text-[11px] bg-slate-50/60 p-2.5 rounded-xl border border-slate-200/80">
-            <div className="flex justify-between py-0.5 border-b border-slate-200/60">
-              <span className="text-slate-600 font-sans text-[10.5px]">รวมเป็นเงิน (Subtotal):</span>
-              <span className="font-semibold text-slate-900">{formatMoney(doc.subtotal)}</span>
-            </div>
-            {doc.discountTotal > 0 && (
-              <div className="flex justify-between py-0.5 border-b border-slate-200/60">
-                <span className="text-slate-600 font-sans text-[10.5px]">ส่วนลดรวม (Discount):</span>
-                <span className="text-rose-600">-{formatMoney(doc.discountTotal)}</span>
-              </div>
-            )}
+            {(() => {
+              const itemsGross = Math.round(doc.items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0) * 100) / 100;
+              const showGrossBeforeDiscount = doc.discountTotal > 0 && itemsGross > doc.subtotal + 0.01;
+              return (
+                <>
+                  {showGrossBeforeDiscount && (
+                    <div className="flex justify-between py-0.5 border-b border-slate-200/60">
+                      <span className="text-slate-600 font-sans text-[10.5px]">รวมมูลค่าตามรายการ (Gross Total):</span>
+                      <span className="font-semibold text-slate-800">{formatMoney(itemsGross)}</span>
+                    </div>
+                  )}
+                  {doc.discountTotal > 0 && (
+                    <div className="flex justify-between py-0.5 border-b border-slate-200/60">
+                      <span className="text-slate-600 font-sans text-[10.5px]">หัก ส่วนลดรวม (Discount):</span>
+                      <span className="text-rose-600">-{formatMoney(doc.discountTotal)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between py-0.5 border-b border-slate-200/60">
+                    <span className="text-slate-600 font-sans text-[10.5px]">
+                      {doc.discountTotal > 0 ? 'ยอดหลังหักส่วนลด (Subtotal):' : 'รวมเป็นเงิน (Subtotal):'}
+                    </span>
+                    <span className="font-semibold text-slate-900">{formatMoney(doc.subtotal)}</span>
+                  </div>
+                </>
+              );
+            })()}
             <div className="flex justify-between py-0.5 border-b border-slate-200/60">
               <span className="text-slate-600 font-sans text-[10.5px]">ภาษีมูลค่าเพิ่ม VAT 7%:</span>
               <span className="font-semibold text-slate-900">{formatMoney(doc.vatAmount)}</span>
@@ -637,38 +655,53 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+      <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto">
         
         {/* Top Control Bar (Hidden when printing) */}
-        <div className="no-print bg-white px-4 sm:px-6 py-3 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="font-mono text-xs font-bold px-2.5 py-1 rounded bg-rose-50 text-rose-600 border border-rose-200">
+        <div className="no-print bg-white px-4 sm:px-5 py-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+          {/* Left: Top-Left Close Button + Document Number & Title */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              title="ปิดหน้าต่าง (Close)"
+              className="w-8 h-8 rounded-full bg-slate-800 hover:bg-rose-600 text-white flex items-center justify-center transition active:scale-95 shrink-0 shadow-sm"
+            >
+              <X className="w-4 h-4 stroke-[2.5]" />
+            </button>
+
+            <div className="h-5 w-px bg-slate-200" />
+
+            <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 shadow-2xs">
               {doc.documentNo}
             </span>
-            <span className="text-sm font-semibold text-slate-800">
+            <span className="text-sm font-bold text-slate-800 whitespace-nowrap">
               {title.main}
             </span>
+          </div>
 
+          {/* Right: Copy Mode Switcher + Action & Print Buttons */}
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
             {/* Document Copy Switcher (ต้นฉบับ / สำเนา) */}
-            <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200 text-xs shadow-inner">
+            <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200/80 text-[11px] shadow-inner">
               <button
                 type="button"
                 onClick={() => setCopyMode('BOTH')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 ${
+                className={`px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 whitespace-nowrap ${
                   copyMode === 'BOTH'
-                    ? 'bg-rose-600 text-white shadow-sm'
+                    ? 'bg-rose-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
                 title="รวมต้นฉบับและสำเนาครบชุด 2 หน้าในไฟล์เดียวกัน"
               >
-                <span>📑 ชุด 2 หน้า (ต้นฉบับ + สำเนา)</span>
+                <span>📑 ชุด 2 หน้า</span>
               </button>
               <button
                 type="button"
                 onClick={() => setCopyMode('ORIGINAL')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 ${
+                className={`px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 whitespace-nowrap ${
                   copyMode === 'ORIGINAL'
-                    ? 'bg-rose-600 text-white shadow-sm'
+                    ? 'bg-rose-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
                 title="เฉพาะต้นฉบับสำหรับลูกค้า"
@@ -678,9 +711,9 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               <button
                 type="button"
                 onClick={() => setCopyMode('COPY')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 ${
+                className={`px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 whitespace-nowrap ${
                   copyMode === 'COPY'
-                    ? 'bg-rose-600 text-white shadow-sm'
+                    ? 'bg-rose-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
                 title="เฉพาะสำเนาสำหรับฝ่ายบัญชี"
@@ -688,13 +721,125 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                 <span>📄 สำเนา</span>
               </button>
             </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+            <div className="hidden sm:block h-5 w-px bg-slate-200 mx-0.5" />
+
+            {/* One-Click Document Conversion Workflow Buttons */}
+            {onConvertDocument && doc.type === 'QUOTATION' && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onConvertDocument(doc, 'INVOICE')}
+                  className="px-2.5 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold text-[11px] border border-sky-300 flex items-center gap-1 transition shadow-2xs whitespace-nowrap"
+                  title="สร้างใบแจ้งหนี้ (Invoice) โดยดึงรายการทั้งหมดจากใบเสนอราคานี้ในคลิกเดียว"
+                >
+                  <FileText className="w-3.5 h-3.5 text-sky-600" />
+                  <span>ออกใบแจ้งหนี้</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onConvertDocument(doc, 'DELIVERY_ORDER')}
+                  className="px-2.5 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-800 font-bold text-[11px] border border-violet-300 flex items-center gap-1 transition shadow-2xs whitespace-nowrap"
+                  title="สร้างใบส่งของชั่วคราว (DO) โดยดึงรายการจากใบเสนอราคานี้ในคลิกเดียว"
+                >
+                  <Truck className="w-3.5 h-3.5 text-violet-600" />
+                  <span>ออกใบส่งของ</span>
+                </button>
+              </>
+            )}
+
+            {onConvertDocument && doc.type === 'DELIVERY_ORDER' && (
+              <button
+                type="button"
+                onClick={() => onConvertDocument(doc, 'INVOICE')}
+                className="px-2.5 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold text-[11px] border border-sky-300 flex items-center gap-1 transition shadow-2xs whitespace-nowrap"
+                title="สร้างใบแจ้งหนี้ (Invoice) อ้างอิงจากใบส่งของชั่วคราวนี้"
+              >
+                <FileText className="w-3.5 h-3.5 text-sky-600" />
+                <span>ออกใบแจ้งหนี้</span>
+              </button>
+            )}
+
+            {onConvertDocument && doc.type === 'INVOICE' && (
+              <button
+                type="button"
+                onClick={() => onConvertDocument(doc, 'TAX_INVOICE')}
+                className="px-2.5 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold text-[11px] border border-sky-300 flex items-center gap-1 transition shadow-2xs whitespace-nowrap"
+                title="ออกใบกำกับภาษี (Tax Invoice) จากใบแจ้งหนี้นี้ในคลิกเดียว"
+              >
+                <Receipt className="w-3.5 h-3.5 text-sky-600" />
+                <span>ออกใบกำกับภาษี</span>
+              </button>
+            )}
+
+            {onConvertDocument && doc.type === 'PURCHASE_ORDER' && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onConvertDocument(doc, 'PURCHASE_INVOICE')}
+                  className="px-2.5 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold text-[11px] border border-sky-300 flex items-center gap-1 transition shadow-2xs whitespace-nowrap"
+                  title="บันทึกใบแจ้งหนี้ค่าใช้จ่าย (PINV) จากใบสั่งซื้อนี้ในคลิกเดียว"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5 text-sky-600" />
+                  <span>บันทึกใบแจ้งหนี้ซื้อ</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onConvertDocument(doc, 'PAYMENT_VOUCHER')}
+                  className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-[11px] border border-amber-300 flex items-center gap-1 transition shadow-2xs whitespace-nowrap"
+                  title="ออกใบสำคัญจ่าย (PV) จากใบสั่งซื้อนี้ในคลิกเดียว"
+                >
+                  <ArrowRightCircle className="w-3.5 h-3.5 text-amber-600" />
+                  <span>ออกใบสำคัญจ่าย</span>
+                </button>
+              </>
+            )}
+
+            {onConvertDocument && doc.type === 'PURCHASE_INVOICE' && (
+              <button
+                type="button"
+                onClick={() => onConvertDocument(doc, 'PAYMENT_VOUCHER')}
+                className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-[11px] border border-amber-300 flex items-center gap-1 transition shadow-2xs whitespace-nowrap"
+                title="ออกใบสำคัญจ่าย (PV) จากใบแจ้งหนี้ค่าใช้จ่ายนี้ในคลิกเดียว"
+              >
+                <ArrowRightCircle className="w-3.5 h-3.5 text-amber-600" />
+                <span>ออกใบสำคัญจ่าย</span>
+              </button>
+            )}
+
+            {hasWht && !isWhtCertificate && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setViewMode(prev => prev === 'WHT_50_TAWI' ? 'STANDARD' : 'WHT_50_TAWI')}
+                  className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] border flex items-center gap-1 transition shadow-2xs whitespace-nowrap ${
+                    viewMode === 'WHT_50_TAWI'
+                      ? 'bg-purple-600 text-white border-purple-700'
+                      : 'bg-purple-50 hover:bg-purple-100 text-purple-800 border-purple-300'
+                  }`}
+                  title="สลับดูหรือพิมพ์หนังสือรับรองการหักภาษี ณ ที่จ่าย (50 ทวิ) ของเอกสารนี้"
+                >
+                  <Award className="w-3.5 h-3.5" />
+                  <span>{viewMode === 'WHT_50_TAWI' ? 'ดูเอกสารหลัก' : 'ดู/พิมพ์ 50 ทวิ'}</span>
+                </button>
+                {onConvertDocument && (doc.type === 'PAYMENT_VOUCHER' || doc.type === 'PURCHASE_INVOICE') && (
+                  <button
+                    type="button"
+                    onClick={() => onConvertDocument(doc, 'WHT_CERTIFICATE')}
+                    className="px-2.5 py-1.5 rounded-xl bg-fuchsia-50 hover:bg-fuchsia-100 text-fuchsia-800 font-bold text-[11px] border border-fuchsia-300 flex items-center gap-1 transition shadow-2xs whitespace-nowrap"
+                    title="บันทึกและออกเอกสารหนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ) เข้าระบบบัญชี"
+                  >
+                    <Award className="w-3.5 h-3.5 text-fuchsia-600" />
+                    <span>บันทึก 50 ทวิ</span>
+                  </button>
+                )}
+              </>
+            )}
+
             {onGeneratePoFromQuotation && doc.type === 'QUOTATION' && (
               <button
                 onClick={() => onGeneratePoFromQuotation(doc)}
-                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 text-indigo-800 font-bold text-xs border border-indigo-300 flex items-center gap-1.5 transition shadow-sm"
+                className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 text-indigo-800 font-bold text-[11px] border border-indigo-300 flex items-center gap-1 transition shadow-2xs whitespace-nowrap"
                 title="สร้างใบสั่งซื้อ (PO) พาร์ทจาก BOM สำหรับโครงการตามใบเสนอราคานี้"
               >
                 <Cpu className="w-3.5 h-3.5 text-indigo-600" />
@@ -704,44 +849,37 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
             {onIssueReceipt && (doc.type === 'INVOICE' || doc.type === 'TAX_INVOICE') && (
               <button
                 onClick={() => onIssueReceipt(doc)}
-                className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-300 flex items-center gap-1.5 transition shadow-sm"
+                className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-[11px] border border-amber-300 flex items-center gap-1 transition shadow-2xs whitespace-nowrap"
                 title="ออกใบเสร็จรับเงินจากใบแจ้งหนี้นี้"
               >
                 <FileText className="w-3.5 h-3.5 text-amber-600" />
-                <span>📑 ออกใบเสร็จ</span>
+                <span>ออกใบเสร็จ</span>
               </button>
             )}
             {['TAX_INVOICE', 'INVOICE', 'RECEIPT'].includes(doc.type) && (
               <button
                 onClick={() => downloadEtaxXml(doc, company)}
-                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 text-emerald-800 font-bold text-xs border border-emerald-300 flex items-center gap-1.5 transition shadow-sm"
+                className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 text-emerald-800 font-bold text-[11px] border border-emerald-300 flex items-center gap-1 transition shadow-2xs whitespace-nowrap"
                 title="ดาวน์โหลดไฟล์ XML ตามมาตรฐาน e-Tax Invoice ของกรมสรรพากร และ ETDA"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>⚡ e-Tax XML</span>
+                <span>e-Tax XML</span>
               </button>
             )}
             <button
               onClick={handlePrint}
-              className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-glow transition active:scale-95"
+              className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-glow transition active:scale-95 whitespace-nowrap"
             >
-              <Printer className="w-4 h-4" />
+              <Printer className="w-3.5 h-3.5" />
               <span>
-                {copyMode === 'BOTH' ? 'พิมพ์ชุด 2 หน้า (ต้นฉบับ+สำเนา) / PDF' : copyMode === 'ORIGINAL' ? 'พิมพ์ต้นฉบับ / PDF' : 'พิมพ์สำเนา / PDF'}
+                {copyMode === 'BOTH' ? 'พิมพ์ชุด 2 หน้า / PDF' : copyMode === 'ORIGINAL' ? 'พิมพ์ต้นฉบับ / PDF' : 'พิมพ์สำเนา / PDF'}
               </span>
             </button>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
           </div>
         </div>
 
         {/* Printable A4 Paper Document Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-950">
+        <div className="flex-1 overflow-y-auto overflow-x-auto p-3 sm:p-8 bg-slate-950">
           {viewMode === 'WHT_50_TAWI' ? (
             <div id="printable-document-content">
               <WhtCertificateView document={doc} company={company} />

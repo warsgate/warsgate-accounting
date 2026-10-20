@@ -189,8 +189,13 @@ export function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('warsgate_sidebar_collapsed') === 'true';
   });
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   const toggleSidebar = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setIsMobileMenuOpen(prev => !prev);
+      return;
+    }
     setIsSidebarCollapsed(prev => {
       const next = !prev;
       localStorage.setItem('warsgate_sidebar_collapsed', String(next));
@@ -442,6 +447,13 @@ export function App() {
   const handleIssueReceiptFromInvoice = (invoiceDoc: AccountingDocument) => {
     setFromDoc(invoiceDoc);
     setCreateDocType('RECEIPT');
+    setEditingDoc(null);
+    setViewDoc(null);
+  };
+
+  const handleConvertDocument = (sourceDoc: AccountingDocument, targetType: DocumentType) => {
+    setFromDoc(sourceDoc);
+    setCreateDocType(targetType);
     setEditingDoc(null);
     setViewDoc(null);
   };
@@ -739,7 +751,7 @@ export function App() {
       {/* Main Workspace Layout */}
       <div className="flex flex-1 overflow-hidden">
         
-        {/* Left Sidebar Navigation (Collapsible) */}
+        {/* Left Sidebar Navigation (Collapsible + Mobile Drawer) */}
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -748,10 +760,40 @@ export function App() {
           products={products}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={toggleSidebar}
+          isMobileOpen={isMobileMenuOpen}
+          onCloseMobile={() => setIsMobileMenuOpen(false)}
         />
 
         {/* Content Area - Full screen flush with edge */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 bg-slate-50/70 w-full">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 bg-slate-50/70 w-full min-w-0">
+          {/* Mobile Quick Navigation Pills (< md) */}
+          <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-2.5 mb-3 border-b border-slate-200/80 no-print">
+            {[
+              { id: 'dashboard', label: '📊 ภาพรวม' },
+              { id: 'sales', label: '💰 รายรับ' },
+              { id: 'milestone-billing', label: '📑 งวดงาน' },
+              { id: 'billing-note', label: '📋 ใบวางบิล' },
+              { id: 'expenses', label: '💸 รายจ่าย' },
+              { id: 'project-pnl', label: '📈 กำไรรายจ็อบ' },
+              { id: 'customer-balances', label: '🏢 ลูกหนี้ & PO' },
+              { id: 'contacts', label: '👥 ผู้ติดต่อ' },
+              { id: 'tax', label: '🧾 ภาษี' },
+              { id: 'settings', label: '⚙️ ตั้งค่า' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition shrink-0 ${
+                  activeTab === tab.id
+                    ? 'bg-rose-600 text-white shadow-xs'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
           <div className="w-full">
             {activeTab === 'dashboard' && (
               <DashboardView
@@ -952,6 +994,7 @@ export function App() {
           company={company}
           onClose={() => setViewDoc(null)}
           onIssueReceipt={handleIssueReceiptFromInvoice}
+          onConvertDocument={handleConvertDocument}
           onGeneratePoFromQuotation={(doc) => {
             setViewDoc(null);
             setBomPoQuotationTarget(doc);

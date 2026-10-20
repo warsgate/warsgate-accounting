@@ -2,7 +2,7 @@ import React from "react";
 import { 
   LayoutDashboard, FileCheck, TrendingUp, TrendingDown, Users, Package,
   BookOpen, Calculator, Settings, ChevronRight, ChevronLeft, Zap, BarChart3,
-  PanelLeftClose, PanelLeftOpen, Cpu, ExternalLink, Clock, Sparkles, Layers, Calendar
+  PanelLeftClose, PanelLeftOpen, Cpu, ExternalLink, Clock, Sparkles, Layers, Calendar, X
 } from "lucide-react";
 import { AccountingDocument, Contact, ProductService } from "../types";
 
@@ -14,6 +14,8 @@ interface SidebarProps {
   products?: ProductService[];
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -23,7 +25,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   contacts = [],
   products = [],
   isCollapsed = false,
-  onToggleCollapse
+  onToggleCollapse,
+  isMobileOpen = false,
+  onCloseMobile
 }) => {
   const salesCount = documents.filter(d => ["QUOTATION", "INVOICE", "TAX_INVOICE", "DELIVERY_ORDER", "RECEIPT"].includes(d.type)).length;
   const expenseCount = documents.filter(d => ["PURCHASE_ORDER", "PURCHASE_INVOICE", "PAYMENT_VOUCHER", "WHT_CERTIFICATE"].includes(d.type)).length;
@@ -141,11 +145,87 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside 
-      className={`bg-white border-r border-slate-200 flex flex-col justify-between hidden md:flex shrink-0 shadow-sm transition-all duration-300 ease-in-out select-none relative ${
-        isCollapsed ? "w-[72px]" : "w-64"
-      }`}
-    >
+    <>
+      {/* Mobile Slide-Over Drawer (< md) */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+            onClick={onCloseMobile}
+          />
+          <aside className="relative w-72 max-w-[85vw] bg-white h-full flex flex-col justify-between shadow-2xl z-10 overflow-y-auto animate-in slide-in-from-left duration-200">
+            <div className="p-3 space-y-1">
+              <div className="flex items-center justify-between px-2 pb-2.5 mb-2 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={onCloseMobile}
+                    className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 flex items-center justify-center"
+                    title="ปิดเมนู"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs font-bold text-slate-800">
+                    เมนูหลัก (Navigation)
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 font-bold">
+                  Mobile
+                </span>
+              </div>
+
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      onCloseMobile?.();
+                    }}
+                    className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-left ${
+                      isActive
+                        ? "bg-rose-50 border border-rose-200 text-rose-700 shadow-xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`p-2 rounded-lg shrink-0 ${
+                        isActive
+                          ? "bg-rose-600 text-white shadow-xs"
+                          : "bg-slate-100 text-slate-500"
+                      }`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className={`block text-xs truncate ${isActive ? "text-rose-700 font-bold" : "text-slate-700 font-semibold"}`}>
+                          {item.label}
+                        </span>
+                        <span className={`text-[10px] block truncate ${isActive ? "text-rose-500" : "text-slate-400"}`}>
+                          {item.subtitle}
+                        </span>
+                      </div>
+                    </div>
+                    {item.badge && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono font-bold whitespace-nowrap shrink-0 ml-1 ${item.badgeColor}`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop Left Sidebar (md:flex) */}
+      <aside 
+        className={`bg-white border-r border-slate-200 flex-col justify-between hidden md:flex shrink-0 shadow-sm transition-all duration-300 ease-in-out select-none relative ${
+          isCollapsed ? "w-[72px]" : "w-64"
+        }`}
+      >
       <div className="p-3 space-y-1 pt-3">
         
         {/* Top Header & Collapse Button */}
@@ -326,6 +406,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-    </aside>
+      </aside>
+    </>
   );
 };

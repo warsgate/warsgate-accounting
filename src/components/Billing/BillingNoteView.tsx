@@ -909,9 +909,21 @@ export const BillingNoteView: React.FC<BillingNoteViewProps> = ({
           <div className="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-10 shadow-2xl border border-slate-200 space-y-6 my-8 print:p-0 print:border-none print:shadow-none">
             
             {/* Modal Action Header (Hidden in Print) */}
-            <div className="no-print flex items-center justify-between pb-4 border-b border-slate-200 print:hidden">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+            <div className="no-print flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200 print:hidden">
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedNoteForPrint(null)}
+                  title="ปิดหน้าต่าง (Close)"
+                  className="w-8 h-8 rounded-full bg-slate-800 hover:bg-rose-600 text-white flex items-center justify-center transition active:scale-95 shrink-0 shadow-sm"
+                >
+                  <X className="w-4 h-4 stroke-[2.5]" />
+                </button>
+                <div className="h-5 w-px bg-slate-200" />
+                <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  {selectedNoteForPrint.documentNo}
+                </span>
+                <span className="text-sm font-bold text-slate-800">
                   ตัวอย่างเอกสารใบวางบิล (Billing Note Preview)
                 </span>
               </div>
@@ -1042,12 +1054,6 @@ export const BillingNoteView: React.FC<BillingNoteViewProps> = ({
                 >
                   <Printer className="w-4 h-4" />
                   <span>พิมพ์ใบวางบิล (Print)</span>
-                </button>
-                <button
-                  onClick={() => setSelectedNoteForPrint(null)}
-                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition"
-                >
-                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
